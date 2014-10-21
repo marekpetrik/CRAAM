@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="RAAM" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/raam" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add option="-fopenmp -fPIC" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-fopenmp" />
+					<Add library="boost_unit_test_framework" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/raam" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-std=c++11" />
+					<Add option="-fopenmp -fPIC" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-fopenmp" />
+				</Linker>
+			</Target>
+			<Target title="Benchmark">
+				<Option output="bin/Benchmark/raam" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Benchmark" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-std=c++11" />
+					<Add option="-fopenmp -ftree-vectorize -funroll-loops" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-fopenmp" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="include/Action.hpp" />
+		<Unit filename="include/RMDP.hpp" />
+		<Unit filename="include/State.hpp" />
+		<Unit filename="include/Transition.hpp" />
+		<Unit filename="include/definitions.hpp" />
+		<Unit filename="src/Action.cpp" />
+		<Unit filename="src/RMDP.cpp" />
+		<Unit filename="src/State.cpp" />
+		<Unit filename="src/Transition.cpp" />
+		<Unit filename="src/definitions.cpp" />
+		<Unit filename="test/benchmark.cpp">
+			<Option target="Benchmark" />
+		</Unit>
+		<Unit filename="test/test.cpp">
+			<Option target="Debug" />
+		</Unit>
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
