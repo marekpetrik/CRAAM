@@ -1,6 +1,5 @@
-
-Robust And Approximate Markov decision processes
-================================================
+C++ Robust And Approximate Markov decision processes
+==============================================
 
 .. role:: cpp(code)
     :language: c++
@@ -157,4 +156,4 @@ References
 
 .. [Puterman2005] Puterman, M. L. (2005). Markov decision processes: Discrete stochastic dynamic programming. Handbooks in operations research and management …. John Wiley & Sons, Inc.
 
-.. [Iyengar2005] Iyengar, G. N. G. (2005). Robust dynamic programming. Mathematics of Operations Research, 30(2), 1–29. 
+.. [Iyengar2005] Iyengar, G. N. G. (2005). Robust dynamic programming. Mathematics of Operations Research, 30(2), 1–29.
