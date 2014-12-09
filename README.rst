@@ -1,10 +1,10 @@
-C++ Robust And Approximate Markov decision processes
-==============================================
+Robust And Approximate Markov decision processes
+===========================================
 
 .. role:: cpp(code)
     :language: c++
 
-A simple and easy to use library to solve Markov decision processes and *robust* Markov decision processes. 
+A simple and easy to use C++ library to solve Markov decision processes and *robust* Markov decision processes. 
 
 The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]_. The library assumes *maximization* over actions. The states and actions must be finite.
 
