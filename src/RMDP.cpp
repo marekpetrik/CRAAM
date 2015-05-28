@@ -599,6 +599,9 @@ void RMDP::set_distribution(long fromid, long actionid, vector<prec_t> const& di
 }
 
 void RMDP::set_thresholds(prec_t threshold){
+    /**
+     * \brief Sets thresholds for all states uniformly
+     */
     for(auto & s : this->states){
         s.set_thresholds(threshold);
     }
@@ -771,8 +774,9 @@ string RMDP::to_string() const {
 
 void RMDP::set_uniform_distribution(prec_t threshold){
     /**
-     * \brief Sets the distribution for each state and action to be
-     * uniform
+     * \brief Sets the distribution for outcomes for each state and
+     * action to be uniform. It also sets the threshold to be the same
+     * for all states.
      */
     for(auto& s : states){
         for(auto& a : s.actions){
@@ -783,3 +787,4 @@ void RMDP::set_uniform_distribution(prec_t threshold){
         }
     }
 }
+

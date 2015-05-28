@@ -68,7 +68,7 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
      *
      * \param distribution New distribution of outcomes. Must be either the same dimension as the number
      * of outcomes, or length 0. If the length is 0, it is assumed to be a uniform distribution over states.
-     * \param threshold Bound on the worst-case distribtution on the outcomes.
+     * \param threshold Bound on the worst-case distribution on the outcomes.
      */
 
     if(distribution.size() == 0){
@@ -93,7 +93,7 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
     this->threshold = threshold;
 }
 
-pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t discount) const{
+pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t discount) const {
     /**
      * \brief Computes the maximal outcome for the value function
      *
