@@ -97,7 +97,7 @@ public:
     // these are mostly convenience functions
     void set_distribution(long fromid, long actionid, vector<prec_t> const& distribution, prec_t threshold);
     void set_uniform_distribution(prec_t threshold);
-    void set_thresholds(prec_t threshold);
+    void set_uniform_thresholds(prec_t threshold);
 
     void add_transitions(vector<long> const& fromids, vector<long> const& actionids, vector<long> const& outcomeids, vector<long> const& toids, vector<prec_t> const& probs, vector<prec_t> const& rews);
 

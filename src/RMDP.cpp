@@ -598,7 +598,7 @@ void RMDP::set_distribution(long fromid, long actionid, vector<prec_t> const& di
     states[fromid].actions[actionid].set_distribution(distribution, threshold);
 }
 
-void RMDP::set_thresholds(prec_t threshold){
+void RMDP::set_uniform_thresholds(prec_t threshold){
     /**
      * \brief Sets thresholds for all states uniformly
      */
