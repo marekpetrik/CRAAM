@@ -41,6 +41,54 @@ long RMDP::transition_count(long stateid, long actionid, long outcomeid) const{
     return this->states[stateid].actions[actionid].outcomes[outcomeid].indices.size();
 }
 
+long RMDP::sample_count(long stateid, long actionid, long outcomeid) const{
+    /**
+     * \brief Returns the number of samples (state to state transitions) for the
+     *        given parameters.
+     *
+     * \param fromid Starting state ID
+     * \param actionid Action ID
+     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+     * \param sampleid Sample (a single state transition) ID
+     */
+    const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
+    return tran.rewards.size();
+}
+
+void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward){
+    /**
+     * \brief Sets the the reward for the given sample id.
+     * \param fromid Starting state ID
+     * \param actionid Action ID
+     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+     * \param sampleid Sample (a single state transition) ID
+     * \param reward The new reward
+     */
+
+    Transition& tran = this->get_transition(stateid,actionid,outcomeid);
+
+    if(sampleid < 0l || sampleid >= (long) tran.rewards.size()){
+        throw invalid_argument("invalid sample number");
+    }
+    tran.rewards[sampleid] = reward;
+}
+
+
+prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sampleid) const {
+    /**
+     * \brief Sets the the reward for the given sample id.
+     * \param fromid Starting state ID
+     * \param actionid Action ID
+     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+     * \param sampleid Sample (a single state transition) ID
+     */
+    const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
+
+    if(sampleid < 0l || sampleid >= (long) tran.rewards.size()){
+        throw invalid_argument("invalid sample number");
+    }
+    return tran.rewards[sampleid];
+}
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
@@ -605,6 +653,23 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
     for(auto & s : this->states){
         s.set_thresholds(threshold);
     }
+}
+
+Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid){
+    /**
+     * Returns transition states, probabilities, and rewards
+     */
+    if(stateid < 0l || stateid >= (long) this->states.size()){
+        throw invalid_argument("invalid state number");
+    }
+    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
+        throw invalid_argument("invalid action number");
+    }
+    if(outcomeid < 0l || outcomeid >= (long) this->states[stateid].actions[actionid].outcomes.size()){
+        throw invalid_argument("invalid outcome number");
+    }
+
+    return (this->states[stateid].actions[actionid].outcomes[outcomeid]);
 }
 
 const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{

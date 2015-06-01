@@ -99,13 +99,20 @@ public:
     void set_uniform_distribution(prec_t threshold);
     void set_uniform_thresholds(prec_t threshold);
 
+    // modifying and querying a single function
+    prec_t get_reward(long stateid, long actionid, long outcomeid, long sampleid) const;
+    void set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward);
+
     void add_transitions(vector<long> const& fromids, vector<long> const& actionids, vector<long> const& outcomeids, vector<long> const& toids, vector<prec_t> const& probs, vector<prec_t> const& rews);
 
+    // functions returning counts
     long state_count() const;
     long action_count(long stateid) const;
     long outcome_count(long stateid, long actionid) const;
     long transition_count(long stateid, long actionid, long outcomeid) const;
+    long sample_count(long stateid, long actionid, long outcomeid) const;
 
+    Transition& get_transition(long stateid, long actionid, long outcomeid);
     const Transition& get_transition(long stateid, long actionid, long outcomeid) const;
 
     // Updates the state values in place - can solve finite-horizon problems quickly when ordered correctly

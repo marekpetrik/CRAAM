@@ -107,3 +107,60 @@
 	<stdexcept>
 	"Action.hpp"
 
+1421233433 source:/home/marek/Projects/craam/src/definitions.cpp
+	"definitions.hpp"
+
+1421233433 /home/marek/Projects/craam/include/definitions.hpp
+	<vector>
+
+1421233433 source:/home/marek/Projects/craam/src/State.cpp
+	<limits>
+	<string>
+	"State.hpp"
+
+1421233433 /home/marek/Projects/craam/include/State.hpp
+	<utility>
+	<tuple>
+	<vector>
+	<stdexcept>
+	"Action.hpp"
+
+1421233433 /home/marek/Projects/craam/include/Action.hpp
+	<utility>
+	<vector>
+	<stdexcept>
+	"definitions.hpp"
+	"Transition.hpp"
+
+1433193540 /home/marek/Projects/craam/include/Transition.hpp
+	<vector>
+	"definitions.hpp"
+
+1421233433 source:/home/marek/Projects/craam/src/Transition.cpp
+	<algorithm>
+	<stdexcept>
+	<vector>
+	<numeric>
+	<cmath>
+	<assert.h>
+	"Transition.hpp"
+	"definitions.hpp"
+
+1421233433 source:/home/marek/Projects/craam/test/test.cpp
+	<iostream>
+	<sstream>
+	"Transition.hpp"
+	"Action.hpp"
+	"State.hpp"
+	"RMDP.hpp"
+	<boost/test/unit_test.hpp>
+
+1433193212 /home/marek/Projects/craam/include/RMDP.hpp
+	<vector>
+	<istream>
+	<ostream>
+	<fstream>
+	<memory>
+	"definitions.hpp"
+	"State.hpp"
+

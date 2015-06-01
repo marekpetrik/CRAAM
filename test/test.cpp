@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
     auto&& result2 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
-    rmdp.set_thresholds(0);
+    rmdp.set_uniform_thresholds(0);
     result1 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
     BOOST_CHECK_CLOSE(result1.valuefunction[0],15.0,1e-3);
 
@@ -450,14 +450,14 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
     BOOST_CHECK_CLOSE(result2.valuefunction[0],15.0,1e-3);
 
 
-    rmdp.set_thresholds(1);
+    rmdp.set_uniform_thresholds(1);
     result1 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
     BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
 
     result2 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
-    rmdp.set_thresholds(0.5);
+    rmdp.set_uniform_thresholds(0.5);
     result1 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
     BOOST_CHECK_CLOSE(result1.valuefunction[0],12.5,1e-3);
 
