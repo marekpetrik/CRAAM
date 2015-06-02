@@ -809,12 +809,25 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
     }
 }
 
-unique_ptr<RMDP> RMDP::copy(){
+unique_ptr<RMDP> RMDP::copy() const {
     /**
-     * Copies the RMDP
+     * \brief Creates a copy of the MDP.
      */
 
     unique_ptr<RMDP> result(new RMDP(this->state_count()));
+
+    this->copy_into(*result);
+
+    return result;
+}
+
+void RMDP::copy_into(RMDP& result) const {
+    /**
+     * \brief Copies the values of the RMDP to a new one. The new RMDP
+     *          should be empty.
+     */
+
+    // make sure that the created MDP is empty
 
     // *** copy transitions ***
     //idstatefrom
@@ -833,7 +846,7 @@ unique_ptr<RMDP> RMDP::copy(){
 
                 //idstateto
                 for (size_t l = 0; l < indices.size(); l++){
-                    result->add_transition(i,j,k,l,probabilities[l],rewards[l]);
+                    result.add_transition(i,j,k,l,probabilities[l],rewards[l]);
                 }
             }
         }
@@ -842,7 +855,7 @@ unique_ptr<RMDP> RMDP::copy(){
     // *** copy distributions and thresholds ***
     for(size_t i = 0l; i < this->states.size(); i++){
         const auto& actions_origin = (this->states[i]).actions;
-        auto& actions_dest = (result->states[i]).actions;
+        auto& actions_dest = (result.states[i]).actions;
 
         //idaction
         for(size_t j = 0; j < actions_origin.size(); j++){
@@ -853,8 +866,6 @@ unique_ptr<RMDP> RMDP::copy(){
             action_dest.threshold = action_origin.threshold;
         }
     }
-
-    return result;
 }
 
 string RMDP::to_string() const {

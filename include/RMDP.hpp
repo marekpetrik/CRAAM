@@ -139,7 +139,8 @@ public:
     void transitions_to_csv_file(const string& filename, bool header = true) const;
 
     // copying
-    unique_ptr<RMDP> copy();
+    unique_ptr<RMDP> copy() const;
+    void copy_into(RMDP& result) const;
 
     // string representation
     string to_string() const;
