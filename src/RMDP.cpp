@@ -846,7 +846,7 @@ void RMDP::copy_into(RMDP& result) const {
 
                 //idstateto
                 for (size_t l = 0; l < indices.size(); l++){
-                    result.add_transition(i,j,k,l,probabilities[l],rewards[l]);
+                    result.add_transition(i,j,k,indices[l],probabilities[l],rewards[l]);
                 }
             }
         }
