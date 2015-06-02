@@ -133,11 +133,13 @@ public:
     Solution mpi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const;
 
-
     // writing a reading files
     static unique_ptr<RMDP> transitions_from_csv(istream& input, bool header = true);
     void transitions_to_csv(ostream& output, bool header = true) const;
     void transitions_to_csv_file(const string& filename, bool header = true) const;
+
+    // copying
+    unique_ptr<RMDP> copy();
 
     // string representation
     string to_string() const;

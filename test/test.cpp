@@ -819,3 +819,44 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
     BOOST_CHECK_EQUAL(rmdp->get_threshold(3,0), 1.0);
 
 }
+
+BOOST_AUTO_TEST_CASE(test_rmdp_copy){
+    RMDP rmdp_original(1);
+
+    vector<prec_t> dist = {0.5,0.5};
+
+    rmdp_original.add_transition(0,0,0,0,1,1);
+    rmdp_original.add_transition(0,0,1,0,1,2);
+    rmdp_original.set_distribution(0,0,dist,2);
+
+    auto rmdp = rmdp_original.copy();
+
+    vector<prec_t> initial = {0};
+
+    auto&& result1 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
+
+    auto&& result2 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+
+    rmdp->set_uniform_thresholds(0);
+    result1 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0],15.0,1e-3);
+
+    result2 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0],15.0,1e-3);
+
+    rmdp->set_uniform_thresholds(1);
+    result1 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
+
+    result2 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+
+    rmdp->set_uniform_thresholds(0.5);
+    result1 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0],12.5,1e-3);
+
+    result2 = rmdp->vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0],17.5,1e-3);
+}

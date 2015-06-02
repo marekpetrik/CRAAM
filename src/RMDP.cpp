@@ -650,7 +650,7 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
     /**
      * \brief Sets thresholds for all states uniformly
      */
-    for(auto & s : this->states){
+    for(auto& s : this->states){
         s.set_thresholds(threshold);
     }
 }
@@ -787,17 +787,17 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
 
     //idstatefrom
     for(size_t i = 0l; i < this->states.size(); i++){
-        auto actions = (this->states[i]).actions;
+        const auto& actions = (this->states[i]).actions;
 
         //idaction
         for(size_t j = 0; j < actions.size(); j++){
-            auto outcomes = actions[j].outcomes;
+            const auto& outcomes = actions[j].outcomes;
 
             //idoutcome
             for(size_t k = 0; k < outcomes.size(); k++){
-                auto indices = outcomes[k].indices;
-                auto rewards = outcomes[k].rewards;
-                auto probabilities = outcomes[k].probabilities;
+                const auto& indices = outcomes[k].indices;
+                const auto& rewards = outcomes[k].rewards;
+                const auto& probabilities = outcomes[k].probabilities;
 
                 //idstateto
                 for (size_t l = 0; l < indices.size(); l++){
@@ -807,6 +807,54 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
             }
         }
     }
+}
+
+unique_ptr<RMDP> RMDP::copy(){
+    /**
+     * Copies the RMDP
+     */
+
+    unique_ptr<RMDP> result(new RMDP(this->state_count()));
+
+    // *** copy transitions ***
+    //idstatefrom
+    for(size_t i = 0l; i < this->states.size(); i++){
+        const auto& actions = (this->states[i]).actions;
+
+        //idaction
+        for(size_t j = 0; j < actions.size(); j++){
+            const auto& outcomes = actions[j].outcomes;
+
+            //idoutcome
+            for(size_t k = 0; k < outcomes.size(); k++){
+                const auto& indices = outcomes[k].indices;
+                const auto& rewards = outcomes[k].rewards;
+                const auto& probabilities = outcomes[k].probabilities;
+
+                //idstateto
+                for (size_t l = 0; l < indices.size(); l++){
+                    result->add_transition(i,j,k,l,probabilities[l],rewards[l]);
+                }
+            }
+        }
+    }
+
+    // *** copy distributions and thresholds ***
+    for(size_t i = 0l; i < this->states.size(); i++){
+        const auto& actions_origin = (this->states[i]).actions;
+        auto& actions_dest = (result->states[i]).actions;
+
+        //idaction
+        for(size_t j = 0; j < actions_origin.size(); j++){
+            const auto& action_origin = actions_origin[j];
+            auto& action_dest = actions_dest[j];
+
+            action_dest.distribution = action_origin.distribution;
+            action_dest.threshold = action_origin.threshold;
+        }
+    }
+
+    return result;
 }
 
 string RMDP::to_string() const {
