@@ -894,7 +894,11 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     store.seekg(0);
     auto rmdp1 = RMDP::transitions_from_csv(store,false);
 
+    // copying to make sure that copy works
     auto rmdp = rmdp1->copy();
+
+    // change rewards to make sure that it is really a copy
+    rmdp1->set_reward(1,0,0,0,9.0);
 
     // print the problem definition for debugging
     //cout << string_representation << endl;
