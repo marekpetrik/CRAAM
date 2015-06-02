@@ -853,3 +853,46 @@ void RMDP::set_uniform_distribution(prec_t threshold){
     }
 }
 
+void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
+    /**
+     * \brief Saves the transition probabilities and rewards to a CSV file
+     * \param filename Name of the file
+     * \param header Whether to create a header of the file too
+     */
+    ofstream ofs;
+    ofs.open(filename);
+
+    transitions_to_csv(ofs,header);
+    ofs.close();
+}
+
+void RMDP::set_threshold(long stateid, long actionid, prec_t threshold){
+    /**
+     * \brief Sets a new threshold value
+     */
+    if(stateid < 0l || stateid >= (long) this->states.size()){
+        throw invalid_argument("invalid state number");
+    }
+    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
+        throw invalid_argument("invalid action number");
+    }
+    if(threshold < 0.0 || threshold > 2.0) {
+        throw invalid_argument("threshold must be between 0 and 2");
+    }
+
+    this->states[stateid].actions[actionid].threshold = threshold;
+}
+
+prec_t RMDP::get_threshold(long stateid, long actionid) const {
+    /**
+     * \brief Returns the threshold value
+     */
+    if(stateid < 0l || stateid >= (long) this->states.size()){
+        throw invalid_argument("invalid state number");
+    }
+    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
+        throw invalid_argument("invalid action number");
+    }
+
+    return (this->states[stateid].actions[actionid].threshold);
+}

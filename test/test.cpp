@@ -449,7 +449,6 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
     result2 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Optimistic);
     BOOST_CHECK_CLOSE(result2.valuefunction[0],15.0,1e-3);
 
-
     rmdp.set_uniform_thresholds(1);
     result1 = rmdp.vi_gs_l1(initial,0.9, 1000, 0, SolutionType::Robust);
     BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
@@ -782,5 +781,41 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
     sol = rmdp->mpi_jac_l1(value,gamma,1000,1e-5,1000,1e-5,SolutionType::Optimistic);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
+
+}
+
+BOOST_AUTO_TEST_CASE(test_parameter_read_write){
+    RMDP m(6);
+
+    // define the MDP representation
+    // format: idstatefrom, idaction, idoutcome, idstateto, probability, reward
+    string string_representation{
+        "1,0,0,5,1.0,20.0 \
+         2,0,0,5,1.0,30.0 \
+         3,0,0,5,1.0,10.0 \
+         4,0,0,5,1.0,40.0 \
+         4,1,0,5,1.0,41.0 \
+         0,0,0,1,1.0,0.0 \
+         0,0,1,2,1.0,0.0 \
+         0,1,0,3,1.0,0.0 \
+         0,1,0,4,1.0,2.0 \
+         0,1,1,4,1.0,0.0\n"};
+
+    stringstream store(string_representation);
+
+    store.seekg(0);
+    auto rmdp = RMDP::transitions_from_csv(store,false);
+
+    BOOST_CHECK_EQUAL(rmdp->get_reward(3,0,0,0), 10.0);
+    rmdp->set_reward(3,0,0,0,15.1);
+    BOOST_CHECK_EQUAL(rmdp->get_reward(3,0,0,0), 15.1);
+
+    BOOST_CHECK_EQUAL(rmdp->get_reward(0,1,0,1), 2.0);
+    rmdp->set_reward(0,1,0,1,19.1);
+    BOOST_CHECK_EQUAL(rmdp->get_reward(0,1,0,1), 19.1);
+
+    BOOST_CHECK_EQUAL(rmdp->get_threshold(3,0), 0);
+    rmdp->set_threshold(3,0,1.0);
+    BOOST_CHECK_EQUAL(rmdp->get_threshold(3,0), 1.0);
 
 }
