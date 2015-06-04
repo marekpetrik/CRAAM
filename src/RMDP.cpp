@@ -57,7 +57,7 @@ long RMDP::sample_count(long stateid, long actionid, long outcomeid) const{
 
 void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward){
     /**
-     * \brief Sets the the reward for the given sample id.
+     * \brief Sets the reward for the given sample id.
      * \param fromid Starting state ID
      * \param actionid Action ID
      * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
@@ -76,7 +76,7 @@ void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid
 
 prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sampleid) const {
     /**
-     * \brief Sets the the reward for the given sample id.
+     * \brief Returns the reward for the given sample id.
      * \param fromid Starting state ID
      * \param actionid Action ID
      * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
@@ -88,6 +88,38 @@ prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sample
         throw invalid_argument("invalid sample number");
     }
     return tran.rewards[sampleid];
+}
+
+prec_t RMDP::get_toid(long stateid, long actionid, long outcomeid, long sampleid) const {
+    /**
+     * \brief Returns the target state for the given sample id.
+     * \param fromid Starting state ID
+     * \param actionid Action ID
+     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+     * \param sampleid Sample (a single state transition) ID
+     */
+    const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
+
+    if(sampleid < 0l || sampleid >= (long) tran.rewards.size()){
+        throw invalid_argument("invalid sample number");
+    }
+    return tran.indices[sampleid];
+}
+
+prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long sampleid) const {
+    /**
+     * \brief Returns the probability for the given sample id.
+     * \param fromid Starting state ID
+     * \param actionid Action ID
+     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+     * \param sampleid Sample (a single state transition) ID
+     */
+    const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
+
+    if(sampleid < 0l || sampleid >= (long) tran.rewards.size()){
+        throw invalid_argument("invalid sample number");
+    }
+    return tran.probabilities[sampleid];
 }
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){

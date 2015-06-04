@@ -105,6 +105,8 @@ public:
 
     // querying parameters
     prec_t get_reward(long stateid, long actionid, long outcomeid, long sampleid) const;
+    prec_t get_toid(long stateid, long actionid, long outcomeid, long sampleid) const;
+    prec_t get_probability(long stateid, long actionid, long outcomeid, long sampleid) const;
     Transition& get_transition(long stateid, long actionid, long outcomeid);
     const Transition& get_transition(long stateid, long actionid, long outcomeid) const;
     prec_t get_threshold(long stateid, long actionid) const;
