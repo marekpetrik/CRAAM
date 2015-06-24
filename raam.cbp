@@ -61,11 +61,13 @@
 		</Compiler>
 		<Unit filename="include/Action.hpp" />
 		<Unit filename="include/RMDP.hpp" />
+		<Unit filename="include/Simulation.hpp" />
 		<Unit filename="include/State.hpp" />
 		<Unit filename="include/Transition.hpp" />
 		<Unit filename="include/definitions.hpp" />
 		<Unit filename="src/Action.cpp" />
 		<Unit filename="src/RMDP.cpp" />
+		<Unit filename="src/Simulation.cpp" />
 		<Unit filename="src/State.cpp" />
 		<Unit filename="src/Transition.cpp" />
 		<Unit filename="src/definitions.cpp" />
