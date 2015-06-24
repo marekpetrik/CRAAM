@@ -1,9 +1,12 @@
-#include <pair>
+#include<utility>
+
+#include "definitions.hpp"
 
 using namespace std;
 
 
-struct ExpSample<DecState,ExpState> {
+template <class DecState,class ExpState>
+struct ExpSample {
     /**
      * \brief Represents the transition from an expectation state to a
      * a decision state.
@@ -24,7 +27,8 @@ struct ExpSample<DecState,ExpState> {
     };
 };
 
-struct DecSample<DecState,Action,ExpState=pair<DecState,Action>> {
+template <class DecState,class Action,class ExpState=pair<DecState,Action>>
+struct DecSample {
     /**
      * \brief Represents the transition from a decision state to an
      * expectation state.
@@ -46,7 +50,8 @@ struct DecSample<DecState,Action,ExpState=pair<DecState,Action>> {
     };
 };
 
-class Samples<DecState,Action,ExpState> {
+template <class DecState,class Action,class ExpState=pair<DecState,Action>>
+class Samples {
     /**
      * \brief General representation of samples
      */

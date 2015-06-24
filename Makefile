@@ -88,6 +88,9 @@ $(OBJDIR_DEBUG)/src/Transition.o: src/Transition.cpp
 $(OBJDIR_DEBUG)/src/definitions.o: src/definitions.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/definitions.cpp -o $(OBJDIR_DEBUG)/src/definitions.o
 
+$(OBJDIR_DEBUG)/src/definitions.o: src/definitions.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/definitions.cpp -o $(OBJDIR_DEBUG)/src/definitions.o
+
 $(OBJDIR_DEBUG)/test/test.o: test/test.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c test/test.cpp -o $(OBJDIR_DEBUG)/test/test.o
 
