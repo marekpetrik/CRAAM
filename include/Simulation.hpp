@@ -1,4 +1,5 @@
 #include<utility>
+#include<vector>
 
 #include "definitions.hpp"
 
@@ -56,5 +57,13 @@ class Samples {
      * \brief General representation of samples
      */
 
+public:
+    vector<DecSample<DecState,Action,ExpState>> decsamples;
+    vector<ExpSample<DecState,ExpState>> expsamples;
+
+public:
+
+    void add_dec(const DecSample<DecState,Action,ExpState>& decsample);
+    void add_exp(const ExpSample<DecState,ExpState>& expsample);
 
 };
