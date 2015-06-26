@@ -3,8 +3,6 @@
 #include <iostream>
 #include <fstream>
 
-
-
 #include "RMDP.hpp"
 
 using namespace std;
