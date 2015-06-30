@@ -75,6 +75,9 @@
 			<Option target="Benchmark" />
 		</Unit>
 		<Unit filename="test/test.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="test/test_simulation.cpp">
 			<Option target="Debug" />
 		</Unit>
 		<Extensions>
