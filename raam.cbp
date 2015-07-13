@@ -12,9 +12,8 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-std=c++11" />
 					<Add option="-g" />
-					<Add option="-fopenmp -fPIC" />
+					<Add option="-fopenmp -fPIC -std=c++14" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
@@ -30,8 +29,7 @@
 				<Compiler>
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-std=c++11" />
-					<Add option="-fopenmp -fPIC" />
+					<Add option="-fopenmp -fPIC -std=c++14" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
@@ -46,8 +44,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O3" />
-					<Add option="-std=c++11" />
-					<Add option="-fopenmp -ftree-vectorize -funroll-loops" />
+					<Add option="-fopenmp -ftree-vectorize -funroll-loops -std=c++14" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>

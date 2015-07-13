@@ -1,13 +1,26 @@
-#include<utility>
-#include<vector>
-#include<memory>
-#include<random>
+#include <utility>
+#include <vector>
+#include <memory>
+#include <random>
+#include <functional>
+#include <cmath>
+#include <set>
 
 #include "definitions.hpp"
 
 using namespace std;
 
-
+/*
+ * Signature of static methods required for the simulator
+ *
+ * States and actions are passed by value
+ *
+ * DState init_state() const
+ * EState transition_dec(State, Action) const
+ * pair<double,DState> transition_exp(EState) const
+ * bool end_condition(DState) const
+ * const array<Action>& actions(DState)  const // needed for a random policy and value function policy
+ */
 template <class DecState,class ExpState>
 struct ExpSample {
     /**
@@ -62,46 +75,85 @@ public:
 
     void add_dec(const DecSample<DecState,Action,ExpState>& decsample){
         /**
-        * \brief Adds a sample starting in a decision state
-        */
-
+         * \brief Adds a sample starting in a decision state
+         */
         this->decsamples.push_back(decsample);
     };
 
     void add_initial(const DecState& decstate){
         /**
          * \brief Adds an initial state
-         *
          */
          this->initial.push_back(decstate);
-
     };
 
     void add_exp(const ExpSample<DecState,ExpState>& expsample){
         /**
          * \brief Adds a sample starting in an expectation state
          */
-
         this->expsamples.push_back(expsample);
+    };
+
+    prec_t mean_return(prec_t discount){
+        /**
+         * \brief Computes the discounted mean return over all the
+         * samples
+         *
+         * \param discount Discount factor
+         */
+
+        prec_t result = 0;
+
+        set<int> runs;
+
+        for(const auto& es : expsamples){
+           result += es.reward * pow(discount,es.step);
+           runs.insert(es.run);
+        }
+
+        result /= runs.size();
+
+        return result;
     };
 };
 
-/*
- * Signature of static methods required for the simulator
- *
- * DState init_state() const
- * EState transition_dec(const DState&, const Action&) const
- * pair<double,DState> transition_exp(const EState&) const
- * bool end_condition(const DState&) const
- * array<Action> actions(const DState&)  const // needed for a random policy and value function policy
- */
+template<class Sim, class DState, class Action>
+class RandomPolicy {
+    /**
+     * \brief An object that behaves as a random policy
+     */
 
-template<class DState,class Action,class EState,class Simulator,Action (*policy)(DState)>
+private:
+
+    const Sim& sim;
+    default_random_engine gen;
+
+public:
+
+    RandomPolicy(const Sim& sim) : sim(sim), gen(random_device{}())
+    {};
+
+    Action operator() (DState dstate){
+        /**
+         * \brief Returns the random action
+         */
+        const vector<Action>&& actions = sim.actions(dstate);
+
+        auto actioncount = actions.size();
+        uniform_int_distribution<> dst(0,actioncount-1);
+
+        return actions[dst(gen)];
+    };
+};
+
+//-----------------------------------------------------------------------------------
+template<class DState,class Action,class EState>
 unique_ptr<Samples<DState,Action,EState>>
-simulate_stateless(Simulator& sim, long horizon,long runs,prec_t prob_term=0.0,long tran_limit=-1){
+simulate_stateless(auto& sim, const function<Action(DState&)>& policy, long horizon,long runs,prec_t prob_term=0.0,long tran_limit=-1){
     /** \brief Runs the simulator and generates samples. A simulator with no state
      *
      * \param sim Simulator that holds the properties needed by the simulator
+     * \param policy Policy function
      * \param horizon Number of steps
      * \param prob_term The probability of termination in each step
      * \return Samples
@@ -112,9 +164,8 @@ simulate_stateless(Simulator& sim, long horizon,long runs,prec_t prob_term=0.0,l
     long transitions = 0;
 
     // initialize random numbers when appropriate
-    default_random_engine generator;
+    default_random_engine generator(random_device{}());
     uniform_real_distribution<double> distribution(0.0,1.0);
-
 
     for(auto run=0l; run < runs; run++){
 
@@ -151,6 +202,5 @@ simulate_stateless(Simulator& sim, long horizon,long runs,prec_t prob_term=0.0,l
         if(tran_limit > 0 && transitions > tran_limit)
             break;
     }
-
     return samples;
 };

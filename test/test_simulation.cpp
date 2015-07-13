@@ -2,7 +2,7 @@
 #include <sstream>
 #include <random>
 #include <utility>
-
+#include <functional>
 #include "Simulation.hpp"
 
 using namespace std;
@@ -23,9 +23,7 @@ using namespace std;
 }
 
 #define BOOST_TEST_MODULE MainModule
-//#include <boost/test/included/unit_test.hpp>
 #include <boost/test/unit_test.hpp>
-
 
 
 struct TestDState{
@@ -35,6 +33,7 @@ struct TestDState{
         this->index = i;
     };
 };
+
 
 struct TestEState{
     int index;
@@ -53,19 +52,19 @@ public:
         return TestDState(1);
     }
 
-    TestEState transition_dec(const TestDState&, const int&) const{
+    TestEState transition_dec(TestDState, int) const{
         return TestEState(1);
     };
 
-    pair<double,TestDState> transition_exp(const TestEState&) const{
+    pair<double,TestDState> transition_exp(TestEState) const{
         return pair<double,TestDState>(1.0,TestDState(1));
     };
 
-    bool end_condition(const TestDState&) const{
+    bool end_condition(TestDState) const{
         return false;
     };
 
-    vector<int> actions(const TestDState&) const{
+    vector<int> actions(TestDState) const{
         return vector<int>{1};
     };
 
@@ -78,11 +77,10 @@ int test_policy(TestDState){
 BOOST_AUTO_TEST_CASE( basic_simulation ) {
     TestSim sim;
 
-    auto samples = simulate_stateless<TestDState,int,TestEState,TestSim,test_policy>(sim, 10,5);
-
-    cout << samples->decsamples.size() << endl;
+    auto samples = simulate_stateless<TestDState,int,TestEState>(sim, test_policy, 10,5);
+    BOOST_CHECK_EQUAL(samples->decsamples.size(),50);
+    BOOST_CHECK_EQUAL(samples->expsamples.size(),50);
 }
-
 
 class Counter{
     /**
@@ -93,10 +91,9 @@ public:
 
     default_random_engine gen;
     bernoulli_distribution d;
-    const array<int,3> actions_list;;
+    const vector<int> actions_list;;
 
-
-    Counter(double success) : gen(), d(success), actions_list({0,1,-1}) {
+    Counter(double success) : gen(random_device{}()), d(success), actions_list({1,-1}) {
         /** \brief Define the success of each action
          * \param success The probability that the action is actually applied
          */
@@ -106,13 +103,15 @@ public:
         return 0;
     };
 
-    pair<int,int> transition_dec(const int state, const int action) const{
+    pair<int,int> transition_dec(int state, int action) const{
         return make_pair(state,action);
     };
 
     pair<double,int> transition_exp(const pair<int,int> expstate) {
         int pos = expstate.first;
         int act = expstate.second;
+
+        cout << "(" << pos << "," << act << ") ";
 
         int nextpos = d(gen) ? pos + act : pos;
 
@@ -123,19 +122,20 @@ public:
         return false;
     }
 
-    const array<int,3> actions(const TestDState&) const{
+    vector<int> actions(int) const{
         return actions_list;
     };
-
 };
 
+BOOST_AUTO_TEST_CASE( simulation_multiple_counter ) {
+    Counter sim(0.9);
 
+    RandomPolicy<Counter,int,int> random_pol(sim);
 
-BOOST_AUTO_TEST_CASE( counter_simulation ) {
-    Counter sim(0.2);
+    auto samples = simulate_stateless<int,int,pair<int,int>>(sim,random_pol,20,20);
 
-    auto samples = simulate_stateless<int,int,pair<int,int>,Counter,test_policy>(sim, 10,5);
-
-    cout << samples->decsamples.size() << endl;
+    cout << samples->mean_return(0.9) << endl;
 }
+
+
 
