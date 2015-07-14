@@ -147,7 +147,8 @@ public:
 };
 
 //-----------------------------------------------------------------------------------
-template<class DState,class Action,class EState>
+template<class DState,class Action,class EState = pair<DState,Action>>
+
 unique_ptr<Samples<DState,Action,EState>>
 simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,

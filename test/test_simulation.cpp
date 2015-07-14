@@ -8,7 +8,7 @@
 using namespace std;
 
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+//#define BOOST_TEST_MAIN
 
 #define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
     using std::distance; \
@@ -22,7 +22,7 @@ using namespace std;
     } \
 }
 
-#define BOOST_TEST_MODULE MainModule
+//#define BOOST_TEST_MODULE MainModule
 #include <boost/test/unit_test.hpp>
 
 
@@ -87,21 +87,24 @@ class Counter{
      * Decision state: position
      * Expectation state: position, action
      */
-public:
 
+private:
     default_random_engine gen;
     bernoulli_distribution d;
-    const vector<int> actions_list;;
+    const vector<int> actions_list;
+    const int initstate;
 
-    Counter(double success, random_device::result_type seed = random_device{}())
-        : gen(seed), d(success), actions_list({1,-1}) {
+public:
+
+    Counter(double success, int initstate, random_device::result_type seed = random_device{}())
+        : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {
         /** \brief Define the success of each action
          * \param success The probability that the action is actually applied
          */
     };
 
     int init_state() const {
-        return 0;
+        return initstate;
     };
 
     pair<int,int> transition_dec(int state, int action) const{
@@ -129,12 +132,18 @@ public:
 };
 
 
-
 BOOST_AUTO_TEST_CASE( simulation_multiple_counter ) {
-    Counter sim(0.9,1);
+    Counter sim(0.9,0,1);
 
     RandomPolicy<Counter,int,int> random_pol(sim,1);
-    auto samples = simulate_stateless<int,int,pair<int,int>>(sim,random_pol,20,20);
-
+    auto samples = simulate_stateless<int,int>(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
+
+    samples = simulate_stateless<int,int>(sim,random_pol,1,20);
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
+
+    Counter sim2(0.9,3,1);
+    samples = simulate_stateless<int,int>(sim2,random_pol,1,20);
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
 }
+
