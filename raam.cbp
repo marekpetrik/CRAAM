@@ -29,7 +29,7 @@
 				<Compiler>
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-fopenmp -fPIC -std=c++14" />
+					<Add option="-fopenmp -fPIC -std=c++14 -ftree-vectorize -funroll-loops -march=native" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
@@ -43,8 +43,9 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-fopenmp -ftree-vectorize -funroll-loops -std=c++14" />
+					<Add option="-fopenmp -ftree-vectorize -funroll-loops -std=c++14 -march=native" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
@@ -72,7 +73,7 @@
 			<Option target="Benchmark" />
 		</Unit>
 		<Unit filename="test/test.cpp">
-			<Option target="&lt;{~None~}&gt;" />
+			<Option target="Debug" />
 		</Unit>
 		<Unit filename="test/test_simulation.cpp">
 			<Option target="Debug" />
