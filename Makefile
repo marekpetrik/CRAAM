@@ -19,7 +19,7 @@ LIB =
 LDFLAGS = 
 
 INC_DEBUG = $(INC) -Iinclude
-CFLAGS_DEBUG = $(CFLAGS) -std=c++11 -g -fopenmp -fPIC
+CFLAGS_DEBUG = $(CFLAGS) -g -fopenmp -fPIC -std=c++14
 RESINC_DEBUG = $(RESINC)
 RCFLAGS_DEBUG = $(RCFLAGS)
 LIBDIR_DEBUG = $(LIBDIR)
@@ -30,7 +30,7 @@ DEP_DEBUG =
 OUT_DEBUG = bin/Debug/raam
 
 INC_RELEASE = $(INC) -Iinclude
-CFLAGS_RELEASE = $(CFLAGS) -O3 -std=c++11 -fopenmp -fPIC
+CFLAGS_RELEASE = $(CFLAGS) -fexpensive-optimizations -O3 -fopenmp -fPIC -std=c++14 -ftree-vectorize -funroll-loops -march=native
 RESINC_RELEASE = $(RESINC)
 RCFLAGS_RELEASE = $(RCFLAGS)
 LIBDIR_RELEASE = $(LIBDIR)
@@ -41,7 +41,7 @@ DEP_RELEASE =
 OUT_RELEASE = bin/Release/raam.so
 
 INC_BENCHMARK = $(INC) -Iinclude
-CFLAGS_BENCHMARK = $(CFLAGS) -O3 -std=c++11 -fopenmp -ftree-vectorize -funroll-loops -march=native
+CFLAGS_BENCHMARK = $(CFLAGS) -fexpensive-optimizations -O3 -fopenmp -ftree-vectorize -funroll-loops -std=c++14 -march=native
 RESINC_BENCHMARK = $(RESINC)
 RCFLAGS_BENCHMARK = $(RCFLAGS)
 LIBDIR_BENCHMARK = $(LIBDIR)
@@ -51,11 +51,11 @@ OBJDIR_BENCHMARK = obj/Benchmark
 DEP_BENCHMARK = 
 OUT_BENCHMARK = bin/Benchmark/raam
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/src/Action.o $(OBJDIR_DEBUG)/src/RMDP.o $(OBJDIR_DEBUG)/src/State.o $(OBJDIR_DEBUG)/src/Transition.o $(OBJDIR_DEBUG)/src/definitions.o $(OBJDIR_DEBUG)/test/test.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/src/Action.o $(OBJDIR_DEBUG)/src/RMDP.o $(OBJDIR_DEBUG)/src/Simulation.o $(OBJDIR_DEBUG)/src/State.o $(OBJDIR_DEBUG)/src/Transition.o $(OBJDIR_DEBUG)/src/definitions.o $(OBJDIR_DEBUG)/test/test.o $(OBJDIR_DEBUG)/test/test_simulation.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/src/Action.o $(OBJDIR_RELEASE)/src/RMDP.o $(OBJDIR_RELEASE)/src/State.o $(OBJDIR_RELEASE)/src/Transition.o $(OBJDIR_RELEASE)/src/definitions.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/src/Action.o $(OBJDIR_RELEASE)/src/RMDP.o $(OBJDIR_RELEASE)/src/Simulation.o $(OBJDIR_RELEASE)/src/State.o $(OBJDIR_RELEASE)/src/Transition.o $(OBJDIR_RELEASE)/src/definitions.o
 
-OBJ_BENCHMARK = $(OBJDIR_BENCHMARK)/src/Action.o $(OBJDIR_BENCHMARK)/src/RMDP.o $(OBJDIR_BENCHMARK)/src/State.o $(OBJDIR_BENCHMARK)/src/Transition.o $(OBJDIR_BENCHMARK)/src/definitions.o $(OBJDIR_BENCHMARK)/test/benchmark.o
+OBJ_BENCHMARK = $(OBJDIR_BENCHMARK)/src/Action.o $(OBJDIR_BENCHMARK)/src/RMDP.o $(OBJDIR_BENCHMARK)/src/Simulation.o $(OBJDIR_BENCHMARK)/src/State.o $(OBJDIR_BENCHMARK)/src/Transition.o $(OBJDIR_BENCHMARK)/src/definitions.o $(OBJDIR_BENCHMARK)/test/benchmark.o
 
 all: debug release benchmark
 
@@ -79,6 +79,9 @@ $(OBJDIR_DEBUG)/src/Action.o: src/Action.cpp
 $(OBJDIR_DEBUG)/src/RMDP.o: src/RMDP.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/RMDP.cpp -o $(OBJDIR_DEBUG)/src/RMDP.o
 
+$(OBJDIR_DEBUG)/src/Simulation.o: src/Simulation.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/Simulation.cpp -o $(OBJDIR_DEBUG)/src/Simulation.o
+
 $(OBJDIR_DEBUG)/src/State.o: src/State.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/State.cpp -o $(OBJDIR_DEBUG)/src/State.o
 
@@ -90,6 +93,9 @@ $(OBJDIR_DEBUG)/src/definitions.o: src/definitions.cpp
 
 $(OBJDIR_DEBUG)/test/test.o: test/test.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c test/test.cpp -o $(OBJDIR_DEBUG)/test/test.o
+
+$(OBJDIR_DEBUG)/test/test_simulation.o: test/test_simulation.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c test/test_simulation.cpp -o $(OBJDIR_DEBUG)/test/test_simulation.o
 
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
@@ -113,6 +119,9 @@ $(OBJDIR_RELEASE)/src/Action.o: src/Action.cpp
 
 $(OBJDIR_RELEASE)/src/RMDP.o: src/RMDP.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/RMDP.cpp -o $(OBJDIR_RELEASE)/src/RMDP.o
+
+$(OBJDIR_RELEASE)/src/Simulation.o: src/Simulation.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/Simulation.cpp -o $(OBJDIR_RELEASE)/src/Simulation.o
 
 $(OBJDIR_RELEASE)/src/State.o: src/State.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/State.cpp -o $(OBJDIR_RELEASE)/src/State.o
@@ -145,6 +154,9 @@ $(OBJDIR_BENCHMARK)/src/Action.o: src/Action.cpp
 
 $(OBJDIR_BENCHMARK)/src/RMDP.o: src/RMDP.cpp
 	$(CXX) $(CFLAGS_BENCHMARK) $(INC_BENCHMARK) -c src/RMDP.cpp -o $(OBJDIR_BENCHMARK)/src/RMDP.o
+
+$(OBJDIR_BENCHMARK)/src/Simulation.o: src/Simulation.cpp
+	$(CXX) $(CFLAGS_BENCHMARK) $(INC_BENCHMARK) -c src/Simulation.cpp -o $(OBJDIR_BENCHMARK)/src/Simulation.o
 
 $(OBJDIR_BENCHMARK)/src/State.o: src/State.cpp
 	$(CXX) $(CFLAGS_BENCHMARK) $(INC_BENCHMARK) -c src/State.cpp -o $(OBJDIR_BENCHMARK)/src/State.o

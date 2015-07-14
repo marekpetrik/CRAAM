@@ -661,7 +661,7 @@ void RMDP::add_transitions(vector<long> const& fromids, vector<long> const& acti
      */
 
     auto s = fromids.size();
-    if(s != outcomeids.size() || s != outcomeids.size() || s != toids.size() || s != actionids.size() || s != probs.size() || s != rews.size())
+    if(s != outcomeids.size() || s != toids.size() || s != actionids.size() || s != probs.size() || s != rews.size())
         throw invalid_argument("sizes do not match.");
 
     for(auto l=0l; l <= (long) s; l++)
