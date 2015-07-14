@@ -130,7 +130,7 @@ private:
 
 public:
 
-    RandomPolicy(const Sim& sim) : sim(sim), gen(random_device{}())
+    RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
     Action operator() (DState dstate){
@@ -149,7 +149,9 @@ public:
 //-----------------------------------------------------------------------------------
 template<class DState,class Action,class EState>
 unique_ptr<Samples<DState,Action,EState>>
-simulate_stateless(auto& sim, const function<Action(DState&)>& policy, long horizon,long runs,prec_t prob_term=0.0,long tran_limit=-1){
+simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
+                   long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
+                   random_device::result_type seed = random_device{}()){
     /** \brief Runs the simulator and generates samples. A simulator with no state
      *
      * \param sim Simulator that holds the properties needed by the simulator
@@ -164,7 +166,7 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy, long hori
     long transitions = 0;
 
     // initialize random numbers when appropriate
-    default_random_engine generator(random_device{}());
+    default_random_engine generator(seed);
     uniform_real_distribution<double> distribution(0.0,1.0);
 
     for(auto run=0l; run < runs; run++){

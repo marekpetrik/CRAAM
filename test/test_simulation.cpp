@@ -93,7 +93,8 @@ public:
     bernoulli_distribution d;
     const vector<int> actions_list;;
 
-    Counter(double success) : gen(random_device{}()), d(success), actions_list({1,-1}) {
+    Counter(double success, random_device::result_type seed = random_device{}())
+        : gen(seed), d(success), actions_list({1,-1}) {
         /** \brief Define the success of each action
          * \param success The probability that the action is actually applied
          */
@@ -111,7 +112,7 @@ public:
         int pos = expstate.first;
         int act = expstate.second;
 
-        cout << "(" << pos << "," << act << ") ";
+        //cout << "(" << pos << "," << act << ") ";
 
         int nextpos = d(gen) ? pos + act : pos;
 
@@ -127,15 +128,13 @@ public:
     };
 };
 
+
+
 BOOST_AUTO_TEST_CASE( simulation_multiple_counter ) {
-    Counter sim(0.9);
+    Counter sim(0.9,1);
 
-    RandomPolicy<Counter,int,int> random_pol(sim);
-
+    RandomPolicy<Counter,int,int> random_pol(sim,1);
     auto samples = simulate_stateless<int,int,pair<int,int>>(sim,random_pol,20,20);
 
-    cout << samples->mean_return(0.9) << endl;
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
 }
-
-
-
