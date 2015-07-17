@@ -16,10 +16,11 @@ using namespace std;
  * States and actions are passed by value
  *
  * DState init_state() const
- * EState transition_dec(State, Action) const
+ * EState transition_dec(DState, Action) const
  * pair<double,DState> transition_exp(EState) const
  * bool end_condition(DState) const
- * const array<Action>& actions(DState)  const // needed for a random policy and value function policy
+ * vector<Action> actions(DState)  const // needed for a random policy and value function policy
+ * vector<Action> actions const          // an alternative when the actions are not state dependent
  */
 template <class DecState,class ExpState>
 struct ExpSample {
@@ -118,9 +119,10 @@ public:
 };
 
 template<class Sim, class DState, class Action>
-class RandomPolicy {
+class RandomPolicySD {
     /**
-     * \brief An object that behaves as a random policy
+     * \brief An object that behaves as a random policy for problems
+     * with state-dependent actions.
      */
 
 private:
@@ -130,7 +132,7 @@ private:
 
 public:
 
-    RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
+    RandomPolicySD(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
     Action operator() (DState dstate){
@@ -139,6 +141,38 @@ public:
          */
         const vector<Action>&& actions = sim.actions(dstate);
 
+        auto actioncount = actions.size();
+        uniform_int_distribution<> dst(0,actioncount-1);
+
+        return actions[dst(gen)];
+    };
+};
+
+template<class Sim, class DState, class Action>
+class RandomPolicySI {
+    /**
+     * \brief An object that behaves as a random policy for problems
+     * with state-dependent actions.
+     * 
+     * The actions are copied internally.
+     */
+
+private:
+
+    const Sim& sim;
+    default_random_engine gen;
+    const vector<Action> actions;   // list of actions is constant
+
+public:
+
+    RandomPolicySI(const Sim& sim, random_device::result_type seed = random_device{}()) 
+        : sim(sim), gen(seed), actions(sim.actions())
+    {};
+
+    Action operator() (DState dstate){
+        /**
+         * \brief Returns the random action
+         */
         auto actioncount = actions.size();
         uniform_int_distribution<> dst(0,actioncount-1);
 

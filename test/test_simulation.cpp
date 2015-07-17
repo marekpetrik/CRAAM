@@ -129,13 +129,32 @@ public:
     vector<int> actions(int) const{
         return actions_list;
     };
+
+    vector<int> actions() const{
+        return actions_list;
+    };
 };
 
 
-BOOST_AUTO_TEST_CASE( simulation_multiple_counter ) {
+BOOST_AUTO_TEST_CASE( simulation_multiple_counter_sd ) {
     Counter sim(0.9,0,1);
 
-    RandomPolicy<Counter,int,int> random_pol(sim,1);
+    RandomPolicySD<Counter,int,int> random_pol(sim,1);
+    auto samples = simulate_stateless<int,int>(sim,random_pol,20,20);
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
+
+    samples = simulate_stateless<int,int>(sim,random_pol,1,20);
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
+
+    Counter sim2(0.9,3,1);
+    samples = simulate_stateless<int,int>(sim2,random_pol,1,20);
+    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
+}
+
+BOOST_AUTO_TEST_CASE( simulation_multiple_counter_si ) {
+    Counter sim(0.9,0,1);
+
+    RandomPolicySI<Counter,int,int> random_pol(sim,1);
     auto samples = simulate_stateless<int,int>(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
 
