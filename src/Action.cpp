@@ -8,6 +8,8 @@
 using namespace std;
 
 
+namespace craam {
+
 pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t){
     /**
     Computes the solution of:
@@ -284,4 +286,6 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
         outcomes.resize(outcomeid + 1);
     }
     outcomes[outcomeid].add_sample(toid, probability, reward);
+}
+
 }

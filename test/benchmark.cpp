@@ -6,6 +6,7 @@
 #include "RMDP.hpp"
 
 using namespace std;
+using namespace craam;
 
 int main(int argc, char * argv []){
 

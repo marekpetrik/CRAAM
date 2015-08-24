@@ -1,8 +1,9 @@
 #include <limits>
 #include <string>
 
-
 #include "State.hpp"
+
+namespace craam {
 
 tuple<long,long,prec_t> State::max_max(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
@@ -215,4 +216,6 @@ void State::set_thresholds(prec_t threshold){
     for(auto & a : actions){
         a.set_threshold(threshold);
     }
+}
+
 }

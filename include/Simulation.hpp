@@ -10,6 +10,8 @@
 
 using namespace std;
 
+namespace craam {
+
 /*
  * Signature of static methods required for the simulator
  *
@@ -153,7 +155,7 @@ class RandomPolicySI {
     /**
      * \brief An object that behaves as a random policy for problems
      * with state-dependent actions.
-     * 
+     *
      * The actions are copied internally.
      */
 
@@ -165,7 +167,7 @@ private:
 
 public:
 
-    RandomPolicySI(const Sim& sim, random_device::result_type seed = random_device{}()) 
+    RandomPolicySI(const Sim& sim, random_device::result_type seed = random_device{}())
         : sim(sim), gen(seed), actions(sim.actions())
     {};
 
@@ -182,7 +184,6 @@ public:
 
 //-----------------------------------------------------------------------------------
 template<class DState,class Action,class EState = pair<DState,Action>>
-
 unique_ptr<Samples<DState,Action,EState>>
 simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
@@ -240,4 +241,6 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
             break;
     }
     return samples;
+};
+
 };

@@ -12,6 +12,8 @@
 
 using namespace std;
 
+namespace craam {
+
 enum Uncertainty {
     simplex = 0
 };
@@ -146,6 +148,7 @@ public:
 
     // string representation
     string to_string() const;
+};
 };
 
 #endif // RMDP_H

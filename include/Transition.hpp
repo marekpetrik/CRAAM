@@ -7,6 +7,8 @@
 
 using namespace std;
 
+namespace craam {
+
 const prec_t tolerance = 1e-5;
 
 class Transition {
@@ -38,5 +40,6 @@ public:
     prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount) const;
 };
 
+}
 
 #endif // TRANSITION_H

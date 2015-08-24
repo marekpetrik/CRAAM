@@ -7,6 +7,8 @@
 
 #include "RMDP.hpp"
 
+namespace craam {
+
 long RMDP::state_count() const{
     return this->states.size();
 }
@@ -986,4 +988,6 @@ prec_t RMDP::get_threshold(long stateid, long actionid) const {
     }
 
     return (this->states[stateid].actions[actionid].threshold);
+}
+
 }

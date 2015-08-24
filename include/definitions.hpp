@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace craam {
+
 typedef double prec_t;
 
 template <typename T> vector<size_t> sort_indexes(vector<T> const& v) {
@@ -41,4 +43,5 @@ template <typename T> vector<size_t> sort_indexes_desc(vector<T> const& v) {
     return idx;
 }
 
+}
 #endif // DEFINITIONS_H

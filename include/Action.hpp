@@ -10,6 +10,8 @@
 
 using namespace std;
 
+namespace craam {
+
 pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t);
 
 class Action {
@@ -58,4 +60,5 @@ public:
     }
 };
 
+}
 #endif // ACTION_H

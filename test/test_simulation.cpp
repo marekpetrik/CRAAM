@@ -6,6 +6,7 @@
 #include "Simulation.hpp"
 
 using namespace std;
+using namespace craam;
 
 #define BOOST_TEST_DYN_LINK
 //#define BOOST_TEST_MAIN

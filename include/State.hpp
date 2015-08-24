@@ -10,6 +10,8 @@
 
 using namespace std;
 
+namespace craam {
+
 class State {
 public:
     vector<Action> actions;
@@ -36,5 +38,7 @@ public:
 
     void set_thresholds(prec_t threshold);
 };
+
+}
 
 #endif // STATE_H

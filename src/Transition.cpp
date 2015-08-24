@@ -8,6 +8,8 @@
 #include "Transition.hpp"
 #include "definitions.hpp"
 
+namespace craam {
+
 Transition::Transition(vector<long> const indices, vector<prec_t> probabilities, vector<prec_t> rewards){
     /** \brief Creates a single transition
      *
@@ -116,4 +118,6 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
     }
     return value;
+}
+
 }
