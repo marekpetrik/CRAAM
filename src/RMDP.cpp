@@ -45,13 +45,13 @@ long RMDP::transition_count(long stateid, long actionid, long outcomeid) const{
 
 long RMDP::sample_count(long stateid, long actionid, long outcomeid) const{
     /**
-     * \brief Returns the number of samples (state to state transitions) for the
-     *        given parameters.
-     *
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param sampleid Sample (a single state transition) ID
+       Returns the number of samples (state to state transitions) for the
+              given parameters.
+
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param sampleid Sample (a single state transition) ID
      */
     const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
     return tran.rewards.size();
@@ -59,12 +59,12 @@ long RMDP::sample_count(long stateid, long actionid, long outcomeid) const{
 
 void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward){
     /**
-     * \brief Sets the reward for the given sample id.
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param sampleid Sample (a single state transition) ID
-     * \param reward The new reward
+       Sets the reward for the given sample id.
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param sampleid Sample (a single state transition) ID
+       \param reward The new reward
      */
 
     Transition& tran = this->get_transition(stateid,actionid,outcomeid);
@@ -78,11 +78,11 @@ void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid
 
 prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sampleid) const {
     /**
-     * \brief Returns the reward for the given sample id.
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param sampleid Sample (a single state transition) ID
+       Returns the reward for the given sample id.
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param sampleid Sample (a single state transition) ID
      */
     const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
 
@@ -94,11 +94,11 @@ prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sample
 
 prec_t RMDP::get_toid(long stateid, long actionid, long outcomeid, long sampleid) const {
     /**
-     * \brief Returns the target state for the given sample id.
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param sampleid Sample (a single state transition) ID
+       Returns the target state for the given sample id.
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param sampleid Sample (a single state transition) ID
      */
     const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
 
@@ -110,11 +110,11 @@ prec_t RMDP::get_toid(long stateid, long actionid, long outcomeid, long sampleid
 
 prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long sampleid) const {
     /**
-     * \brief Returns the probability for the given sample id.
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param sampleid Sample (a single state transition) ID
+       Returns the probability for the given sample id.
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param sampleid Sample (a single state transition) ID
      */
     const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
 
@@ -126,14 +126,14 @@ prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long s
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
-     * \brief Adds a transition probability
+       Adds a transition probability
      *
-     * \param fromid Starting state ID
-     * \param actionid Action ID
-     * \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-     * \param toid Destination ID
-     * \param probability Probability of the transition (must be non-negative)
-     * \param reward The reward associated with the transition.
+       \param fromid Starting state ID
+       \param actionid Action ID
+       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+       \param toid Destination ID
+       \param probability Probability of the transition (must be non-negative)
+       \param reward The reward associated with the transition.
      */
 
     if(fromid < 0l) throw invalid_argument("incorrect fromid");
@@ -150,81 +150,22 @@ void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid,
 }
 
 void RMDP::add_transition_d(long fromid, long actionid, long toid, prec_t probability, prec_t reward){
-    /** \brief Adds a non-robust transition.  */
+    /** Adds a non-robust transition.  */
     this->add_transition(fromid, actionid, 0, toid, probability, reward);
-}
-
-
-Solution RMDP::vi_gs(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const {
-    /**
-     * \brief Gauss-Seidel value iteration variant (not parallellized). The outcomes are
-     * selected using worst-case optimization.
-     *
-     * Because this function updates the array value furing the iteration, it may be
-     * difficult to prallelize easily.
-     *
-     * \param valuefunction Initial value function. Passed by value, because it is modified.
-     * \param discount Discount factor.
-     * \param iterations Maximal number of iterations to run
-     * \param maxresidual Stop when the maximal residual falls below this value.
-     * \param type Whether the solution is maximized or minimized or computed average
-     */
-
-    if(valuefunction.size() != states.size()){
-        throw invalid_argument("incorrect size of value function");
-    }
-
-    vector<long> policy(states.size());
-    vector<long> outcomes(states.size());
-
-    prec_t residual = numeric_limits<prec_t>::infinity();
-    size_t i;
-
-    for(i = 0; i < iterations && residual > maxresidual; i++){
-        residual = 0;
-
-        for(size_t s = 0l; s < states.size(); s++){
-            const auto& state = states[s];
-
-            pair<long,prec_t> avgvalue;
-            tuple<long,long,prec_t> newvalue;
-
-            switch(type){
-            case SolutionType::Robust:
-                newvalue = state.max_min(valuefunction,discount);
-                break;
-            case SolutionType::Optimistic:
-                newvalue = state.max_max(valuefunction,discount);
-                break;
-            case SolutionType::Average:
-                avgvalue = state.max_average(valuefunction,discount);
-                // TODO replace by make_tuple
-                newvalue = tuple<long,long,prec_t>(avgvalue.first,-1,avgvalue.second);
-                break;
-            }
-
-            residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
-            valuefunction[s] = get<2>(newvalue);
-
-            policy[s] = get<0>(newvalue);
-            outcomes[s] = get<1>(newvalue);
-        }
-    }
-    return Solution(valuefunction,policy,outcomes,residual,i);
 }
 
 Solution RMDP::vi_jac(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const{
     /**
-     * \brief Jacobi value iteration variant (not parallellized). The outcomes are
-     * selected using worst-case optimization.
-     *
-     * This method uses OpenMP to parallelize the computation.
-     *
-     * \param valuefunction Initial value function.
-     * \param discount Discount factor.
-     * \param iterations Maximal number of iterations to run
-     * \param maxresidual Stop when the maximal residual falls below this value.
-     * \param type Whether the solution is maximized or minimized or computed average
+       Jacobi value iteration variant (not parallellized). The outcomes are
+       selected using worst-case optimization.
+
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+       \param type Whether the solution is maximized or minimized or computed average
      */
 
     if(valuefunction.size() != states.size()){
@@ -279,70 +220,18 @@ Solution RMDP::vi_jac(vector<prec_t> const& valuefunction, prec_t discount, unsi
     return Solution(valuenew,policy,outcomes,residual,i);
 }
 
-Solution RMDP::vi_gs_l1(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const {
-    /**
-     * \brief Gauss-Seidel value iteration variant (not parallellized). The outcomes are
-     * selected using l1 bounds, as specified by set_distribution.
-     *
-     * Because this function updates the array value furing the iteration, it may be
-     * difficult to prallelize easily.
-     *
-     * \param valuefunction Initial value function. Passed by value, because it is modified.
-     * \param discount Discount factor.
-     * \param iterations Maximal number of iterations to run
-     * \param maxresidual Stop when the maximal residual falls below this value.
-     * \param type Whether the solution is maximized or minimized or computed average
-     */
-
-
-    if(valuefunction.size() != this->states.size()){
-        throw invalid_argument("incorrect size of value function");
-    }
-
-    vector<long> policy(this->states.size());
-    vector<vector<prec_t>> outcome_dists(this->states.size());
-
-    prec_t residual = numeric_limits<prec_t>::infinity();
-    size_t i;
-
-    for(i = 0; i < iterations && residual > maxresidual; i++){
-
-        residual = 0;
-        for(auto s=0l; s < (long) this->states.size(); s++){
-            const auto& state = this->states[s];
-
-            tuple<long,vector<prec_t>,prec_t> newvalue;
-            switch(type){
-            case SolutionType::Robust:
-                newvalue = state.max_min_l1(valuefunction, discount);
-                break;
-            case SolutionType::Optimistic:
-                newvalue = state.max_max_l1(valuefunction, discount);
-                break;
-            default:
-                throw invalid_argument("unknown/invalid (average not supported) optimization type.");
-            }
-            residual = max(residual, abs(valuefunction[s] - get<2>(newvalue) ));
-            valuefunction[s] = get<2>(newvalue);
-            outcome_dists[s] = get<1>(newvalue);
-            policy[s] = get<0>(newvalue);
-        }
-    }
-    return Solution(valuefunction,policy,outcome_dists,residual,i);
-}
-
 Solution RMDP::vi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const{
     /**
-     * \brief Jacobi value iteration variant (not parallellized). The outcomes are
-     * selected using l1 bounds, as specified by set_distribution.
-     *
-     * This method uses OpenMP to parallelize the computation.
-     *
-     * \param valuefunction Initial value function.
-     * \param discount Discount factor.
-     * \param iterations Maximal number of iterations to run
-     * \param maxresidual Stop when the maximal residual falls below this value.
-     * \param type Whether the solution is maximized or minimized or computed average
+       Jacobi value iteration variant (not parallellized). The outcomes are
+       selected using l1 bounds, as specified by set_distribution.
+
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+       \param type Whether the solution is maximized or minimized or computed average
      */
 
     if(valuefunction.size() != this->states.size()){
@@ -398,22 +287,22 @@ Solution RMDP::mpi_jac(vector<prec_t> const& valuefunction, prec_t discount, uns
                      unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const {
 
     /**
-     * \brief Modified policy iteration using Jacobi value iteration in the inner loop
-     *
-     * This method generalized modified policy iteration to the robust MDP. In the value iteration step,
-     * both the action *and* the outcome are fixed.
-     *
-     * Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-     *
-     * \param valuefunction Initial value function
-     * \param discount Discount factor
-     * \param iterations_pi Maximal number of policy iteration steps
-     * \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-     * \param iterations_vi Maximal number of inner loop value iterations
-     * \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-     *              This value should be smaller than maxresidual_pi
-     *
-     * \return Computed (approximate) solution
+       Modified policy iteration using Jacobi value iteration in the inner loop
+
+       This method generalized modified policy iteration to the robust MDP. In the value iteration step,
+       both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
      */
 
     if(valuefunction.size() != this->states.size()) throw invalid_argument("incorrect size of value function");
@@ -516,23 +405,23 @@ Solution RMDP::mpi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, 
                      unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const {
 
     /**
-     * \brief Modified policy iteration using Jacobi value iteration in the inner loop. The worst
-     * case is computed with respect to an l1 bounded worst case.
+       Modified policy iteration using Jacobi value iteration in the inner loop. The worst
+       case is computed with respect to an l1 bounded worst case.
+
+       This method generalized modified policy iteration to the robust MDP. In the value iteration step,
+       both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
      *
-     * This method generalized modified policy iteration to the robust MDP. In the value iteration step,
-     * both the action *and* the outcome are fixed.
-     *
-     * Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-     *
-     * \param valuefunction Initial value function
-     * \param discount Discount factor
-     * \param iterations_pi Maximal number of policy iteration steps
-     * \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-     * \param iterations_vi Maximal number of inner loop value iterations
-     * \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-     *              This value should be smaller than maxresidual_pi
-     *
-     * \return Computed (approximate) solution
+       \return Computed (approximate) solution
      */
 
     if(valuefunction.size() != this->states.size()) throw invalid_argument("incorrect size of value function");
@@ -620,11 +509,11 @@ Solution RMDP::mpi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, 
 
 bool RMDP::is_normalized() const{
     /**
-     * \brief Check if all transitions in the process are normalized.
-     *
-     * Note that if there are no actions, or no outcomes for a state, the RMDP still may be normalized.
-     *
-     * \return True iff all transitions are normalized.
+       Check if all transitions in the process are normalized.
+
+       Note that if there are no actions, or no outcomes for a state, the RMDP still may be normalized.
+
+       \return True if and only if all transitions are normalized.
      */
 
     for(auto const& s : states){
@@ -639,7 +528,7 @@ bool RMDP::is_normalized() const{
 }
 void RMDP::normalize(){
     /**
-     * \brief Normalize all transitions for all states, actions, outcomes.
+       Normalize all transitions for all states, actions, outcomes.
      */
 
      for(auto& s : states){
@@ -652,14 +541,15 @@ void RMDP::normalize(){
 }
 
 void RMDP::add_transitions(vector<long> const& fromids, vector<long> const& actionids, vector<long> const& outcomeids, vector<long> const& toids, vector<prec_t> const& probs, vector<prec_t> const& rews){
-    /** \brief Add multiple samples (transitions) to the MDP definition
-     *
-     * \param fromids Starting state ids
-     * \param outcomeis IDs used of the outcomes
-     * \param toids Destination state ids
-     * \param actionids
-     * \param probs Probabilities of the transitions
-     * \param rews Rewards of the transitions
+    /**
+        Add multiple samples (transitions) to the MDP definition
+
+       \param fromids Starting state ids
+       \param outcomeis IDs used of the outcomes
+       \param toids Destination state ids
+       \param actionids
+       \param probs Probabilities of the transitions
+       \param rews Rewards of the transitions
      */
 
     auto s = fromids.size();
@@ -682,7 +572,7 @@ void RMDP::set_distribution(long fromid, long actionid, vector<prec_t> const& di
 
 void RMDP::set_uniform_thresholds(prec_t threshold){
     /**
-     * \brief Sets thresholds for all states uniformly
+       Sets thresholds for all states uniformly
      */
     for(auto& s : this->states){
         s.set_thresholds(threshold);
@@ -691,7 +581,7 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
 
 Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid){
     /**
-     * Returns transition states, probabilities, and rewards
+       Returns transition states, probabilities, and rewards
      */
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
@@ -708,7 +598,7 @@ Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid){
 
 const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{
     /**
-     * Returns transition states, probabilities, and rewards
+       Returns transition states, probabilities, and rewards
      */
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
@@ -727,20 +617,20 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
 
 unique_ptr<RMDP> RMDP::transitions_from_csv(istream& input, bool header){
     /**
-     * \brief Loads an RMDP definition from a simple csv file
-     *
-     * States, actions, and outcomes are identified by 0-based ids.
-     *
-     * The columns are separated by commas, and rows by new lines.
-     *
-     * The file is formatted with the following columns:
-     * idstatefrom, idaction, idoutcome, idstateto, probability, reward
-     *
-     * Note that outcome distributions are not restored.
-     *
-     * \param input Source of the RMDP
-     * \param header Whether the first line of the file represents the header.
-     *                  The column names are not checked for correctness or number!
+       Loads an RMDP definition from a simple csv file
+
+       States, actions, and outcomes are identified by 0-based ids.
+
+       The columns are separated by commas, and rows by new lines.
+
+       The file is formatted with the following columns:
+       idstatefrom, idaction, idoutcome, idstateto, probability, reward
+
+       Note that outcome distributions are not restored.
+
+       \param input Source of the RMDP
+       \param header Whether the first line of the file represents the header.
+                        The column names are not checked for correctness or number!
      */
 
     string line;
@@ -793,24 +683,24 @@ unique_ptr<RMDP> RMDP::transitions_from_csv(istream& input, bool header){
 
 void RMDP::transitions_to_csv(ostream& output, bool header) const{
     /**
-     * \brief Saves the model to a stream as a simple csv file
-     *
-     * States, actions, and outcomes are identified by 0-based ids.
-     *
-     * The columns are separated by commas, and rows by new lines.
-     *
-     * The file is formatted with the following columns:
-     * idstatefrom, idaction, idoutcome, idstateto, probability, reward
-     *
-     * Exported and imported MDP will be be slightly different. Since action/transitions
-     * will not be exported if there are no actions for the state. However, when
-     * there is data for action 1 and action 3, action 2 will be created with no outcomes.
-     *
-     * Note that outcome distributions are not saved.
-     *
-     * \param output Output for the stream
-     * \param header Whether the header should be written as the
-     *        first line of the file represents the header.
+       Saves the model to a stream as a simple csv file
+
+       States, actions, and outcomes are identified by 0-based ids.
+
+       The columns are separated by commas, and rows by new lines.
+
+       The file is formatted with the following columns:
+       idstatefrom, idaction, idoutcome, idstateto, probability, reward
+
+       Exported and imported MDP will be be slightly different. Since action/transitions
+       will not be exported if there are no actions for the state. However, when
+       there is data for action 1 and action 3, action 2 will be created with no outcomes.
+
+       Note that outcome distributions are not saved.
+
+       \param output Output for the stream
+       \param header Whether the header should be written as the
+              first line of the file represents the header.
      */
 
     //write header is so requested
@@ -845,7 +735,7 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
 
 unique_ptr<RMDP> RMDP::copy() const {
     /**
-     * \brief Creates a copy of the MDP.
+       Creates a copy of the MDP.
      */
 
     unique_ptr<RMDP> result(new RMDP(this->state_count()));
@@ -857,8 +747,7 @@ unique_ptr<RMDP> RMDP::copy() const {
 
 void RMDP::copy_into(RMDP& result) const {
     /**
-     * \brief Copies the values of the RMDP to a new one. The new RMDP
-     *          should be empty.
+       Copies the values of the RMDP to a new one. The new RMDP should be empty.
      */
 
     // make sure that the created MDP is empty
@@ -903,10 +792,10 @@ void RMDP::copy_into(RMDP& result) const {
 }
 
 string RMDP::to_string() const {
-    /** \brief Returns a brief string representation of the MDP.
-     *
-     * This method is mostly suitable for analyzing small MDPs.
-     *
+    /** Returns a brief string representation of the MDP.
+
+       This method is mostly suitable for analyzing small MDPs.
+
      */
     string result;
 
@@ -932,9 +821,9 @@ string RMDP::to_string() const {
 
 void RMDP::set_uniform_distribution(prec_t threshold){
     /**
-     * \brief Sets the distribution for outcomes for each state and
-     * action to be uniform. It also sets the threshold to be the same
-     * for all states.
+       Sets the distribution for outcomes for each state and
+       action to be uniform. It also sets the threshold to be the same
+       for all states.
      */
     for(auto& s : states){
         for(auto& a : s.actions){
@@ -948,9 +837,10 @@ void RMDP::set_uniform_distribution(prec_t threshold){
 
 void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
     /**
-     * \brief Saves the transition probabilities and rewards to a CSV file
-     * \param filename Name of the file
-     * \param header Whether to create a header of the file too
+       Saves the transition probabilities and rewards to a CSV file
+
+       \param filename Name of the file
+       \param header Whether to create a header of the file too
      */
     ofstream ofs;
     ofs.open(filename);
@@ -961,7 +851,7 @@ void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
 
 void RMDP::set_threshold(long stateid, long actionid, prec_t threshold){
     /**
-     * \brief Sets a new threshold value
+       Sets a new threshold value
      */
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
@@ -978,7 +868,7 @@ void RMDP::set_threshold(long stateid, long actionid, prec_t threshold){
 
 prec_t RMDP::get_threshold(long stateid, long actionid) const {
     /**
-     * \brief Returns the threshold value
+       Returns the threshold value
      */
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
