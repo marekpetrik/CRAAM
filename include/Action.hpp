@@ -3,7 +3,6 @@
 
 #include <utility>
 #include <vector>
-#include <stdexcept>
 
 #include "definitions.hpp"
 #include "Transition.hpp"
@@ -11,8 +10,6 @@
 using namespace std;
 
 namespace craam {
-
-pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t);
 
 class Action {
 
@@ -27,7 +24,7 @@ public:
         threshold = -1;
     }
 
-    // plain
+    // plain solution
     pair<long,prec_t> maximal(vector<prec_t> const& valuefunction, prec_t discount) const;
     pair<long,prec_t> minimal(vector<prec_t> const& valuefunction, prec_t discount) const;
 
