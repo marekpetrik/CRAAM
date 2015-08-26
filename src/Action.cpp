@@ -2,6 +2,7 @@
 #include <numeric>
 #include <limits>
 #include <algorithm>
+#include <stdexcept>
 
 #include "Action.hpp"
 
@@ -164,66 +165,6 @@ prec_t Action::fixed(vector<prec_t> const& valuefunction, prec_t discount, int i
 
     const auto& outcome = outcomes[index];
     return outcome.compute_value(valuefunction, discount);
-}
-
-pair<vector<prec_t>,prec_t> Action::maximal_l1(vector<prec_t> const& valuefunction, prec_t discount, vector<prec_t> const& distribution, prec_t t) const{
-    /**
-     * \brief Computes the maximal outcome distribution given l1 constraints on the the distribution
-     *
-     * \param valuefunction Value function reference
-     * \param discount Discount factor
-     *
-     * \return Outcome distribution and the mean value for the maximal bounded solution
-     */
-
-    if(distribution.size() != outcomes.size()){
-        throw range_error("distribution not set properly");
-    }
-
-    if(outcomes.size() == 0){
-        throw range_error("action with no outcomes");
-    }
-
-    vector<prec_t> outcomevalues(outcomes.size());
-
-    for(size_t i = 0; i < outcomes.size(); i++){
-        const auto& outcome = outcomes[i];
-        outcomevalues[i] = - outcome.compute_value(valuefunction, discount);
-    }
-
-    auto result = worstcase_l1(outcomevalues, distribution, t);
-    result.second = - result.second;
-
-    return result;
-}
-
-pair<vector<prec_t>,prec_t> Action::minimal_l1(vector<prec_t> const& valuefunction, prec_t discount, vector<prec_t> const& distribution, prec_t t) const{
-    /** \brief Computes the minimal outcome distribution given l1 constraints on the the distribution
-     *
-     * \param valuefunction Value function reference
-     * \param discount Discount factor
-     * \param distribution Reference distribution for the L1 bound
-     * \param threshold Bound on the L1 deviation
-     *
-     * \return Outcome distribution and the mean value for the minimal bounded solution
-     */
-
-    if(distribution.size() != outcomes.size()){
-        throw range_error("distribution not set properly");
-    }
-
-    if(outcomes.size() == 0){
-        return make_pair(vector<prec_t>(0), -numeric_limits<prec_t>::infinity());
-    }
-
-    vector<prec_t> outcomevalues(outcomes.size());
-
-    for(size_t i = 0; i < outcomes.size(); i++){
-        const auto& outcome = outcomes[i];
-        outcomevalues[i] = outcome.compute_value(valuefunction, discount);
-    }
-
-    return worstcase_l1(outcomevalues, distribution, t);
 }
 
 void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
