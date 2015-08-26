@@ -12,23 +12,11 @@ using namespace std;
 
 namespace craam {
 
-/*
- * Signature of static methods required for the simulator
- *
- * States and actions are passed by value
- *
- * DState init_state() const
- * EState transition_dec(DState, Action) const
- * pair<double,DState> transition_exp(EState) const
- * bool end_condition(DState) const
- * vector<Action> actions(DState)  const // needed for a random policy and value function policy
- * vector<Action> actions const          // an alternative when the actions are not state dependent
- */
 template <class DecState,class ExpState>
 struct ExpSample {
     /**
-     * \brief Represents the transition from an expectation state to a
-     * a decision state.
+       Represents the transition from an expectation state to a
+       a decision state.
      */
     const ExpState expstate_from;
     const DecState decstate_to;
@@ -47,8 +35,7 @@ struct ExpSample {
 template <class DecState,class Action,class ExpState=pair<DecState,Action>>
 struct DecSample {
     /**
-     * \brief Represents the transition from a decision state to an
-     * expectation state.
+       Represents the transition from a decision state to an expectation state.
      */
     const DecState decstate_from;
     const Action action;
@@ -66,7 +53,7 @@ struct DecSample {
 template <class DecState,class Action,class ExpState=pair<DecState,Action>>
 class Samples {
     /**
-     * \brief General representation of samples
+       General representation of samples.
      */
 
 public:
@@ -78,31 +65,31 @@ public:
 
     void add_dec(const DecSample<DecState,Action,ExpState>& decsample){
         /**
-         * \brief Adds a sample starting in a decision state
+         * Adds a sample starting in a decision state
          */
         this->decsamples.push_back(decsample);
     };
 
     void add_initial(const DecState& decstate){
         /**
-         * \brief Adds an initial state
+           Adds an initial state
          */
          this->initial.push_back(decstate);
     };
 
     void add_exp(const ExpSample<DecState,ExpState>& expsample){
         /**
-         * \brief Adds a sample starting in an expectation state
+           Adds a sample starting in an expectation state
          */
         this->expsamples.push_back(expsample);
     };
 
     prec_t mean_return(prec_t discount){
         /**
-         * \brief Computes the discounted mean return over all the
-         * samples
+           Computes the discounted mean return over all the
+           samples
          *
-         * \param discount Discount factor
+           \param discount Discount factor
          */
 
         prec_t result = 0;
@@ -123,8 +110,8 @@ public:
 template<class Sim, class DState, class Action>
 class RandomPolicySD {
     /**
-     * \brief An object that behaves as a random policy for problems
-     * with state-dependent actions.
+       An object that behaves as a random policy for problems
+       with state-dependent actions.
      */
 
 private:
@@ -139,7 +126,7 @@ public:
 
     Action operator() (DState dstate){
         /**
-         * \brief Returns the random action
+           Returns the random action
          */
         const vector<Action>&& actions = sim.actions(dstate);
 
@@ -153,10 +140,10 @@ public:
 template<class Sim, class DState, class Action>
 class RandomPolicySI {
     /**
-     * \brief An object that behaves as a random policy for problems
-     * with state-dependent actions.
+       An object that behaves as a random policy for problems
+       with state-dependent actions.
      *
-     * The actions are copied internally.
+       The actions are copied internally.
      */
 
 private:
@@ -173,7 +160,7 @@ public:
 
     Action operator() (DState dstate){
         /**
-         * \brief Returns the random action
+           Returns the random action
          */
         auto actioncount = actions.size();
         uniform_int_distribution<> dst(0,actioncount-1);
@@ -188,13 +175,31 @@ unique_ptr<Samples<DState,Action,EState>>
 simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
                    random_device::result_type seed = random_device{}()){
-    /** \brief Runs the simulator and generates samples. A simulator with no state
-     *
-     * \param sim Simulator that holds the properties needed by the simulator
-     * \param policy Policy function
-     * \param horizon Number of steps
-     * \param prob_term The probability of termination in each step
-     * \return Samples
+    /** Runs the simulator and generates samples.
+
+        This method assumes that the simulator can state simulation in any state. There may be
+        an internal state, however, which is independent of the transitions; for example this may be
+        the internal state of the random number generator.
+
+        States and actions are passed by value everywhere and therefore it is important that
+        they are lightweight objects.
+
+       Signature of static methods required for the simulator
+
+
+       DState init_state() const
+       EState transition_dec(DState, Action) const
+       pair<double,DState> transition_exp(EState) const
+       bool end_condition(DState) const
+       vector<Action> actions(DState)  const // needed for a random policy and value function policy
+       vector<Action> actions const          // an alternative when the actions are not state dependent
+
+       \param sim Simulator that holds the properties needed by the simulator
+       \param policy Policy function
+       \param horizon Number of steps
+       \param prob_term The probability of termination in each step
+
+       \return Samples
      */
 
     unique_ptr<Samples<DState,Action,EState>> samples(new Samples<DState,Action,EState>());
