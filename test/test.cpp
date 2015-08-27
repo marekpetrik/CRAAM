@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 20,0, SolutionType::Robust);
+    re = rmdp.vi_jac_rob(initial,0.9, 20,0);
 
     vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re.valuefunction,1e-3);
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Robust);
+    re = rmdp.vi_jac_rob(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Optimistic);
+    re = rmdp.vi_jac_opt(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Average);
+    re = rmdp.vi_jac_ave(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 }
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Robust);
+    re = rmdp.vi_jac_rob(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Optimistic);
+    re = rmdp.vi_jac_opt(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac(initial,0.9, 10000,0, SolutionType::Average);
+    re = rmdp.vi_jac_ave(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 }
@@ -378,13 +378,13 @@ BOOST_AUTO_TEST_CASE(test_value_function_robust_optimistic){
     for(auto & i : initial)
         i = 0;
 
-    auto&& result1 = rmdp.vi_jac(initial,0.9, 1000000, 0, SolutionType::Robust);
+    auto&& result1 = rmdp.vi_jac_rob(initial,0.9, 1000000, 0);
     BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
 
-    auto&& result2 = rmdp.vi_jac(initial,0.9, 1000000, 0, SolutionType::Optimistic);
+    auto&& result2 = rmdp.vi_jac_opt(initial,0.9, 1000000, 0);
     BOOST_CHECK_CLOSE(result2.valuefunction[0],20,1e-3);
 
-    auto&& result3 = rmdp.vi_jac(initial,0.9, 1000000, 0, SolutionType::Average);
+    auto&& result3 = rmdp.vi_jac_ave(initial,0.9, 1000000, 0);
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 }
 
@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
 
     // solve and check value function
     vector<prec_t> initial{0,0};
-    auto&& re = rmdp.vi_jac(initial,0.9,2000,0, SolutionType::Robust);
+    auto&& re = rmdp.vi_jac_rob(initial,0.9,2000,0);
 
     vector<prec_t> val{0.545454545455, 0.0};
 
@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Robust);
+    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
     sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
@@ -591,7 +591,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Average);
+    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
     sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
@@ -611,7 +611,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Optimistic);
+    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
     sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
@@ -698,7 +698,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Robust);
+    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
     sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
@@ -731,7 +731,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Average);
+    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
     sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
@@ -751,7 +751,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Optimistic);
+    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
     sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
@@ -923,7 +923,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Robust);
+    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
     sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
@@ -956,7 +956,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Average);
+    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
     sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
@@ -976,7 +976,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac(value,gamma,1000,1e-5,SolutionType::Optimistic);
+    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
     sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);

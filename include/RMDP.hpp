@@ -8,6 +8,7 @@
 #include <memory>
 #include <cmath>
 #include <tuple>
+#include <algorithm>
 
 #include "definitions.hpp"
 #include "State.hpp"
@@ -399,7 +400,33 @@ public:
            \param iterations Maximal number of iterations to run
            \param maxresidual Stop when the maximal residual falls below this value.
          */
-         return vi_jac_gen<SolutionType::Robust>()
+         return vi_jac_gen<SolutionType::Robust>(valuefunction, discount, iterations, maxresidual);
+    };
+
+    Solution vi_jac_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+        /**
+           Optimistic Jacobi value iteration variant. The nature behaves as best-case.
+           This method uses OpenMP to parallelize the computation.
+
+           \param valuefunction Initial value function.
+           \param discount Discount factor.
+           \param iterations Maximal number of iterations to run
+           \param maxresidual Stop when the maximal residual falls below this value.
+         */
+         return vi_jac_gen<SolutionType::Optimistic>(valuefunction, discount, iterations, maxresidual);
+    };
+
+    Solution vi_jac_ave(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+        /**
+           Average Jacobi value iteration variant. The nature behaves as average-case.
+           This method uses OpenMP to parallelize the computation.
+
+           \param valuefunction Initial value function.
+           \param discount Discount factor.
+           \param iterations Maximal number of iterations to run
+           \param maxresidual Stop when the maximal residual falls below this value.
+         */
+         return vi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
     Solution vi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const;
