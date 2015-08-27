@@ -238,8 +238,8 @@ public:
     template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
     Solution vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
         /**
-           Gauss-Seidel value iteration variant (not parallelized). The natures policy is
-           constrained, given by the function Nature.
+           Gauss-Seidel value iteration variant with constrained nature(not parallelized).
+           The natures policy is constrained, given by the function Nature.
 
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize.
@@ -277,6 +277,7 @@ public:
                     newvalue = state.max_max_cst<Nature>(valuefunction, discount);
                     break;
                 default:
+                    static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic, "Unknown/invalid (average not supported) optimization type.");
                     throw invalid_argument("Unknown/invalid (average not supported) optimization type.");
                 }
                 residual = max(residual, abs(valuefunction[s] - get<2>(newvalue) ));
@@ -375,7 +376,7 @@ public:
                     newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
                     break;
                 default:
-                    throw invalid_argument("unknown optimization type.");
+                    throw invalid_argument("Unknown optimization type.");
                 }
 
                 residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
@@ -429,11 +430,227 @@ public:
          return vi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
-    Solution vi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual, SolutionType type) const;
+    template<SolutionType type,pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+    Solution vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+        /**
+           Jacobi value iteration variant with constrained nature. The outcomes are
+           selected using Nature function.
+
+           This method uses OpenMP to parallelize the computation.
+
+           This is a generic version, which works for best/worst-case optimization and
+           arbitrary constraints on nature (given by the function Nature). Average case constrained
+           nature is not supported.
+
+           \param valuefunction Initial value function.
+           \param discount Discount factor.
+           \param iterations Maximal number of iterations to run
+           \param maxresidual Stop when the maximal residual falls below this value.
+         */
+
+        if(valuefunction.size() != this->states.size()){
+            throw invalid_argument("incorrect dimension of the value function.");
+        }
+
+        vector<long> policy(this->states.size());
+        vector<vector<prec_t>> outcome_dists(this->states.size());
+
+        vector<prec_t> oddvalue = valuefunction;            // set in even iterations (0 is even)
+        vector<prec_t> evenvalue = valuefunction;           // set in odd iterations
+        vector<prec_t> residuals(valuefunction.size());
+
+        prec_t residual = numeric_limits<prec_t>::infinity();
+        size_t i;
+
+        for(i = 0; i < iterations && residual > maxresidual; i++){
+            vector<prec_t> & sourcevalue = i % 2 == 0 ? oddvalue  : evenvalue;
+            vector<prec_t> & targetvalue = i % 2 == 0 ? evenvalue : oddvalue;
+
+            #pragma omp parallel for
+            for(auto s = 0l; s <  (long)this->states.size(); s++){
+                const auto& state = this->states[s];
+
+                tuple<long,vector<prec_t>,prec_t> newvalue;
+                switch(type){
+                case SolutionType::Robust:
+                    newvalue = state.max_min_l1(sourcevalue,discount);
+                    break;
+                case SolutionType::Optimistic:
+                    newvalue = state.max_max_l1(sourcevalue,discount);
+                    break;
+                default:
+                    static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic, "Unknown/invalid (average not supported) optimization type.");
+                    throw invalid_argument("Unknown/invalid (average not supported) optimization type.");
+                }
+
+                residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
+                targetvalue[s] = get<2>(newvalue);
+                outcome_dists[s] = get<1>(newvalue);
+                policy[s] = get<0>(newvalue);
+
+            }
+            residual = *max_element(residuals.begin(),residuals.end());
+        }
+
+        vector<prec_t> & valuenew = i % 2 == 0 ? oddvalue : evenvalue;
+
+        return Solution(valuenew,policy,outcome_dists,residual,i);
+    };
+
+
+    Solution vi_jac_l1_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+        /**
+           Robust Jacobi value iteration variant with constrained nature. The nature is constrained
+           by an L1 norm.
+
+           This method uses OpenMP to parallelize the computation.
+
+           \param valuefunction Initial value function.
+           \param discount Discount factor.
+           \param iterations Maximal number of iterations to run
+           \param maxresidual Stop when the maximal residual falls below this value.
+         */
+
+         return vi_jac_cst<SolutionType::Robust, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+    };
+
+    Solution vi_jac_l1_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+        /**
+           Optimistic Jacobi value iteration variant with constrained nature. The nature is constrained
+           by an L1 norm.
+
+           This method uses OpenMP to parallelize the computation.
+
+           \param valuefunction Initial value function.
+           \param discount Discount factor.
+           \param iterations Maximal number of iterations to run
+           \param maxresidual Stop when the maximal residual falls below this value.
+         */
+
+         return vi_jac_cst<SolutionType::Optimistic, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+    };
+
 
     // modified policy iteration
+    template<SolutionType type>
     Solution mpi_jac(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
-                     unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const;
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+        /**
+           Modified policy iteration using Jacobi value iteration in the inner loop.
+            The template parameter type determines the behavior of nature.
+
+           This method generalizes modified policy iteration to robust MDPs.
+           In the value iteration step, both the action *and* the outcome are fixed.
+
+           Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+           \param valuefunction Initial value function
+           \param discount Discount factor
+           \param iterations_pi Maximal number of policy iteration steps
+           \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+           \param iterations_vi Maximal number of inner loop value iterations
+           \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                        This value should be smaller than maxresidual_pi
+
+           \return Computed (approximate) solution
+         */
+
+        if(valuefunction.size() != this->states.size())
+            throw invalid_argument("Incorrect size of value function.");
+
+
+        vector<long> policy(this->states.size());
+        vector<long> outcomes(this->states.size());
+
+        vector<prec_t> oddvalue = valuefunction;        // set in even iterations (0 is even)
+        vector<prec_t> evenvalue = valuefunction;       // set in odd iterations
+
+        vector<prec_t> residuals(valuefunction.size());
+
+        prec_t residual_pi = numeric_limits<prec_t>::infinity();
+
+        size_t i; // defined here to be able to report the number of iterations
+
+        vector<prec_t> * sourcevalue = & oddvalue;
+        vector<prec_t> * targetvalue = & evenvalue;
+
+        for(i = 0; i < iterations_pi; i++){
+
+            std::swap<vector<prec_t>*>(targetvalue, sourcevalue);
+
+            prec_t residual_vi = numeric_limits<prec_t>::infinity();
+
+            // update policies
+            #pragma omp parallel for
+            for(auto s = 0l; s < (long) states.size(); s++){
+                const auto& state = states[s];
+
+                pair<long,prec_t> avgvalue;
+                tuple<long,long,prec_t> newvalue;
+
+                // TODO: would removing the switch improve performance?
+                switch(type){
+                case SolutionType::Robust:
+                    newvalue = state.max_min(*sourcevalue,discount);
+                    break;
+                case SolutionType::Optimistic:
+                    newvalue = state.max_max(*sourcevalue,discount);
+                    break;
+                case SolutionType::Average:
+                    avgvalue = state.max_average(*sourcevalue,discount);
+                    newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
+                    break;
+                default:
+                    throw invalid_argument("unknown optimization type.");
+                }
+
+                residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
+                (*targetvalue)[s] = get<2>(newvalue);
+
+                policy[s] = get<0>(newvalue);
+                outcomes[s] = get<1>(newvalue);
+            }
+
+            residual_pi = *max_element(residuals.begin(),residuals.end());
+
+            // the residual is sufficiently small
+            if(residual_pi <= maxresidual_pi)
+                break;
+
+            // compute values using value iteration
+            for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
+
+                swap(targetvalue, sourcevalue);
+
+                #pragma omp parallel for
+                for(auto s = 0l; s < (long) states.size(); s++){
+                    prec_t newvalue;
+
+                    switch(type){
+                    case SolutionType::Robust:
+                    case SolutionType::Optimistic:
+                        newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],outcomes[s]);
+                        break;
+                    case SolutionType::Average:
+                        newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
+                        break;
+                    default:
+                        throw invalid_argument("Unknown optimization type.");
+                    }
+
+                    residuals[s] = abs((*sourcevalue)[s] - newvalue);
+                    (*targetvalue)[s] = newvalue;
+                }
+                residual_vi = *max_element(residuals.begin(),residuals.end());
+            }
+        }
+
+        vector<prec_t> & valuenew = *targetvalue;
+
+        return Solution(valuenew,policy,outcomes,residual_pi,i);
+
+    };
 
     Solution mpi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const;
