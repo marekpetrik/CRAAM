@@ -38,7 +38,7 @@ int main(int argc, char * argv []){
     //ProfilerStart("mpi.prof");
 
     vector<prec_t> value(rmdp->state_count());
-    auto&& sol = rmdp->mpi_jac(value,0.999,2000,0.0001,2000,0.0001,SolutionType::Robust);
+    auto&& sol = rmdp->mpi_jac_rob(value,0.999,2000,0.0001,2000,0.0001);
 
     //ProfilerStop();
 

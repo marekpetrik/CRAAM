@@ -533,7 +533,7 @@ public:
 
     // modified policy iteration
     template<SolutionType type>
-    Solution mpi_jac(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+    Solution mpi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi) const{
 
         /**
@@ -651,6 +651,90 @@ public:
         return Solution(valuenew,policy,outcomes,residual_pi,i);
 
     };
+
+    Solution mpi_jac_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+        /**
+           Robust modified policy iteration using Jacobi value iteration in the inner loop.
+           The nature behaves as worst-case.
+
+           This method generalizes modified policy iteration to robust MDPs.
+           In the value iteration step, both the action *and* the outcome are fixed.
+
+           Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+           \param valuefunction Initial value function
+           \param discount Discount factor
+           \param iterations_pi Maximal number of policy iteration steps
+           \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+           \param iterations_vi Maximal number of inner loop value iterations
+           \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                        This value should be smaller than maxresidual_pi
+
+           \return Computed (approximate) solution
+         */
+
+         return mpi_jac_gen<SolutionType::Robust>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                     iterations_vi, maxresidual_vi);
+
+    };
+
+    Solution mpi_jac_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+        /**
+           Optimistic modified policy iteration using Jacobi value iteration in the inner loop.
+           The nature behaves as best-case.
+
+           This method generalizes modified policy iteration to robust MDPs.
+           In the value iteration step, both the action *and* the outcome are fixed.
+
+           Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+           \param valuefunction Initial value function
+           \param discount Discount factor
+           \param iterations_pi Maximal number of policy iteration steps
+           \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+           \param iterations_vi Maximal number of inner loop value iterations
+           \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                        This value should be smaller than maxresidual_pi
+
+           \return Computed (approximate) solution
+         */
+
+         return mpi_jac_gen<SolutionType::Optimistic>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                     iterations_vi, maxresidual_vi);
+
+    };
+
+    Solution mpi_jac_ave(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+        /**
+           Average modified policy iteration using Jacobi value iteration in the inner loop.
+           The nature behaves as average-case.
+
+           This method generalizes modified policy iteration to robust MDPs.
+           In the value iteration step, both the action *and* the outcome are fixed.
+
+           Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+           \param valuefunction Initial value function
+           \param discount Discount factor
+           \param iterations_pi Maximal number of policy iteration steps
+           \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+           \param iterations_vi Maximal number of inner loop value iterations
+           \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                        This value should be smaller than maxresidual_pi
+
+           \return Computed (approximate) solution
+         */
+
+         return mpi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                     iterations_vi, maxresidual_vi);
+    };
+
 
     Solution mpi_jac_l1(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi, SolutionType type) const;
