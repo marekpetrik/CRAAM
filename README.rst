@@ -23,14 +23,14 @@ The included algorithms are *value iteration* and *modified policy iteration*. T
 Installation
 ------------
 
-The main dependence is a compiler that supports the c++11 standard (e.g., gcc 4.7 or later). A compiler with OpenMP support is needed to run the computation on multiple cores. The tests included with the library need `boost libraries <http://boost.org>`_ version at least 1.21 to run. 
+The main dependence is a compiler that supports the c++14 standard (e.g., gcc 4.9 or later, or clang 3.4 or later). Everything except Simulation.hpp (only required to run simulations) will also compile using c++11 standard (gcc 4.7 or later). A compiler with OpenMP support is needed to run the computation on multiple cores. The tests included with the library need `boost libraries <http://boost.org>`_ version at least 1.21 to run. 
 
-The code has been tested with:
+The code has been tested on:
 
 * Linux
-* GCC 4.9.1
-* Boost 1.56.0
-* GNU Make 4.0
+* GCC 5.2.0
+* Boost 1.58.0
+* GNU Make 4.1
 
 **Note**: The project will also compile with GCC 4.6, but requires that ``-std=c++11`` is replaced by ``-std=c++0x`` and the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitely (without calling :cpp:`RMDP::RMDP(long)`). 
 
