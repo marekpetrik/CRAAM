@@ -85,12 +85,14 @@ Transitions are added through functions :cpp:`RMDP::add_transition` and :cpp:`RM
 ======================  ====================================
 Method                  Algorithm
 ======================  ====================================
-:cpp:`RMDP::vi_gs`      Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
-:cpp:`RMDP::vi_jac`     Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
-:cpp:`RMDP::vi_gs_l1`   The same as ``vi_gs`` except the worst case is bounded with respect to an :math:`L_1` norm.
-:cpp:`RMDP::vi_jac_l1`  The same as ``vi_jac`` except the worst case is bounded with respect to an :math:`L_1` norm.
-:cpp:`RMDP::mpi_jac`    Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
+:cpp:`RMDP::vi_gs_*`      Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
+:cpp:`RMDP::vi_jac_*`     Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
+:cpp:`RMDP::vi_gs_l1_*`   The same as ``vi_gs`` except the worst case is bounded with respect to an :math:`L_1` norm.
+:cpp:`RMDP::vi_jac_l1_*`  The same as ``vi_jac`` except the worst case is bounded with respect to an :math:`L_1` norm.
+:cpp:`RMDP::mpi_jac_*`    Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
 ======================  ====================================
+
+The star in the above can be one of {:cpp:`rob`, :cpp:`opt`, :cpp:`ave`} which represents the actions of nature. The values represent respective the worst case (robust), the best case (optimistic), and average.
 
 The following is a simple example of formulating and solving a small MDP. 
 
@@ -118,7 +120,7 @@ The following is a simple example of formulating and solving a small MDP.
         vector<prec_t> initial{0,0,0};
     
         // solve using Jacobi value iteration
-        auto&& re = rmdp.vi_jac(initial,0.9,20,0, SolutionType::Robust);
+        auto&& re = rmdp.vi_jac_rob(initial,0.9,20,0);
     
         for(auto v : re.valuefunction){
             cout << v << " ";
