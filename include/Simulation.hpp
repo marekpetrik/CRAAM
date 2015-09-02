@@ -176,7 +176,8 @@ class SampleType=Samples<DState,Action,EState>>
 simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
                    random_device::result_type seed = random_device{}()){
-    /** Runs the simulator and generates samples.
+    /**
+        Runs the simulator and generates samples.
 
         This method assumes that the simulator can state simulation in any state. There may be
         an internal state, however, which is independent of the transitions; for example this may be
@@ -185,21 +186,21 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
         States and actions are passed by value everywhere and therefore it is important that
         they are lightweight objects.
 
-       Signature of static methods required for the simulator
+        Signature of static methods required for the simulator
 
-       DState init_state() const
-       EState transition_dec(DState, Action) const
-       pair<double,DState> transition_exp(EState) const
-       bool end_condition(DState) const
-       vector<Action> actions(DState)  const // needed for a random policy and value function policy
-       vector<Action> actions const          // an alternative when the actions are not state dependent
+        DState init_state() const
+        EState transition_dec(DState, Action)        // may change the state of the random number generator
+        pair<double,DState> transition_exp(EState)   // may change the state of the random number generator
+        bool end_condition(DState) const
+        vector<Action> actions(DState)  const // needed for a random policy and value function policy
+        vector<Action> actions const          // an alternative when the actions are not state dependent
 
-       \param sim Simulator that holds the properties needed by the simulator
-       \param policy Policy function
-       \param horizon Number of steps
-       \param prob_term The probability of termination in each step
+        \param sim Simulator that holds the properties needed by the simulator
+        \param policy Policy function
+        \param horizon Number of steps
+        \param prob_term The probability of termination in each step
 
-       \return Samples
+        \return Samples
      */
 
     unique_ptr<SampleType> samples(new SampleType());

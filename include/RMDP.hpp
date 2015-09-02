@@ -135,9 +135,10 @@ public:
            which can compute any solution type (robust, optimistic, or average).
 
            Because this function updates the array value during the iteration, it may be
-           difficult to paralelize.
+           difficult to parallelize.
 
-           \param valuefunction Initial value function. Passed by value, because it is modified.
+           \param valuefunction Initial value function. Passed by value,
+                                because it is modified.
            \param discount Discount factor.
            \param iterations Maximal number of iterations to run
            \param maxresidual Stop when the maximal residual falls below this value.
@@ -190,7 +191,7 @@ public:
            selected using worst-case nature.
 
            Because this function updates the array value during the iteration, it may be
-           difficult to paralelize easily.
+           difficult to parallelize easily.
 
            \param valuefunction Initial value function. Passed by value, because it is modified.
            \param discount Discount factor.
@@ -207,7 +208,7 @@ public:
            selected using best-case nature.
 
            Because this function updates the array value during the iteration, it may be
-           difficult to paralelize easily.
+           difficult to parallelize easily.
 
            \param valuefunction Initial value function. Passed by value, because it is modified.
            \param discount Discount factor.
