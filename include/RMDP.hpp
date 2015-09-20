@@ -134,6 +134,11 @@ public:
            Gauss-Seidel value iteration variant (not parallelized). This is a generic function,
            which can compute any solution type (robust, optimistic, or average).
 
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
+
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize.
 
@@ -190,6 +195,11 @@ public:
            Gauss-Seidel value iteration variant (not parallelized). The outcomes are
            selected using worst-case nature.
 
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
+
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize easily.
 
@@ -207,6 +217,11 @@ public:
            Gauss-Seidel value iteration variant (not parallelized). The outcomes are
            selected using best-case nature.
 
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
+
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize easily.
 
@@ -223,6 +238,11 @@ public:
         /**
            Gauss-Seidel value iteration variant (not parallelized). The outcomes are
            selected using average-case nature.
+
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
 
            Because this function updates the array value during the iteration, it may be
            difficult to paralelize easily.
@@ -295,6 +315,11 @@ public:
            Robust Gauss-Seidel value iteration variant (not parallelized). The natures policy is
            constrained using L1 constraints and is worst-case.
 
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
+
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize.
 
@@ -311,6 +336,11 @@ public:
         /**
            Optimistic Gauss-Seidel value iteration variant (not parallelized). The natures policy is
            constrained using L1 constraints and is best-case.
+
+           This function is suitable for computing the value function of a finite state MDP. If
+           the states are ordered correctly, one iteration is enough to compute the optimal value function.
+           Since the value function is updated from the first state to the last, the states should be ordered
+           in reverse temporal order.
 
            Because this function updates the array value during the iteration, it may be
            difficult to parallelize.
