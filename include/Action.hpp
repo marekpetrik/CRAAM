@@ -19,11 +19,8 @@ public:
     vector<prec_t> distribution;
     prec_t threshold;
 
-    Action(){};
-    Action(vector<Transition> outcomes){
-        this->outcomes = outcomes;
-        threshold = -1;
-    }
+    Action(): threshold(0) {};
+    Action(vector<Transition> outcomes) : outcomes(outcomes), threshold(0) {};
 
     // plain solution
     pair<long,prec_t> maximal(vector<prec_t> const& valuefunction, prec_t discount) const;
