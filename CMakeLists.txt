@@ -6,6 +6,10 @@ project (CRAAM)
 option (BUILD_SIMULATION "Build simulation functionality" ON)
 option (BUILD_TEST "Build tests" ON)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 include_directories ("include")
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
@@ -26,9 +30,12 @@ if (BUILD_SIMULATION)
     set (CMAKE_CXX_STANDARD 14)
 endif (BUILD_SIMULATION)
 
+add_library (craam ${SRCS} )
+#install (TARGETS craam DESTINATION bin)
+
 if (BUILD_TEST)
-    add_executable (basic_test ${TSTS} ${SRCS})
-    target_link_libraries(basic_test ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+    add_executable (unit_tests ${TSTS} )
+    target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
     enable_testing()
-    add_test(basic_test basic_test)
+    add_test(UnitTests ./unit_tests)
 endif (BUILD_TEST)
