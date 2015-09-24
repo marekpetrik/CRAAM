@@ -528,4 +528,128 @@ prec_t RMDP::get_threshold(long stateid, long actionid) const {
     return (this->states[stateid].actions[actionid].threshold);
 }
 
+template<SolutionType type>
+Solution RMDP::vi_gs_gen(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Gauss-Seidel value iteration variant (not parallelized). This is a generic function,
+       which can compute any solution type (robust, optimistic, or average).
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize.
+
+       \param valuefunction Initial value function. Passed by value,
+                            because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    if(valuefunction.size() != states.size())
+        throw invalid_argument("Incorrect dimensions of value function.");
+
+    vector<long> policy(states.size());
+    vector<long> outcomes(states.size());
+
+    prec_t residual = numeric_limits<prec_t>::infinity();
+    size_t i;
+
+    for(i = 0; i < iterations && residual > maxresidual; i++){
+        residual = 0;
+
+        for(size_t s = 0l; s < states.size(); s++){
+            const auto& state = states[s];
+
+            pair<long,prec_t> avgvalue;
+            tuple<long,long,prec_t> newvalue;
+
+            switch(type){
+            case SolutionType::Robust:
+                newvalue = state.max_min(valuefunction,discount);
+                break;
+            case SolutionType::Optimistic:
+                newvalue = state.max_max(valuefunction,discount);
+                break;
+            case SolutionType::Average:
+                avgvalue = state.max_average(valuefunction,discount);
+                newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
+                break;
+            }
+
+            residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
+            valuefunction[s] = get<2>(newvalue);
+
+            policy[s] = get<0>(newvalue);
+            outcomes[s] = get<1>(newvalue);
+        }
+    }
+    return Solution(valuefunction,policy,outcomes,residual,i);
+}
+
+template Solution RMDP::vi_gs_gen<SolutionType::Robust>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+template Solution RMDP::vi_gs_gen<SolutionType::Optimistic>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+template Solution RMDP::vi_gs_gen<SolutionType::Average>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+
+template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+Solution RMDP::vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Gauss-Seidel value iteration variant with constrained nature(not parallelized).
+       The natures policy is constrained, given by the function Nature.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize.
+
+       This is a generic version, which works for best/worst-case optimization and
+       arbitrary constraints on nature (given by the function Nature). Average case constrained
+       nature is not supported.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+    if(valuefunction.size() != this->states.size())
+        throw invalid_argument("incorrect size of value function");
+
+    vector<long> policy(this->states.size());
+    vector<vector<prec_t>> outcome_dists(this->states.size());
+
+    prec_t residual = numeric_limits<prec_t>::infinity();
+    size_t i;
+
+    for(i = 0; i < iterations && residual > maxresidual; i++){
+
+        residual = 0;
+        for(auto s=0l; s < (long) this->states.size(); s++){
+            const auto& state = this->states[s];
+
+            tuple<long,vector<prec_t>,prec_t> newvalue;
+            switch(type){
+            case SolutionType::Robust:
+                newvalue = state.max_min_cst<Nature>(valuefunction, discount);
+                break;
+            case SolutionType::Optimistic:
+                newvalue = state.max_max_cst<Nature>(valuefunction, discount);
+                break;
+            default:
+                static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic, "Unknown/invalid (average not supported) optimization type.");
+                throw invalid_argument("Unknown/invalid (average not supported) optimization type.");
+            }
+            residual = max(residual, abs(valuefunction[s] - get<2>(newvalue) ));
+            valuefunction[s] = get<2>(newvalue);
+            outcome_dists[s] = get<1>(newvalue);
+            policy[s] = get<0>(newvalue);
+        }
+    }
+    return Solution(valuefunction,policy,outcome_dists,residual,i);
+}
+
+template Solution RMDP::vi_gs_cst<SolutionType::Robust,worstcase_l1>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+template Solution RMDP::vi_gs_cst<SolutionType::Optimistic,worstcase_l1>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+template Solution RMDP::vi_gs_cst<SolutionType::Average,worstcase_l1>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+
 }
