@@ -77,8 +77,6 @@ class RMDP{
      * action with no outcomes: terminates with an error
      * outcome with no target states: terminates with an error
  */
-
-
 public:
     vector<State> states;
 
