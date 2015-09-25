@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(Boost COMPONENTS unit_test_framework)
+find_package(Doxygen)
 
 option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
 option (BUILD_TEST "Build tests (requires Boost)" ON)
@@ -53,16 +54,16 @@ if(BUILD_DOCUMENTATION)
         message(FATAL_ERROR "Needs Doxygen to build the documentation.")
     endif()
 
-    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    #set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    #set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+    #configure_file(${doxyfile_in} ${doxyfile} @ONLY)
 
-    add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen"
-        VERBATIM)
+    #add_custom_target(doc
+    #    COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+    #    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    #    COMMENT "Generating API documentation with Doxygen"
+    #    VERBATIM)
 
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+    #install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
 endif()
