@@ -11,13 +11,13 @@ using namespace std;
 
 namespace craam {
 
-template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<NatureConstr nature>
 pair<vector<prec_t>,prec_t> 
 Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Computes the maximal outcome distribution constraints on the nature's distribution
 
-       Template argument Nature represents the function used to select the constrained distribution
+       Template argument nature represents the function used to select the constrained distribution
        over the outcomes.
 
        Does not work when the number of outcomes is zero.
@@ -39,7 +39,7 @@ Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
         outcomevalues[i] = - outcome.compute_value(valuefunction, discount);
     }
 
-    auto result = Nature(outcomevalues, distribution, threshold);
+    auto result = nature(outcomevalues, distribution, threshold);
     result.second = - result.second;
 
     return result;
@@ -213,13 +213,12 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
     outcomes[outcomeid].add_sample(toid, probability, reward);
 }
 
-template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
-pair<vector<prec_t>,prec_t> 
+template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
 Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Computes the minimal outcome distribution constraints on the nature's distribution
 
-       Template argument Nature represents the function used to select the constrained distribution
+       Template argument nature represents the function used to select the constrained distribution
        over the outcomes.
 
        Returns -infinity when there are no outcomes.
@@ -242,7 +241,7 @@ Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
         outcomevalues[i] = outcome.compute_value(valuefunction, discount);
     }
 
-    return Nature(outcomevalues, distribution, threshold);
+    return nature(outcomevalues, distribution, threshold);
 }
 
 // explicit instantiation of the template

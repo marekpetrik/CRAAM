@@ -195,7 +195,7 @@ public:
         return vi_gs_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
-    template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+    template<SolutionType type, NatureConstr nature>
     Solution 
     vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
@@ -235,7 +235,7 @@ public:
            difficult to parallelize.
 
            This is a generic version, which works for best/worst-case optimization and
-           arbitrary constraints on nature (given by the function Nature). Average case constrained
+           arbitrary constraints on nature (given by the function nature). Average case constrained
            nature is not supported.
 
            \param valuefunction Initial value function. Passed by value, because it is modified.
@@ -289,7 +289,7 @@ public:
          return vi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
-    template<SolutionType type,pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+    template<SolutionType type,NatureConstr nature>
     Solution vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 
@@ -415,7 +415,7 @@ public:
     };
 
 
-    template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+    template<SolutionType type, NatureConstr nature>
     Solution mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi) const;
 

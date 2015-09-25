@@ -36,8 +36,7 @@ public:
     prec_t fixed(vector<prec_t> const& valuefunction, prec_t discount, int index) const;
 
     // **** weighted constrained
-    template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
-    pair<vector<prec_t>,prec_t> 
+    template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
     maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     pair<vector<prec_t>,prec_t> maximal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
@@ -55,8 +54,7 @@ public:
     };
 
 
-    template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
-    pair<vector<prec_t>,prec_t> 
+    template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
     minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     pair<vector<prec_t>,prec_t> minimal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{

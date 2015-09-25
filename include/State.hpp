@@ -24,11 +24,11 @@ public:
     tuple<long,long,prec_t> max_max(vector<prec_t> const& valuefunction, prec_t discount) const;
     tuple<long,long,prec_t> max_min(vector<prec_t> const& valuefunction, prec_t discount) const;
 
-    template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
-    tuple<long,vector<prec_t>,prec_t> max_max_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
+    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t> 
+    max_max_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
-    template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
-    tuple<long,vector<prec_t>,prec_t> max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
+    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t> 
+    max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     tuple<long,vector<prec_t>,prec_t> max_max_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
         return max_max_cst<worstcase_l1>(valuefunction, discount);

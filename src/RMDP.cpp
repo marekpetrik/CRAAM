@@ -594,17 +594,17 @@ template Solution RMDP::vi_gs_gen<SolutionType::Robust>(vector<prec_t> valuefunc
 template Solution RMDP::vi_gs_gen<SolutionType::Optimistic>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_gs_gen<SolutionType::Average>(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
-template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<SolutionType type, NatureConstr nature>
 Solution RMDP::vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
     /**
        Gauss-Seidel value iteration variant with constrained nature(not parallelized).
-       The natures policy is constrained, given by the function Nature.
+       The natures policy is constrained, given by the function nature.
 
        Because this function updates the array value during the iteration, it may be
        difficult to parallelize.
 
        This is a generic version, which works for best/worst-case optimization and
-       arbitrary constraints on nature (given by the function Nature). Average case constrained
+       arbitrary constraints on nature (given by the function nature). Average case constrained
        nature is not supported.
 
        \param valuefunction Initial value function. Passed by value, because it is modified.
@@ -630,10 +630,10 @@ Solution RMDP::vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned
             tuple<long,vector<prec_t>,prec_t> newvalue;
             switch(type){
             case SolutionType::Robust:
-                newvalue = state.max_min_cst<Nature>(valuefunction, discount);
+                newvalue = state.max_min_cst<nature>(valuefunction, discount);
                 break;
             case SolutionType::Optimistic:
-                newvalue = state.max_max_cst<Nature>(valuefunction, discount);
+                newvalue = state.max_max_cst<nature>(valuefunction, discount);
                 break;
             default:
                 static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic, "Unknown/invalid (average not supported) optimization type.");
@@ -722,16 +722,16 @@ template Solution RMDP::vi_jac_gen<SolutionType::Optimistic>(vector<prec_t> cons
 template Solution RMDP::vi_jac_gen<SolutionType::Average>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 
-template<SolutionType type,pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<SolutionType type,NatureConstr nature>
 Solution RMDP::vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
     /**
        Jacobi value iteration variant with constrained nature. The outcomes are
-       selected using Nature function.
+       selected using nature function.
 
        This method uses OpenMP to parallelize the computation.
 
        This is a generic version, which works for best/worst-case optimization and
-       arbitrary constraints on nature (given by the function Nature). Average case constrained
+       arbitrary constraints on nature (given by the function nature). Average case constrained
        nature is not supported.
 
        \param valuefunction Initial value function.
@@ -918,12 +918,12 @@ template Solution RMDP::mpi_jac_gen<SolutionType::Robust>(vector<prec_t> const& 
 template Solution RMDP::mpi_jac_gen<SolutionType::Optimistic>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_gen<SolutionType::Average>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
-template<SolutionType type, pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<SolutionType type, NatureConstr nature>
 Solution RMDP::mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                  unsigned long iterations_vi, prec_t maxresidual_vi) const{
     /**
        Modified policy iteration using Jacobi value iteration in the inner loop and constrained nature.
-       The template determines the constraints (by the parameter Nature) and the type
+       The template determines the constraints (by the parameter nature) and the type
        of nature (by the parameter type)
 
        This method generalized modified policy iteration to the robust MDP. In the value iteration step,
@@ -1022,7 +1022,6 @@ Solution RMDP::mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount,
     return Solution(valuenew,policy,outcomes,residual_pi,i);
 
 };
-
 
 template Solution RMDP::mpi_jac_cst<SolutionType::Robust,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;

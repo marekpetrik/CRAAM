@@ -153,7 +153,7 @@ void State::set_thresholds(prec_t threshold){
     }
 }
 
-template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<NatureConstr nature>
 tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Finds the maximal optimistic action given the l1 constraints.
@@ -180,7 +180,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
     for(size_t i = 0; i < this->actions.size(); i++){
         const auto& action = actions[i];
 
-        auto outcomevalue = action.maximal_cst<Nature>(valuefunction, discount);
+        auto outcomevalue = action.maximal_cst<nature>(valuefunction, discount);
         auto value = outcomevalue.second;
 
         if(value > maxvalue){
@@ -195,7 +195,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
 template tuple<long,vector<prec_t>,prec_t> 
 State::max_max_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
     
-template<pair<vector<prec_t>,prec_t> (*Nature)(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t)>
+template<NatureConstr nature>
 tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Finds the maximal pessimistic action given l1 constraints
@@ -222,7 +222,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& value
     for(size_t i = 0; i < this->actions.size(); i++){
         const auto& action = actions[i];
 
-        auto outcomevalue = action.minimal_cst<Nature>(valuefunction, discount);
+        auto outcomevalue = action.minimal_cst<nature>(valuefunction, discount);
         auto value = outcomevalue.second;
 
         if(value > maxvalue){
