@@ -1,5 +1,4 @@
-#ifndef STATE_H
-#define STATE_H
+#pragma once
 
 #include <utility>
 #include <tuple>
@@ -51,4 +50,3 @@ public:
 
 }
 
-#endif // STATE_H

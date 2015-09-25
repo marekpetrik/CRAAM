@@ -1,6 +1,4 @@
-#ifndef RMDP_H
-#define RMDP_H
-
+#pragma once
 #include <vector>
 #include <istream>
 #include <ostream>
@@ -482,5 +480,3 @@ public:
     string to_string() const;
 };
 };
-
-#endif // RMDP_H

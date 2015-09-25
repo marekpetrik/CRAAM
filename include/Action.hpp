@@ -1,5 +1,4 @@
-#ifndef ACTION_H
-#define ACTION_H
+#pragma once
 
 #include <utility>
 #include <vector>
@@ -80,4 +79,3 @@ public:
 };
 
 }
-#endif // ACTION_H

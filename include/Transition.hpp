@@ -1,5 +1,4 @@
-#ifndef TRANSITION_H
-#define TRANSITION_H
+#pragma once
 
 #include<vector>
 
@@ -41,5 +40,3 @@ public:
 };
 
 }
-
-#endif // TRANSITION_H
