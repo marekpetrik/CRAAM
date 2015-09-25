@@ -3,16 +3,20 @@ cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR)
 
 project (CRAAM)
 
-option (BUILD_SIMULATION "Build simulation functionality" ON)
-option (BUILD_TEST "Build tests" ON)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED)
+
+find_package(Boost COMPONENTS unit_test_framework)
+
+option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
+option (BUILD_TEST "Build tests (requires Boost)" ON)
+option (BUILD_DOCUMENTATION "Build source code documentation" ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories ("include")
-
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 set (SRCS src/Action.cpp  
          src/definitions.cpp  
@@ -27,8 +31,6 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED)
 
 if (BUILD_SIMULATION)
     set (SRCS ${SRCS} src/Simulation.cpp)
@@ -45,3 +47,22 @@ if (BUILD_TEST)
     enable_testing()
     add_test(UnitTests bin/unit_tests)
 endif (BUILD_TEST)
+
+if(BUILD_DOCUMENTATION)
+    if(NOT DOXYGEN_FOUND)
+        message(FATAL_ERROR "Needs Doxygen to build the documentation.")
+    endif()
+
+    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM)
+
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+endif()
