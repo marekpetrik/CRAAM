@@ -7,12 +7,12 @@ sudo: false
 
 addons:
     apt:
-        source:
-            packages:
-                - gcc-4.8
-                - g++4.8
-                - libboost-test-dev
-                - wget
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-4.8
+            - g++4.8
+            - libboost-test-dev
 
 install:
     - wget http://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz 
