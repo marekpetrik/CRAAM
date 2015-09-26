@@ -1,0 +1,15 @@
+language: C++
+
+compiler:
+    - clang
+    - gcc
+    
+before_script: 
+    - sudo apt-get update -qq
+    - sudo apt-get install libboost-test-dev
+
+script:
+    - cmake .
+    - cmake --build .
+    - cmake --build . --target benchmark
+    - cmake --build . --target testit
