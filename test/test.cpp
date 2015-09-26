@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(test_l1_worst_case){
     t = 2;
     w = worstcase_l1(z1,q1,t).second;
     BOOST_CHECK_CLOSE(w, 2.0,1e-3);
-};
+}
 
 BOOST_AUTO_TEST_CASE(test_value_function_l1){
     RMDP rmdp(1);

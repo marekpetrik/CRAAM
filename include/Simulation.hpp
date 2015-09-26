@@ -268,6 +268,6 @@ simulate_stateless( Sim& sim,
             break;
     }
     return samples;
-};
+}
 
-};
+}

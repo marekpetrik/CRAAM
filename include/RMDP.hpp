@@ -479,4 +479,4 @@ public:
     // string representation
     string to_string() const;
 };
-};
+}

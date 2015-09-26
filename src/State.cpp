@@ -32,7 +32,7 @@ tuple<long,long,prec_t> State::max_max(vector<prec_t> const& valuefunction, prec
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
-};
+}
 
 tuple<long,long,prec_t> State::max_min(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
@@ -60,7 +60,7 @@ tuple<long,long,prec_t> State::max_min(vector<prec_t> const& valuefunction, prec
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
-};
+}
 
 pair<long,prec_t> State::max_average(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
@@ -87,7 +87,7 @@ pair<long,prec_t> State::max_average(vector<prec_t> const& valuefunction, prec_t
         }
     }
     return make_pair(result,maxvalue);
-};
+}
 
 // functions used in modified policy iteration
 prec_t State::fixed_average(vector<prec_t> const& valuefunction, prec_t discount, long actionid, vector<prec_t> const& distribution) const{
@@ -190,7 +190,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
         }
     }
     return make_tuple(actionresult,outcomeresult,maxvalue);
-};
+}
 
 template tuple<long,vector<prec_t>,prec_t> 
 State::max_max_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
@@ -233,7 +233,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& value
     }
     return make_tuple(actionresult,outcomeresult,maxvalue);
 
-};
+}
 
 template tuple<long,vector<prec_t>,prec_t> 
 State::max_min_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;

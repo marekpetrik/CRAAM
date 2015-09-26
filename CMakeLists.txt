@@ -22,7 +22,6 @@ endif()
 
 
 #set(CMAKE_VERBOSE_MAKEFILE on) - just run make 
-#TODO: add the appropriate 
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
 option (BUILD_SIMULATION "Build simulation functionality" ON)
@@ -47,11 +46,15 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+# set specific gcc parameters
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic")
+endif()
+
 # whether to build the simulation component of the library
 if (BUILD_SIMULATION)
     set (SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
-    #set (CMAKE_CXX_STANDARD 14)
 endif (BUILD_SIMULATION)
 
 # **** RELEASE VERSION OF THE LIBRARY ****

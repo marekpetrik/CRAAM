@@ -78,7 +78,7 @@ public:
 
 int test_policy(TestDState){
     return 0;
-};
+}
 
 BOOST_AUTO_TEST_CASE( basic_simulation ) {
     TestSim sim;

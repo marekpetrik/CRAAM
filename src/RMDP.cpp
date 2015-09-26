@@ -787,7 +787,7 @@ Solution RMDP::vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, 
     vector<prec_t> & valuenew = i % 2 == 0 ? oddvalue : evenvalue;
 
     return Solution(valuenew,policy,outcome_dists,residual,i);
-};
+}
 
 template Solution RMDP::vi_jac_cst<SolutionType::Robust,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_jac_cst<SolutionType::Optimistic,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
@@ -911,8 +911,7 @@ Solution RMDP::mpi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount,
 
     return Solution(valuenew,policy,outcomes,residual_pi,i);
 
-};
-
+}
 
 template Solution RMDP::mpi_jac_gen<SolutionType::Robust>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_gen<SolutionType::Optimistic>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
@@ -1021,7 +1020,7 @@ Solution RMDP::mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount,
 
     return Solution(valuenew,policy,outcomes,residual_pi,i);
 
-};
+}
 
 template Solution RMDP::mpi_jac_cst<SolutionType::Robust,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
