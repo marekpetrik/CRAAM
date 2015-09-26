@@ -102,6 +102,7 @@ The following is a simple example of formulating and solving a small MDP.
     #include <vector>
     #include "RMDP.h"
     
+    use namespace craam;
     
     int main(){
         RMDP rmdp(3);

@@ -11,7 +11,7 @@ find_package(Doxygen)
 
 #set(CMAKE_VERBOSE_MAKEFILE on)
 option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
-option (BUILD_TEST "Build tests (requires Boost)" ON)
+option (BUILD_TEST "Build tests (requires Boost)" ${BOOST_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -75,12 +75,12 @@ if(BUILD_DOCUMENTATION)
     endif()
 
     set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.config.in)
-    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/doc/doxyfile.config)
+    set(doxyfile ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxyfile.config)
     configure_file(${doxyfile_in} ${doxyfile} @ONLY)
 
-    add_custom_target(doc
+    add_custom_target(docs
         COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM)
 

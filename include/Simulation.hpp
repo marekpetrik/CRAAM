@@ -12,7 +12,8 @@
 
 using namespace std;
 
-namespace craam {
+using namespace craam;
+namespace msen {
 
 template <class DecState,class ExpState>
 struct ExpSample {
