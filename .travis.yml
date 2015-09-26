@@ -11,15 +11,14 @@ addons:
             - ubuntu-toolchain-r-test
         packages:
             - gcc-4.8
-            - g++4.8
             - libboost-test-dev
 
 install:
     - wget http://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz 
     - tar xf cmake-3.3.2-Linux-x86_64.tar.gz
-
 script:
+    - export CC=/usr/bin/gcc-4.8
+    - export CXX=/usr/bin/g++-4.8
     - cmake-3.3.2-Linux-x86_64/bin/cmake .
-    - cmake-3.3.2-Linux-x86_64/bin/cmake --build .
-    - cmake-3.3.2-Linux-x86_64/bin/cmake --build . --target benchmark
     - cmake-3.3.2-Linux-x86_64/bin/cmake --build . --target testit
+    - cmake-3.3.2-Linux-x86_64/bin/cmake --build . --target benchmark

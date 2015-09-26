@@ -90,13 +90,10 @@ public:
         states = vector<State>(state_count);
     };
 
-    RMDP() {
+    RMDP() : RMDP(0) {
         /**
           Constructs an empty RMDP.
          */
-
-        states = vector<State>(0);
-    
     };
 
     // adding transitions
