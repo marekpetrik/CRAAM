@@ -50,6 +50,10 @@ class TestSim {
 
 public:
 
+    typedef TestDState DState;
+    typedef int Action;
+    typedef TestEState EState;
+
     TestDState init_state() const{
         return TestDState(1);
     }
@@ -79,15 +83,21 @@ int test_policy(TestDState){
 BOOST_AUTO_TEST_CASE( basic_simulation ) {
     TestSim sim;
 
-    auto samples = simulate_stateless<TestDState,int,TestEState>(sim, test_policy, 10,5);
+    auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
     BOOST_CHECK_EQUAL(samples->decsamples.size(),50);
     BOOST_CHECK_EQUAL(samples->expsamples.size(),50);
 }
 
 class Counter{
     /**
-     * Decision state: position
-     * Expectation state: position, action
+        A simple simulator class. The state represents a position in a chain 
+        and actions move it up and down.
+        
+        Representation
+        ~~~~~~~~~~~~~~
+        - Decision state: position (int)
+        - Action: change (int)
+        - Expectation state: position, action (int,int)
      */
 
 private:
@@ -97,6 +107,10 @@ private:
     const int initstate;
 
 public:
+
+    typedef int DState;
+    typedef pair<int,int> EState;
+    typedef int Action;
 
     Counter(double success, int initstate, random_device::result_type seed = random_device{}())
         : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {
@@ -141,30 +155,30 @@ public:
 BOOST_AUTO_TEST_CASE( simulation_multiple_counter_sd ) {
     Counter sim(0.9,0,1);
 
-    RandomPolicySD<Counter,int,int> random_pol(sim,1);
-    auto samples = simulate_stateless<int,int>(sim,random_pol,20,20);
+    RandomPolicySD<Counter> random_pol(sim,1);
+    auto samples = simulate_stateless(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
 
-    samples = simulate_stateless<int,int>(sim,random_pol,1,20);
+    samples = simulate_stateless(sim,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
-    samples = simulate_stateless<int,int>(sim2,random_pol,1,20);
+    samples = simulate_stateless(sim2,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
 }
 
 BOOST_AUTO_TEST_CASE( simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
 
-    RandomPolicySI<Counter,int,int> random_pol(sim,1);
-    auto samples = simulate_stateless<int,int>(sim,random_pol,20,20);
+    RandomPolicySI<Counter> random_pol(sim,1);
+    auto samples = simulate_stateless(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
 
-    samples = simulate_stateless<int,int>(sim,random_pol,1,20);
+    samples = simulate_stateless(sim,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
-    samples = simulate_stateless<int,int>(sim2,random_pol,1,20);
+    samples = simulate_stateless(sim2,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
 }
 

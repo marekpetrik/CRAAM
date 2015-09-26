@@ -6,9 +6,9 @@ project (CRAAM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+find_package(OpenMP)
 find_package(Boost COMPONENTS unit_test_framework)
 find_package(Doxygen)
-find_package(OpenMP)
 
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
@@ -25,7 +25,7 @@ endif()
 #TODO: add the appropriate 
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
+option (BUILD_SIMULATION "Build simulation functionality" ON)
 option (BUILD_BENCHMARK "Build benchmaking functionality" ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -51,7 +51,7 @@ endif()
 if (BUILD_SIMULATION)
     set (SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
-    set (CMAKE_CXX_STANDARD 14)
+    #set (CMAKE_CXX_STANDARD 14)
 endif (BUILD_SIMULATION)
 
 # **** RELEASE VERSION OF THE LIBRARY ****

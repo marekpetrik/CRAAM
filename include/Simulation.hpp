@@ -15,72 +15,72 @@ using namespace std;
 using namespace craam;
 namespace msen {
 
-template <class DecState,class ExpState>
-struct ExpSample {
+template <class Sim>
+struct ESample {
     /**
        Represents the transition from an expectation state to a
        a decision state.
      */
-    const ExpState expstate_from;
-    const DecState decstate_to;
+    const typename Sim::EState expstate_from;
+    const typename Sim::DState decstate_to;
     const prec_t reward;
     const prec_t weight;
     const long step;
     const long run;
 
-    ExpSample(const ExpState& expstate_from, const DecState& decstate_to,
+    ESample(const typename Sim::EState& expstate_from, const typename Sim::DState& decstate_to,
               prec_t reward, prec_t weight, long step, long run):
         expstate_from(expstate_from), decstate_to(decstate_to),
         reward(reward), weight(weight), step(step), run(run)
                   {};
 };
 
-template <class DecState,class Action,class ExpState=pair<DecState,Action>>
-struct DecSample {
+template <class Sim>
+struct DSample {
     /**
        Represents the transition from a decision state to an expectation state.
      */
-    const DecState decstate_from;
-    const Action action;
-    const ExpState expstate_to;
+    const typename Sim::DState decstate_from;
+    const typename Sim::Action action;
+    const typename Sim::EState expstate_to;
     const long step;
     const long run;
 
-    DecSample(const DecState& decstate_from, const Action& action,
-              const ExpState& expstate_to, long step, long run):
+    DSample(const typename Sim::DState& decstate_from, const typename Sim::Action& action,
+              const typename Sim::EState& expstate_to, long step, long run):
         decstate_from(decstate_from), action(action),
         expstate_to(expstate_to), step(step), run(run)
         {};
 };
 
-template <class DecState,class Action,class ExpState=pair<DecState,Action>>
+template <class Sim>
 class Samples {
     /**
        General representation of samples.
      */
 
 public:
-    vector<DecSample<DecState,Action,ExpState>> decsamples;
-    vector<DecState> initial;
-    vector<ExpSample<DecState,ExpState>> expsamples;
+    vector<DSample<Sim>> decsamples;
+    vector<typename Sim::DState> initial;
+    vector<ESample<Sim>> expsamples;
 
 public:
 
-    void add_dec(const DecSample<DecState,Action,ExpState>& decsample){
+    void add_dec(const DSample<Sim>& decsample){
         /**
          * Adds a sample starting in a decision state
          */
         this->decsamples.push_back(decsample);
     };
 
-    void add_initial(const DecState& decstate){
+    void add_initial(const typename Sim::DState& decstate){
         /**
            Adds an initial state
          */
          this->initial.push_back(decstate);
     };
 
-    void add_exp(const ExpSample<DecState,ExpState>& expsample){
+    void add_exp(const ESample<Sim>& expsample){
         /**
            Adds a sample starting in an expectation state
          */
@@ -110,11 +110,10 @@ public:
     };
 };
 
-template<class Sim, class DState, class Action>
+template<class Sim>
 class RandomPolicySD {
     /**
-       An object that behaves as a random policy for problems
-       with state-dependent actions.
+        A random policy with state-dependent available actions.
      */
 
 private:
@@ -127,11 +126,11 @@ public:
     RandomPolicySD(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
-    Action operator() (DState dstate){
+    typename Sim::Action operator() (typename Sim::DState dstate){
         /**
            Returns the random action
          */
-        const vector<Action>&& actions = sim.actions(dstate);
+        const vector<typename Sim::Action>&& actions = sim.actions(dstate);
 
         auto actioncount = actions.size();
         uniform_int_distribution<> dst(0,actioncount-1);
@@ -140,7 +139,7 @@ public:
     };
 };
 
-template<class Sim, class DState, class Action>
+template<class Sim>
 class RandomPolicySI {
     /**
        An object that behaves as a random policy for problems
@@ -153,7 +152,7 @@ private:
 
     const Sim& sim;
     default_random_engine gen;
-    const vector<Action> actions;   // list of actions is constant
+    const vector<typename Sim::Action> actions;   // list of actions is constant
 
 public:
 
@@ -161,7 +160,7 @@ public:
         : sim(sim), gen(seed), actions(sim.actions())
     {};
 
-    Action operator() (DState dstate){
+    typename Sim::Action operator() (typename Sim::DState dstate){
         /**
            Returns the random action
          */
@@ -173,12 +172,11 @@ public:
 };
 
 //-----------------------------------------------------------------------------------
-template<class DState,class Action,class EState = pair<DState,Action>,
-class SampleType=Samples<DState,Action,EState>>
-    unique_ptr<SampleType>
-simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
-                   long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
-                   random_device::result_type seed = random_device{}()){
+template<class Sim,class SampleType=Samples<Sim>> unique_ptr<SampleType>
+simulate_stateless( Sim& sim, 
+                    const function<typename Sim::Action(typename Sim::DState&)>& policy,
+                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
+                    random_device::result_type seed = random_device{}()){
     /**
         Runs the simulator and generates samples.
 
@@ -189,14 +187,35 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
         States and actions are passed by value everywhere and therefore it is important that
         they are lightweight objects.
 
-        Signature of static methods required for the simulator
+        An example definition of a simulator should have the following methods:
+        \code
+        /// This class represents a stateless simular, but the non-constant 
+        /// functions may change the state of the random number generator
+        class Simulator{
+        public:
+            /// Type of decision states
+            typedef dec_state_type DState;
+            /// Type of actions
+            typedef action_type Action; 
+            /// Type of expectation states
+            typedef exp_state_type EState;
 
-        DState init_state() const
-        EState transition_dec(DState, Action)        // may change the state of the random number generator
-        pair<double,DState> transition_exp(EState)   // may change the state of the random number generator
-        bool end_condition(DState) const
-        vector<Action> actions(DState)  const // needed for a random policy and value function policy
-        vector<Action> actions const          // an alternative when the actions are not state dependent
+            /// Returns a sample from the initial states.
+            DState init_state();
+            /// Returns an expectation state that follows a decision state and an action
+            EState transition_dec(DState, Action);
+            /// Returns a sample of the reward and a decision state following an expectation state
+            pair<double,DState> transition_exp(EState); 
+            /// Checks whether the decision state is terminal
+            bool end_condition(DState) const;
+
+            /// ** The following functions are not necessary for the simulation
+            /// State dependent action list (use RandomPolicySD)
+            vector<Action> actions(DState)  const;
+            /// State-indpendent action list (use RandomPolicySI)
+            vector<Action> actions const;
+        }
+        \endcode
 
         \param sim Simulator that holds the properties needed by the simulator
         \param policy Policy function
@@ -216,7 +235,7 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
 
     for(auto run=0l; run < runs; run++){
 
-        DState&& decstate = sim.init_state();
+        typename Sim::DState&& decstate = sim.init_state();
         samples->add_initial(decstate);
 
         for(auto step=0l; step < horizon; step++){
@@ -225,18 +244,17 @@ simulate_stateless(auto& sim, const function<Action(DState&)>& policy,
             if(tran_limit > 0 && transitions > tran_limit)
                 break;
 
-            Action&& action = policy(decstate);
-            EState&& expstate = sim.transition_dec(decstate,action);
+            typename Sim::Action&& action = policy(decstate);
+            typename Sim::EState&& expstate = sim.transition_dec(decstate,action);
 
-            samples->add_dec(DecSample<DState,Action,EState>
-                                (decstate, action, expstate, step, run));
+            samples->add_dec(DSample<Sim> (decstate, action, expstate, step, run));
 
             auto&& rewardstate = sim.transition_exp(expstate);
 
             auto reward = rewardstate.first;
             decstate = rewardstate.second;
 
-            samples->add_exp(ExpSample<DState,EState>(expstate, decstate, reward, 1.0, step, run));
+            samples->add_exp(ESample<Sim>(expstate, decstate, reward, 1.0, step, run));
 
             // test the termination probability only after at least one transition
             if(prob_term > 0.0){

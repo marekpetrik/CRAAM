@@ -12,7 +12,7 @@ int main(int argc, char * argv []){
 
     if(argc != 2){
         cout << "Invalid execution parameters. Execute as: " << endl;
-        cout << "raam benchmark_file " << endl;
+        cout << argv[0] << " mdp_file " << endl;
         return -1;
     }
 

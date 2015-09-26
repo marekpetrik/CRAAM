@@ -23,7 +23,15 @@ The included algorithms are *value iteration* and *modified policy iteration*. T
 Installation
 ------------
 
-The main dependence is a compiler that supports the c++14 standard (e.g., gcc 4.9 or later, or clang 3.4 or later). Everything except Simulation.hpp (only required to run simulations) will also compile using c++11 standard (gcc 4.7 or later). A compiler with OpenMP support is needed to run the computation on multiple cores. The tests included with the library need `boost libraries <http://boost.org>`_ version at least 1.21 to run. 
+The library has minimal dependencies and should compile on all major operating systems.
+
+Minimal Requirements
+~~~~~~~~~~~~~~~~~~~~
+
+* `CMake <http://cmake.org/>` 3.1.0
+* C++11 compatible compiler
+
+The main dependence is a compiler that supports the c++14 standard (e.g., gcc 4.9 or later, or clang 3.4 or later). Everything except Simulation.hpp (only required to run simulations) will also compile using C++11 standard (gcc 4.7 or later). A compiler with OpenMP support is needed to run the computation on multiple cores. The tests included with the library need `boost libraries <http://boost.org>`_ version at least 1.21 to run. 
 
 The code has been tested on:
 
@@ -36,7 +44,7 @@ The code has been tested on:
 
 There is a makefile included in the project. 
    
-Build a shared library
+Build a static library
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To build a shared library:
