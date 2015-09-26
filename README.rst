@@ -29,7 +29,11 @@ Minimal Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
 - `CMake <http://cmake.org/>` 3.1.0
-- C++11 compatible compiler, such as gcc 4.7+, clang 3.1+ 
+- C++11 compatible compiler 
+    - Tested with Linux GCC 4.9.2,5.2.0; does not work with GCC 4.7, 4.8. See the note below.
+    - Tested with Linux Clang 3.6.2 (and maybe 3.2+).
+
+**Note**: The library may also compile with GCC 4.6, but the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitly (without calling :cpp:`RMDP::RMDP(long)`) and the simulation component must be disabled in CMakeLists.txt.
 
 Optional Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
@@ -38,11 +42,8 @@ Optional Dependencies
 - `OpenMP <http://openmp.org>`__ to enable parallel computation 
 - `Doxygen <http://doxygen.org>`__  1.8.0+ to generate documentation
 
-**Note**: The library may also compile with GCC 4.6, but requires that ``-std=c++11`` is replaced by ``-std=c++0x`` and the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitly (without calling :cpp:`RMDP::RMDP(long)`). 
-
-   
-Build
-~~~~~
+Build Instructions
+~~~~~~~~~~~~~~~~~~
 
 Build all default supported targets:
 
