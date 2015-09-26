@@ -90,14 +90,14 @@ public:
         states = vector<State>(state_count);
     };
 
-    RMDP() : RMDP(0) {
+    RMDP() {
         /**
           Constructs an empty RMDP.
          */
 
         states = vector<State>(0);
     
-        };
+    };
 
     // adding transitions
     void add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
