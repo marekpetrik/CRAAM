@@ -9,9 +9,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 find_package(Boost COMPONENTS unit_test_framework)
 find_package(Doxygen)
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+if(${Boost_FOUND} LESS 1)
+    message(WARNING "Unit tests require Boost." )
+endif()
+
+# Prints all variables (for testing)
+#get_cmake_property(_variableNames VARIABLES)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+
+#set(CMAKE_VERBOSE_MAKEFILE on) - just run make 
+#TODO: add the appropriate 
 option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
-option (BUILD_TEST "Build tests (requires Boost)" ${BOOST_FOUND})
+option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -33,6 +45,7 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+# whether to build the simulation component of the library
 if (BUILD_SIMULATION)
     set (SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
@@ -48,7 +61,7 @@ add_library (craam_debug ${SRCS} )
 set_target_properties(craam_debug PROPERTIES CMAKE_BUILD_TYPE Debug)
 
 # **** TEST ****
-if (BUILD_TEST)
+if (BUILD_TESTS)
     add_executable (unit_tests_debug ${TSTS} )
     target_link_libraries(unit_tests_debug ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam_debug)
     
@@ -63,7 +76,7 @@ if (BUILD_TEST)
     #enable_testing()
     #add_test(UnitTests bin/unit_tests_debug)
     #add_test(UnitTests bin/unit_tests)
-endif (BUILD_TEST)
+endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
 # builds, downloads and runs a benchmark

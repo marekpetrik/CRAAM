@@ -134,7 +134,7 @@ To compile the file, run:
 
 .. code:: bash
     
-     $ g++ -std=c++11 -I<path_to_RAAM.h> -L . -lraam simple.cpp
+     $ g++ -std=c++11 -I<path_to_RAAM.h> -L . -lcraam simple.cpp
 
 
 Documentation
