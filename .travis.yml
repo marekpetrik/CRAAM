@@ -5,7 +5,9 @@ compiler:
     - gcc
     
 before_script: 
+    - sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
     - sudo apt-get update -qq
+    - sudo apt-get install cmake
     - sudo apt-get install libboost-test-dev
 
 script:
