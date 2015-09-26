@@ -8,12 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(Boost COMPONENTS unit_test_framework)
 find_package(Doxygen)
+find_package(OpenMP)
 
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
 endif()
 
-# Prints all variables (for testing)
+# Prints all variables (for debugging)
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
 #    message(STATUS "${_variableName}=${${_variableName}}")
@@ -22,9 +23,10 @@ endif()
 
 #set(CMAKE_VERBOSE_MAKEFILE on) - just run make 
 #TODO: add the appropriate 
-option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
+option (BUILD_SIMULATION "Build simulation functionality (requires C++14)" ON)
+option (BUILD_BENCHMARK "Build benchmaking functionality" ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -38,8 +40,8 @@ set (SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/src/State.cpp  
          ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp)
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
+set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
-find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -80,6 +82,10 @@ endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
 # builds, downloads and runs a benchmark
+if (BUILD_BENCHMARK)
+    add_executable(benchmark ${BENCH})
+    target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
+endif()
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)
