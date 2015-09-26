@@ -86,7 +86,7 @@ endif (BUILD_TESTS)
 # **** BENCHMARK ****
 # builds, downloads and runs a benchmark
 if (BUILD_BENCHMARK)
-    add_executable(benchmark ${BENCH})
+    add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
     target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
 endif()
 

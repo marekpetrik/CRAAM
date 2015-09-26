@@ -28,39 +28,38 @@ The library has minimal dependencies and should compile on all major operating s
 Minimal Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
-* `CMake <http://cmake.org/>` 3.1.0
-* C++11 compatible compiler
+- `CMake <http://cmake.org/>` 3.1.0
+- C++11 compatible compiler, such as gcc 4.7+, clang 3.1+ 
 
-The main dependence is a compiler that supports the c++14 standard (e.g., gcc 4.9 or later, or clang 3.4 or later). Everything except Simulation.hpp (only required to run simulations) will also compile using C++11 standard (gcc 4.7 or later). A compiler with OpenMP support is needed to run the computation on multiple cores. The tests included with the library need `boost libraries <http://boost.org>`_ version at least 1.21 to run. 
+Optional Dependencies
+~~~~~~~~~~~~~~~~~~~~~
 
-The code has been tested on:
+- `Boost <http://boost.org>`__ to enable unit tests
+- `OpenMP <http://openmp.org>`__ to enable parallel computation 
+- `Doxygen <http://doxygen.org>`__  1.8.0+ to generate documentation
 
-* Linux
-* GCC 5.2.0
-* Boost 1.58.0
-* GNU Make 4.1
+**Note**: The library may also compile with GCC 4.6, but requires that ``-std=c++11`` is replaced by ``-std=c++0x`` and the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitly (without calling :cpp:`RMDP::RMDP(long)`). 
 
-**Note**: The project will also compile with GCC 4.6, but requires that ``-std=c++11`` is replaced by ``-std=c++0x`` and the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitely (without calling :cpp:`RMDP::RMDP(long)`). 
-
-There is a makefile included in the project. 
    
-Build a static library
-~~~~~~~~~~~~~~~~~~~~~~
+Build
+~~~~~
 
-To build a shared library:
-
-.. code:: bash
-
-    $ make release
-
-Build tests
-~~~~~~~~~~~
-
-To run the tests:
+Build all default supported targets:
 
 .. code:: bash
 
-    $ make test
+    $ cmake .
+    $ cmake --build .
+
+Run unit tests
+~~~~~~~~~~~~~~
+
+Note that Boost must be present in order to build the tests in the first place.
+
+.. code:: bash
+
+    $ cmake .
+    $ cmake --build . --target testit
 
 Build a benchmark executable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,14 +71,17 @@ To run a benchmark problem, download and decompress one of the following test fi
 
 These two benchmark problems were generated randomly.
 
-The small benchmark, for example, can be executed as follows:
+The small benchmark example, for example, can be executed as follows:
 
 .. code:: bash
     
+    $ cmake --build . --target benchmark
+    $ mkdir data
+    $ cd data
     $ wget https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip
     $ unzip ss.zip
-    $ make benchmark
-    $ bin/Benchmark/raam smallsize_test.csv
+    $ cd ..
+    $ bin/benchmark data/smallsize_test.csv
     
 Getting Started
 ---------------
