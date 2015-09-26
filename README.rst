@@ -1,5 +1,8 @@
+.. image:: https://travis-ci.org/marekpetrik/CRAAM.svg
+    :target: https://travis-ci.org/marekpetrik/CRAAM
+
 Robust And Approximate Markov decision processes
-===========================================
+===============================================
 
 .. role:: cpp(code)
     :language: c++
