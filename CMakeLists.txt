@@ -33,11 +33,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories ("include")
 
-set (SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp  
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/definitions.cpp  
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/RMDP.cpp  
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/State.cpp  
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp)
+set (SRCS 
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/Action.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/definitions.cpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/definitions.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/RMDP.cpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/RMDP.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/State.cpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/State.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp)
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
@@ -55,7 +61,9 @@ endif()
 
 # whether to build the simulation component of the library
 if (BUILD_SIMULATION)
-    set (SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp)
+    set (SRCS ${SRCS} 
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
 endif (BUILD_SIMULATION)
 
