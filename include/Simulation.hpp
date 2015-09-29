@@ -12,7 +12,7 @@
 
 using namespace std;
 
-using namespace craam;
+namespace craam{
 namespace msen {
 
 template <class Sim>
@@ -270,4 +270,5 @@ simulate_stateless( Sim& sim,
     return samples;
 }
 
-}
+} // end namespace msen
+} // end namespace craam

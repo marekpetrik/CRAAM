@@ -7,7 +7,7 @@
 
 using namespace std;
 using namespace craam;
-using namespace msen;
+using namespace craam::msen;
 
 #define BOOST_TEST_DYN_LINK
 //#define BOOST_TEST_MAIN
