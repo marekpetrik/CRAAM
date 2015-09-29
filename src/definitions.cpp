@@ -18,7 +18,7 @@ A simple and easy to use C++ library to solve Markov decision processes and *rob
 
 The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. The library assumes *maximization* over actions. The states and actions must be finite.
 
-The robust model extends the regular MDPs [Iyengar2005]. The library allows to model uncertainty in *both* the transition and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to [Filar1997].
+The robust model extends the regular MDPs [Iyengar2005]. The library allows to model uncertainty in *both* the transitions and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to [Filar1997].
 
 In summary, the MDP problem being solved is:
 

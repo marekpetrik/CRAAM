@@ -12,7 +12,7 @@ using namespace std;
 namespace craam {
 
 template<NatureConstr nature>
-pair<vector<prec_t>,prec_t> 
+pair<vector<prec_t>,prec_t>
 Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Computes the maximal outcome distribution constraints on the nature's distribution
@@ -50,12 +50,12 @@ template pair<vector<prec_t>,prec_t> Action::maximal_cst<worstcase_l1>(vector<pr
 
 void Action::set_distribution(vector<prec_t> const& distribution, prec_t threshold){
     /**
-     * \brief Sets the base distribution over the outcomes for this particular action. This distribution
-     * is used by some methods to compute a limited worst-case solution.
-     *
-     * \param distribution New distribution of outcomes. Must be either the same dimension as the number
-     * of outcomes, or length 0. If the length is 0, it is assumed to be a uniform distribution over states.
-     * \param threshold Bound on the worst-case distribution on the outcomes.
+       Sets the base distribution over the outcomes for this particular action. This distribution
+       is used by some methods to compute a limited worst-case solution.
+
+       \param distribution New distribution of outcomes. Must be either the same dimension as the number
+       of outcomes, or length 0. If the length is 0, it is assumed to be a uniform distribution over states.
+       \param threshold Bound on the worst-case distribution on the outcomes.
      */
 
     if(distribution.size() == 0){
@@ -82,12 +82,12 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
 
 pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t discount) const {
     /**
-     * \brief Computes the maximal outcome for the value function
-     *
-     * \param valuefunction Value function reference
-     * \param discount Discount factor
-     *
-     * \return The index and value of the maximal outcome
+      Computes the maximal outcome for the value function.
+
+      \param valuefunction Value function reference
+      \param discount Discount factor
+
+      \return The index and value of the maximal outcome
      */
 
     if(outcomes.size() == 0){
@@ -112,12 +112,12 @@ pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t di
 
 pair<long,prec_t> Action::minimal(vector<prec_t> const& valuefunction, prec_t discount) const {
     /**
-     * \brief Computes the minimal outcome for the value function
-     *
-     * \param valuefunction Value function reference
-     * \param discount Discount factor
-     *
-     * \return The index and value of the maximal outcome
+      \brief Computes the minimal outcome for the value function
+
+      \param valuefunction Value function reference
+      \param discount Discount factor
+
+      \return The index and value of the maximal outcome
      */
 
     if(outcomes.size() == 0){
@@ -144,16 +144,17 @@ pair<long,prec_t> Action::minimal(vector<prec_t> const& valuefunction, prec_t di
 }
 
 prec_t Action::average(vector<prec_t> const& valuefunction, prec_t discount, vector<prec_t> const& distribution) const {
-    /** \brief Computes the minimal outcome for the value function
-     *
-     * Uses state weights to compute the average. If there is no distribution set, it assumes
-     * a uniform distribution.
-     *
-     * \param valuefunction Updated value function
-     * \param discount Discount factor
-     * \param distribution Reference distribution for computing the mean
-     *
-     * \return Mean value of the action
+    /**
+        Computes the minimal outcome for the value function.
+
+      Uses state weights to compute the average. If there is no distribution set, it assumes
+      a uniform distribution.
+
+      \param valuefunction Updated value function
+      \param discount Discount factor
+      \param distribution Reference distribution for computing the mean
+
+      \return Mean value of the action
      */
 
 
@@ -213,7 +214,7 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
     outcomes[outcomeid].add_sample(toid, probability, reward);
 }
 
-template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
+template<NatureConstr nature> pair<vector<prec_t>,prec_t>
 Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
        Computes the minimal outcome distribution constraints on the nature's distribution

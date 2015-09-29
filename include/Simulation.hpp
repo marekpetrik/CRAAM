@@ -20,6 +20,9 @@ struct ESample {
     /**
        Represents the transition from an expectation state to a
        a decision state.
+       
+       \tparam Sim Simulator class used to generate the sample. Only the members
+                    defining the types of DState, Action, and EState are necessary.
      */
     const typename Sim::EState expstate_from;
     const typename Sim::DState decstate_to;
@@ -39,6 +42,9 @@ template <class Sim>
 struct DSample {
     /**
        Represents the transition from a decision state to an expectation state.
+
+       \tparam Sim Simulator class used to generate the sample. Only the members
+                    defining the types of DState, Action, and EState are necessary.
      */
     const typename Sim::DState decstate_from;
     const typename Sim::Action action;
@@ -57,6 +63,9 @@ template <class Sim>
 class Samples {
     /**
        General representation of samples.
+
+       \tparam Sim Simulator class used to generate the samples. Only the members
+                    defining the types of DState, Action, and EState are necessary.
      */
 
 public:
@@ -113,7 +122,10 @@ public:
 template<class Sim>
 class RandomPolicySD {
     /**
-        A random policy with state-dependent available actions.
+        A random policy with state-dependent action sets.
+
+       \tparam Sim Simulator class for which the policy is to be constructed.
+                    Must implement an instance method actions(DState).
      */
 
 private:
@@ -143,9 +155,12 @@ template<class Sim>
 class RandomPolicySI {
     /**
        An object that behaves as a random policy for problems
-       with state-dependent actions.
-     *
+       with state-independent action sets.
+       
        The actions are copied internally.
+
+       \tparam Sim Simulator class for which the policy is to be constructed.
+                    Must implement an instance method actions().
      */
 
 private:
@@ -216,6 +231,10 @@ simulate_stateless( Sim& sim,
             vector<Action> actions const;
         }
         \endcode
+
+        \tparam Sim Simulator class used in the simulation. See the main description for the methods
+                    the simulator must provide.
+        \tparam SampleType Class used to hold the samples. 
 
         \param sim Simulator that holds the properties needed by the simulator
         \param policy Policy function
