@@ -87,6 +87,15 @@ The small benchmark example, for example, can be executed as follows:
     $ cd ..
     $ bin/benchmark data/smallsize_test.csv
     
+Development
+~~~~~~~~~~~
+
+CMake can generate project files for a variety of IDE's. For more see:
+
+.. code:: bash
+
+    $ cmake --help
+
 Getting Started
 ---------------
 
