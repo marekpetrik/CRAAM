@@ -25,6 +25,9 @@ enum SolutionType {
     Average = 2
 };
 
+/**
+    Represents a solution to a robust MDP.
+ */
 class Solution {
 public:
     vector<prec_t> valuefunction;
@@ -66,7 +69,6 @@ public:
     };
 };
 
-class RMDP{
 /**
     A robust Markov decision process. Contains methods for constructing and solving RMDPs.
 
@@ -77,6 +79,8 @@ class RMDP{
     - Action with no outcomes: Terminates with an error
     - Outcome with no target states: Terminates with an error
  */
+class RMDP{
+
 public:
     vector<State> states;
 
@@ -130,10 +134,19 @@ public:
     bool is_normalized() const;
     void normalize();
 
-    // value iteration
-    template<SolutionType type>
-    Solution vi_gs_gen(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+    // writing a reading files
+    static unique_ptr<RMDP> transitions_from_csv(istream& input, bool header = true);
+    void transitions_to_csv(ostream& output, bool header = true) const;
+    void transitions_to_csv_file(const string& filename, bool header = true) const;
 
+    // copying
+    unique_ptr<RMDP> copy() const;
+    void copy_into(RMDP& result) const;
+
+    // string representation
+    string to_string() const;
+
+    // value iteration
     Solution vi_gs_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
         /**
            Gauss-Seidel value iteration variant (not parallelized). The outcomes are
@@ -200,10 +213,6 @@ public:
         return vi_gs_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
-    template<SolutionType type, NatureConstr nature>
-    Solution
-    vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-
     Solution vi_gs_l1_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
         /**
            Robust Gauss-Seidel value iteration variant (not parallelized). The natures policy is
@@ -252,9 +261,6 @@ public:
         return vi_gs_cst<SolutionType::Optimistic, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
     };
 
-    template<SolutionType type>
-    Solution vi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-
     Solution vi_jac_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
         /**
            Robust Jacobi value iteration variant. The nature behaves as worst-case.
@@ -294,9 +300,6 @@ public:
          return vi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
     };
 
-    template<SolutionType type,NatureConstr nature>
-    Solution vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-
 
     Solution vi_jac_l1_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
         /**
@@ -332,10 +335,6 @@ public:
 
 
     // modified policy iteration
-    template<SolutionType type>
-    Solution mpi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
-                     unsigned long iterations_vi, prec_t maxresidual_vi) const;
-
     Solution mpi_jac_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi) const{
 
@@ -420,10 +419,6 @@ public:
     };
 
 
-    template<SolutionType type, NatureConstr nature>
-    Solution mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
-                     unsigned long iterations_vi, prec_t maxresidual_vi) const;
-
     Solution mpi_jac_l1_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                      unsigned long iterations_vi, prec_t maxresidual_vi) const{
         /**
@@ -474,16 +469,28 @@ public:
          return mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(valuefunction, discount, iterations_pi, maxresidual_pi, iterations_vi, maxresidual_vi);
     };
 
-    // writing a reading files
-    static unique_ptr<RMDP> transitions_from_csv(istream& input, bool header = true);
-    void transitions_to_csv(ostream& output, bool header = true) const;
-    void transitions_to_csv_file(const string& filename, bool header = true) const;
+protected:
 
-    // copying
-    unique_ptr<RMDP> copy() const;
-    void copy_into(RMDP& result) const;
+    template<SolutionType type>
+    Solution vi_gs_gen(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
-    // string representation
-    string to_string() const;
+    template<SolutionType type, NatureConstr nature>
+    Solution
+    vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+
+    template<SolutionType type, NatureConstr nature>
+    Solution mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const;
+
+    template<SolutionType type,NatureConstr nature>
+    Solution vi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+
+    template<SolutionType type>
+    Solution vi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+
+    template<SolutionType type>
+    Solution mpi_jac_gen(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                     unsigned long iterations_vi, prec_t maxresidual_vi) const;
+
 };
 }

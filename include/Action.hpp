@@ -11,6 +11,7 @@ using namespace std;
 
 namespace craam {
 
+/** An action in an MDP. */
 class Action {
 
 public:

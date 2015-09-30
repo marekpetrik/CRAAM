@@ -15,15 +15,16 @@ using namespace std;
 namespace craam{
 namespace msen {
 
+/**
+   Represents the transition from an expectation state to a
+   a decision state.
+
+   \tparam Sim Simulator class used to generate the sample. Only the members
+                defining the types of DState, Action, and EState are necessary.
+*/
 template <class Sim>
 struct ESample {
-    /**
-       Represents the transition from an expectation state to a
-       a decision state.
-       
-       \tparam Sim Simulator class used to generate the sample. Only the members
-                    defining the types of DState, Action, and EState are necessary.
-     */
+
     const typename Sim::EState expstate_from;
     const typename Sim::DState decstate_to;
     const prec_t reward;
@@ -38,14 +39,15 @@ struct ESample {
                   {};
 };
 
+/**
+   Represents the transition from a decision state to an expectation state.
+
+   \tparam Sim Simulator class used to generate the sample. Only the members
+                defining the types of DState, Action, and EState are necessary.
+ */
 template <class Sim>
 struct DSample {
-    /**
-       Represents the transition from a decision state to an expectation state.
 
-       \tparam Sim Simulator class used to generate the sample. Only the members
-                    defining the types of DState, Action, and EState are necessary.
-     */
     const typename Sim::DState decstate_from;
     const typename Sim::Action action;
     const typename Sim::EState expstate_to;
@@ -59,14 +61,15 @@ struct DSample {
         {};
 };
 
+/**
+   General representation of samples.
+
+   \tparam Sim Simulator class used to generate the samples. Only the members
+                defining the types of DState, Action, and EState are necessary.
+ */
 template <class Sim>
 class Samples {
-    /**
-       General representation of samples.
 
-       \tparam Sim Simulator class used to generate the samples. Only the members
-                    defining the types of DState, Action, and EState are necessary.
-     */
 
 public:
     vector<DSample<Sim>> decsamples;
@@ -119,19 +122,14 @@ public:
     };
 };
 
+/**
+    A random policy with state-dependent action sets.
+
+   \tparam Sim Simulator class for which the policy is to be constructed.
+                Must implement an instance method actions(DState).
+ */
 template<class Sim>
 class RandomPolicySD {
-    /**
-        A random policy with state-dependent action sets.
-
-       \tparam Sim Simulator class for which the policy is to be constructed.
-                    Must implement an instance method actions(DState).
-     */
-
-private:
-
-    const Sim& sim;
-    default_random_engine gen;
 
 public:
 
@@ -149,26 +147,26 @@ public:
 
         return actions[dst(gen)];
     };
-};
 
-template<class Sim>
-class RandomPolicySI {
-    /**
-       An object that behaves as a random policy for problems
-       with state-independent action sets.
-       
-       The actions are copied internally.
-
-       \tparam Sim Simulator class for which the policy is to be constructed.
-                    Must implement an instance method actions().
-     */
 
 private:
 
     const Sim& sim;
     default_random_engine gen;
-    const vector<typename Sim::Action> actions;   // list of actions is constant
 
+};
+
+/**
+   An object that behaves as a random policy for problems
+   with state-independent action sets.
+
+   The actions are copied internally.
+
+   \tparam Sim Simulator class for which the policy is to be constructed.
+                Must implement an instance method actions().
+ */
+template<class Sim>
+class RandomPolicySI {
 public:
 
     RandomPolicySI(const Sim& sim, random_device::result_type seed = random_device{}())
@@ -184,11 +182,17 @@ public:
 
         return actions[dst(gen)];
     };
+
+private:
+
+    const Sim& sim;
+    default_random_engine gen;
+    const vector<typename Sim::Action> actions;   // list of actions is constant
 };
 
 //-----------------------------------------------------------------------------------
 template<class Sim,class SampleType=Samples<Sim>> unique_ptr<SampleType>
-simulate_stateless( Sim& sim, 
+simulate_stateless( Sim& sim,
                     const function<typename Sim::Action(typename Sim::DState&)>& policy,
                     long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
                     random_device::result_type seed = random_device{}()){
@@ -204,14 +208,14 @@ simulate_stateless( Sim& sim,
 
         An example definition of a simulator should have the following methods:
         \code
-        /// This class represents a stateless simular, but the non-constant 
+        /// This class represents a stateless simular, but the non-constant
         /// functions may change the state of the random number generator
         class Simulator{
         public:
             /// Type of decision states
             typedef dec_state_type DState;
             /// Type of actions
-            typedef action_type Action; 
+            typedef action_type Action;
             /// Type of expectation states
             typedef exp_state_type EState;
 
@@ -220,7 +224,7 @@ simulate_stateless( Sim& sim,
             /// Returns an expectation state that follows a decision state and an action
             EState transition_dec(DState, Action);
             /// Returns a sample of the reward and a decision state following an expectation state
-            pair<double,DState> transition_exp(EState); 
+            pair<double,DState> transition_exp(EState);
             /// Checks whether the decision state is terminal
             bool end_condition(DState) const;
 
@@ -234,7 +238,7 @@ simulate_stateless( Sim& sim,
 
         \tparam Sim Simulator class used in the simulation. See the main description for the methods
                     the simulator must provide.
-        \tparam SampleType Class used to hold the samples. 
+        \tparam SampleType Class used to hold the samples.
 
         \param sim Simulator that holds the properties needed by the simulator
         \param policy Policy function

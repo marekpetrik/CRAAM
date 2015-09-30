@@ -10,7 +10,6 @@ namespace craam {
 
 const prec_t tolerance = 1e-5;
 
-class Transition {
 /**
   Represents sparse transition probabilities and rewards from a single state.
 
@@ -18,8 +17,8 @@ class Transition {
   aggregate multiple transition probabilities and should also make value iteration
   more cache friendly. However, transitions need to be added with increasing IDs to
   prevent excessive performance degradation.
- *
  */
+class Transition {
 
 public:
     vector<long> indices;

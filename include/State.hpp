@@ -11,6 +11,7 @@ using namespace std;
 
 namespace craam {
 
+/** A state in an MDP */
 class State {
 public:
     vector<Action> actions;
