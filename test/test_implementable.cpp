@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
     Transition initial(vector<long>{0,1},vector<prec_t>{0.5,0.5},vector<prec_t>{0,0});
 
     mdp->add_transition_d(0,0,1,1.0,1.0);
-    mdp->add_transition_d(1,0,0,1.0,1.0);
+    mdp->add_transition_d(1,0,0,1.0,2.0);
 
     MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
 
@@ -45,5 +45,11 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
     BOOST_CHECK_EQUAL(rmdp.action_count(0), 1);
     BOOST_CHECK_EQUAL(rmdp.outcome_count(0,0), 2);
 
+    vector<prec_t> iv(rmdp.state_count(),0.0);
 
+    Solution&& so = rmdp.mpi_jac_opt(iv,0.9,100,0.0,10,0.0);
+    BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
+
+    Solution&& sr = rmdp.mpi_jac_rob(iv,0.9,100,0.0,10,0.0);
+    BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }

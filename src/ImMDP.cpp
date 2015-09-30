@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <memory>
 
+#include <iostream>
+
 using namespace std;
 
 namespace craam{
