@@ -5,6 +5,7 @@
 #include "Action.hpp"
 #include "State.hpp"
 #include "RMDP.hpp"
+#include "definitions.hpp"
 
 using namespace std;
 using namespace craam;

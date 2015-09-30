@@ -43,7 +43,9 @@ public:
     const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
-    }
+    };
+
+
 
 protected:
 
@@ -51,9 +53,6 @@ protected:
     vector<long> state2outcome;
 
     void initialize_robustmdp();
-
-
-
 };
 
 }}
