@@ -68,12 +68,14 @@ public:
 
 class RMDP{
 /**
-  Some general assumptions:
+    A robust Markov decision process. Contains methods for constructing and solving RMDPs.
 
-     * 0-probability transitions may be omitted
-     * state with no actions: a terminal state with value 0
-     * action with no outcomes: terminates with an error
-     * outcome with no target states: terminates with an error
+    Some general assumptions:
+    - Transition probabilities must be non-negative but do not need to add up to a specific value
+    - Transitions with 0 probabilities may be omitted, except there must be at least one target state in each transition
+    - State with no actions: A terminal state with value 0
+    - Action with no outcomes: Terminates with an error
+    - Outcome with no target states: Terminates with an error
  */
 public:
     vector<State> states;
@@ -198,7 +200,7 @@ public:
     };
 
     template<SolutionType type, NatureConstr nature>
-    Solution 
+    Solution
     vi_gs_cst(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
     Solution vi_gs_l1_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{

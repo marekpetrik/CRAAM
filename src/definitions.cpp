@@ -14,7 +14,7 @@ namespace craam {
 Introduction
 ------------
 
-A simple and easy to use C++ library to solve Markov decision processes and *robust* Markov decision processes. 
+A simple and easy to use C++ library to solve Markov decision processes and *robust* Markov decision processes.
 
 The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. The library assumes *maximization* over actions. The states and actions must be finite.
 
@@ -24,7 +24,7 @@ In summary, the MDP problem being solved is:
 
 \f[v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s\in\mathcal{S}} ( r(s,a,o,s') + \gamma P(s,a,o,s') v(s') ) ~.\f]
 
-Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes. 
+Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes.
 
 The included algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution (see methods of RMDP that end with _l1).
 
@@ -36,9 +36,9 @@ See the github/bitbucket README file
 Getting Started
 ---------------
 
-The main interface to the library is through the class RMDP. The class supports simple construction of an MDP and several methods for solving them. 
+The main interface to the library is through the class RMDP. The class supports simple construction of an MDP and several methods for solving them.
 
-States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair. 
+States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
 
 Transitions are added through functions RMDP::add_transition and RMDP::add_transition_d. The object is automatically resized according to the new transitions added. The actual algorithms are solved using:
 
@@ -51,15 +51,15 @@ Transitions are added through functions RMDP::add_transition and RMDP::add_trans
 
 The star in the above can be one of {rob, opt, ave} which represents the actions of nature. The values represent respective the worst case (robust), the best case (optimistic), and average.
 
-The following is a simple example of formulating and solving a small MDP. 
+The following is a simple example of formulating and solving a small MDP.
 
 \code
     #include <iostream>
     #include <vector>
     #include "RMDP.h"
-    
+
     use namespace craam;
-    
+
     int main(){
         RMDP rmdp(3);
 
@@ -72,21 +72,21 @@ The following is a simple example of formulating and solving a small MDP.
         rmdp.add_transition_d(0,1,1,1,0);
         rmdp.add_transition_d(1,1,2,1,0);
         rmdp.add_transition_d(2,1,2,1,1.1);
-    
+
         // prec_t is the numeric precision type used throughout the library (double)
         vector<prec_t> initial{0,0,0};
-    
+
         // solve using Jacobi value iteration
         auto&& re = rmdp.vi_jac_rob(initial,0.9,20,0);
-    
+
         for(auto v : re.valuefunction){
             cout << v << " ";
         }
-        
+
         return 0;
     }
 
-\endcode    
+\endcode
 
 To compile the file, run:
 
@@ -97,7 +97,7 @@ To compile the file, run:
 General Assumptions
 -------------------
 
-- Transition probabilities must be non-negative but do not need to add up to one 
+- Transition probabilities must be non-negative but do not need to add up to one
 - Transitions with 0 probabilities may be omitted, except there must be at least one target state in each transition
 - **State with no actions**: A terminal state with value 0
 - **Action with no outcomes**: Terminates with an error
@@ -116,7 +116,7 @@ References
 
 
 template <typename T> vector<size_t> sort_indexes(vector<T> const& v) {
-    /** \brief Sort values by indices in ascending order
+    /** \brief Sort indices by values in ascending order
      *
      * \param v List of values
      * \return Sorted indices
@@ -134,7 +134,7 @@ template <typename T> vector<size_t> sort_indexes(vector<T> const& v) {
 
 template <typename T> vector<size_t> sort_indexes_desc(vector<T> const& v)
 {
-    /** \brief Sort values by indices in descending order
+    /** \brief Sort indices by values in descending order
      *
      * \param v List of values
      * \return Sorted indices
