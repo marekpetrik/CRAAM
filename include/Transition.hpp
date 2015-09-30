@@ -12,12 +12,12 @@ const prec_t tolerance = 1e-5;
 
 class Transition {
 /**
- * \brief Represents sparse transition probabilities and rewards from a single state.
- *
- * The destination indexes are sorted increasingly. This makes it simpler to
- * aggregate multiple transition probabilities and should also make value iteration
- * more cache friendly. However, transitions need to be added with increasing IDs to
- * prevent excessive performance degradation.
+  Represents sparse transition probabilities and rewards from a single state.
+
+  The destination indexes are sorted increasingly (as added). This makes it simpler to
+  aggregate multiple transition probabilities and should also make value iteration
+  more cache friendly. However, transitions need to be added with increasing IDs to
+  prevent excessive performance degradation.
  *
  */
 
@@ -37,6 +37,11 @@ public:
     bool is_normalized() const;
 
     prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount) const;
+
+    long max_index() const{
+        /** Returns the maximal indices involved in the transition.  */
+        return indices.back();
+    }
 };
 
 }

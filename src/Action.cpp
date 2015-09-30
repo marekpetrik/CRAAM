@@ -53,8 +53,9 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
        Sets the base distribution over the outcomes for this particular action. This distribution
        is used by some methods to compute a limited worst-case solution.
 
-       \param distribution New distribution of outcomes. Must be either the same dimension as the number
-       of outcomes, or length 0. If the length is 0, it is assumed to be a uniform distribution over states.
+       \param distribution New distribution of outcomes. Must be either the same
+                            dimension as the number of outcomes, or length 0. If the length
+                            is 0, it is assumed to be a uniform distribution over states.
        \param threshold Bound on the worst-case distribution on the outcomes.
      */
 
@@ -82,12 +83,12 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
 
 pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t discount) const {
     /**
-      Computes the maximal outcome for the value function.
+        Computes the maximal outcome for the value function.
 
-      \param valuefunction Value function reference
-      \param discount Discount factor
+        \param valuefunction Value function reference
+        \param discount Discount factor
 
-      \return The index and value of the maximal outcome
+        \return The index and value of the maximal outcome
      */
 
     if(outcomes.size() == 0){
@@ -112,12 +113,12 @@ pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t di
 
 pair<long,prec_t> Action::minimal(vector<prec_t> const& valuefunction, prec_t discount) const {
     /**
-      \brief Computes the minimal outcome for the value function
+        Computes the minimal outcome for the value function
 
-      \param valuefunction Value function reference
-      \param discount Discount factor
+        \param valuefunction Value function reference
+        \param discount Discount factor
 
-      \return The index and value of the maximal outcome
+        \return The index and value of the maximal outcome
      */
 
     if(outcomes.size() == 0){
@@ -147,14 +148,14 @@ prec_t Action::average(vector<prec_t> const& valuefunction, prec_t discount, vec
     /**
         Computes the minimal outcome for the value function.
 
-      Uses state weights to compute the average. If there is no distribution set, it assumes
-      a uniform distribution.
+        Uses state weights to compute the average. If there is no distribution set, it assumes
+        a uniform distribution.
 
-      \param valuefunction Updated value function
-      \param discount Discount factor
-      \param distribution Reference distribution for computing the mean
+        \param valuefunction Updated value function
+        \param discount Discount factor
+        \param distribution Reference distribution for computing the mean
 
-      \return Mean value of the action
+        \return Mean value of the action
      */
 
 
@@ -188,26 +189,43 @@ prec_t Action::average(vector<prec_t> const& valuefunction, prec_t discount, vec
 
 prec_t Action::fixed(vector<prec_t> const& valuefunction, prec_t discount, int index) const{
     /**
-     * \brief Computes the action value for a fixed index outcome
-     *
-     * \param valuefunction Updated value function
-     * \param discount Discount factor
-     * \param index Index of the outcome that is used
-     *
-     * \return Value of the action
+        Computes the action value for a fixed index outcome.
+
+        \param valuefunction Updated value function
+        \param discount Discount factor
+        \param index Index of the outcome that is used
+
+        \return Value of the action
      */
     if(index < 0 || index >= (long) outcomes.size()){
-        throw range_error("index is outside of the array");
+        throw range_error("Index is outside of the array");
     }
 
     const auto& outcome = outcomes[index];
     return outcome.compute_value(valuefunction, discount);
 }
 
+Transition& Action::get_transition(long outcomeid){
+    /**
+        Returns a transition for the outcome to the action. If the transition does
+        not exist then it is created.
+     */
+    if(outcomeid < 0)
+        throw invalid_argument("Outcomeid must be non-negative.");
+    if(outcomeid >= (long) outcomes.size())
+        outcomes.resize(outcomeid + 1);
+
+    return outcomes[outcomeid];
+}
+
 void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
-    if(outcomeid < 0){
-        throw new invalid_argument("incorrect outcomeid");
-    }
+    /**
+        Adds and outcome to the action. If the outcome does not exist, it is
+        created.
+     */
+    if(outcomeid < 0)
+        throw invalid_argument("Outcomeid must be non-negative.");
+
     if(outcomeid >= (long) outcomes.size()){
         outcomes.resize(outcomeid + 1);
     }

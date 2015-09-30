@@ -35,7 +35,7 @@ public:
     prec_t fixed(vector<prec_t> const& valuefunction, prec_t discount, int index) const;
 
     // **** weighted constrained
-    template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
+    template<NatureConstr nature> pair<vector<prec_t>,prec_t>
     maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     pair<vector<prec_t>,prec_t> maximal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
@@ -53,7 +53,7 @@ public:
     };
 
 
-    template<NatureConstr nature> pair<vector<prec_t>,prec_t> 
+    template<NatureConstr nature> pair<vector<prec_t>,prec_t>
     minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     pair<vector<prec_t>,prec_t> minimal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
@@ -70,6 +70,7 @@ public:
     }
 
     void add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward);
+    Transition& get_transition(long outcomeid);
 
     void set_distribution(vector<prec_t> const& distribution, prec_t threshold);
 

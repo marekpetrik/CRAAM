@@ -23,10 +23,10 @@ public:
     tuple<long,long,prec_t> max_max(vector<prec_t> const& valuefunction, prec_t discount) const;
     tuple<long,long,prec_t> max_min(vector<prec_t> const& valuefunction, prec_t discount) const;
 
-    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t> 
+    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t>
     max_max_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
-    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t> 
+    template<NatureConstr nature> tuple<long,vector<prec_t>,prec_t>
     max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
 
     tuple<long,vector<prec_t>,prec_t> max_max_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
@@ -44,6 +44,7 @@ public:
     prec_t fixed_fixed(vector<prec_t> const& valuefunction, prec_t discount, long actionid, long outcomeid) const;
 
     void add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+    Transition& get_transition(long actionid, long outcomeid);
 
     void set_thresholds(prec_t threshold);
 };

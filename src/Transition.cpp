@@ -11,12 +11,12 @@
 namespace craam {
 
 Transition::Transition(vector<long> const indices, vector<prec_t> probabilities, vector<prec_t> rewards){
-    /** \brief Creates a single transition
-     *
-     * \param indexes The indexes of states to transition to
-     * \param probabilities The probabilities of transitions
-     * \param rewards The associated rewards
-     * \return
+    /** Creates a single transition
+
+      \param indexes The indexes of states to transition to
+      \param probabilities The probabilities of transitions
+      \param rewards The associated rewards
+
      */
 
     this->indices = indices;
@@ -26,20 +26,20 @@ Transition::Transition(vector<long> const indices, vector<prec_t> probabilities,
 
 void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
     /**
-     * \brief Adds a single transitions probability to the existing probabilities.
-     *
-     * If the transition to the desired state already exists, then the transition
-     * probability is added and the reward is updated as a weighted combination.
-     *
-     * Transition probabilities are not checked to sum to one.
-     *
-     * \param stateid ID of the target state
-     * \param probability Probability of transitioning to this state
-     * \param reward The reward associated with the transition
+      Adds a single transitions probability to the existing probabilities.
+
+      If the transition to the desired state already exists, then the transition
+      probability is added and the reward is updated as a weighted combination.
+
+      Transition probabilities are not checked to sum to one.
+
+      \param stateid ID of the target state
+      \param probability Probability of transitioning to this state
+      \param reward The reward associated with the transition
      */
 
     if(probability < -0.001) throw invalid_argument("probabilities must be non-negative.");
-    if(stateid < 0) throw invalid_argument("invalid stateid");
+    if(stateid < 0) throw invalid_argument("State id must be non-negative.");
 
 
     // test for the last index; the index is not in the transition yet and belong to the end
@@ -89,32 +89,32 @@ bool Transition::is_normalized() const{
 }
 
 void Transition::normalize(){
-
     prec_t sp = sum_probabilities();
 
     if(sp != 0.0){
-        for (auto& p : probabilities){
+        for (auto& p : probabilities)
             p /= sp;
-        }
     }
 }
 
 prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
-     * \brief Computes value for the transition and a value function.
-     *
-     * When there are no target states, the function terminates with an error.
+      Computes value for the transition and a value function.
+
+      When there are no target states, the function terminates with an error.
      */
 
-    auto count = indices.size();
+    auto scount = indices.size();
 
-    if(count == 0){
-        throw range_error("no transitions defined");
-    }
+    //TODO: check how much complexity these statements are adding
+    if(scount == 0)
+        throw range_error("No transitions defined.");
+    if(max_index() > (long) valuefunction.size())
+        throw range_error("Transition to a state outside of the bounds of the value function.")
 
     prec_t value = (prec_t) 0.0;
 
-    for(size_t c = 0; c < count; c++){
+    for(size_t c = 0; c < scount; c++){
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
     }
     return value;

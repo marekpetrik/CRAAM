@@ -110,11 +110,12 @@ prec_t RMDP::get_toid(long stateid, long actionid, long outcomeid, long sampleid
 
 prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long sampleid) const {
     /**
-       Returns the probability for the given sample id.
-       \param fromid Starting state ID
-       \param actionid Action ID
-       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-       \param sampleid Sample (a single state transition) ID
+        Returns the probability for the given sample id.
+
+        \param fromid Starting state
+        \param actionid Action
+        \param outcomeid Outcome (A single outcome corresponds to a regular MDP)
+        \param sampleid Sample (a single state transition) ID
      */
     const Transition& tran = this->get_transition(stateid,actionid,outcomeid);
 
@@ -124,10 +125,25 @@ prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long s
     return tran.probabilities[sampleid];
 }
 
+Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
+    /**
+       Return a transition for state, action, and outcome. It is created if
+       necessary.
+     */
+
+    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
+
+    if(newid >= (long) this->states.size()){
+        (this->states).resize(fromid+1);
+    }
+
+    return this->states[fromid].get_transition(actionid, outcomeid);
+}
+
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
        Adds a transition probability
-     *
+
        \param fromid Starting state ID
        \param actionid Action ID
        \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
@@ -136,11 +152,9 @@ void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid,
        \param reward The reward associated with the transition.
      */
 
-    if(fromid < 0l) throw invalid_argument("incorrect fromid");
-    if(toid < 0l)   throw invalid_argument("incorrect toid");
+    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
 
     auto newid = max(fromid,toid);
-
     if(newid >= (long) this->states.size()){
         // re-sizing to accommodate the new state
         (this->states).resize(newid+1);

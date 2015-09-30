@@ -130,6 +130,19 @@ prec_t State::fixed_fixed(vector<prec_t> const& valuefunction, prec_t discount, 
     return actions[actionid].fixed(valuefunction, discount, outcomeid);
 }
 
+Transition& State::get_transition(long actionid, long outcomeid){
+    /**
+        Returns the transition; new actions and outcomes are created as necessary.
+     */
+    if(actionid < 0){
+        throw invalid_argument("invalid action id");
+    }
+    if(actionid >= (long) actions.size()){
+        actions.resize(actionid+1);
+    }
+    return this->actions[actionid].get_transition(outcomeid);
+}
+
 void State::add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
        Adds and action (and a whole transition) to the state
@@ -192,9 +205,9 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
     return make_tuple(actionresult,outcomeresult,maxvalue);
 }
 
-template tuple<long,vector<prec_t>,prec_t> 
+template tuple<long,vector<prec_t>,prec_t>
 State::max_max_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
-    
+
 template<NatureConstr nature>
 tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     /**
@@ -235,7 +248,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& value
 
 }
 
-template tuple<long,vector<prec_t>,prec_t> 
+template tuple<long,vector<prec_t>,prec_t>
 State::max_min_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
 
 }

@@ -27,18 +27,7 @@ public:
 
     IMDP(const shared_ptr<const RMDP>& mdp, const vector<long>& observations,
             const Transition& initial) :
-        mdp(mdp), observations(observations), initial(initial)
-    {
-        /**
-            \param mdp A non-robust base MDP model
-            \param observations Maps each state to the index of the corresponding observation.
-                            A valid policy will take the same action in all states
-                            with a single observation. The index is 0-based.
-            \param initial A representation of the initial distribution. The rewards
-                            in this transition are ignored (and should be 0).
-        */
-
-    };
+        mdp(mdp), observations(observations), initial(initial);
 
     unique_ptr<RMDP> to_robust();
 
