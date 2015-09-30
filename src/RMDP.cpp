@@ -262,10 +262,9 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
 }
 
 
-
 unique_ptr<RMDP> RMDP::transitions_from_csv(istream& input, bool header){
     /**
-       Loads an RMDP definition from a simple csv file
+       Loads an RMDP definition from a simple csv file.
 
        States, actions, and outcomes are identified by 0-based ids.
 
