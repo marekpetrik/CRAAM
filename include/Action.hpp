@@ -70,7 +70,10 @@ public:
     }
 
     void add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward);
+
     Transition& get_transition(long outcomeid);
+    const Transition& get_transition(long outcomeid) const;
+
 
     void set_distribution(vector<prec_t> const& distribution, prec_t threshold);
 
@@ -80,3 +83,4 @@ public:
 };
 
 }
+

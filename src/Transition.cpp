@@ -110,7 +110,7 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
     if(scount == 0)
         throw range_error("No transitions defined.");
     if(max_index() > (long) valuefunction.size())
-        throw range_error("Transition to a state outside of the bounds of the value function.")
+        throw range_error("Transition to a state outside of the bounds of the value function.");
 
     prec_t value = (prec_t) 0.0;
 

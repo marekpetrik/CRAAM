@@ -26,8 +26,7 @@ public:
 
 
     IMDP(const shared_ptr<const RMDP>& mdp, const vector<long>& observations,
-            const Transition& initial) :
-        mdp(mdp), observations(observations), initial(initial);
+            const Transition& initial);
 
     unique_ptr<RMDP> to_robust();
 

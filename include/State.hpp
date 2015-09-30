@@ -44,10 +44,14 @@ public:
     prec_t fixed_fixed(vector<prec_t> const& valuefunction, prec_t discount, long actionid, long outcomeid) const;
 
     void add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+
     Transition& get_transition(long actionid, long outcomeid);
+    const Transition& get_transition(long actionid, long outcomeid) const;
 
     void set_thresholds(prec_t threshold);
 };
 
+
 }
+
 

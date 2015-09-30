@@ -38,6 +38,10 @@ public:
 
     prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount) const;
 
+    size_t size() const{
+        return indices.size();
+    }
+
     long max_index() const{
         /** Returns the maximal indices involved in the transition.  */
         return indices.back();

@@ -218,6 +218,17 @@ Transition& Action::get_transition(long outcomeid){
     return outcomes[outcomeid];
 }
 
+const Transition& Action::get_transition(long outcomeid) const{
+    /**
+       Returns the transition. The transition must exist.
+     */
+    if(outcomeid < 0l || outcomeid >= (long) outcomes.size()){
+        throw invalid_argument("invalid outcome number");
+    }
+
+    return outcomes[outcomeid];
+}
+
 void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
         Adds and outcome to the action. If the outcome does not exist, it is

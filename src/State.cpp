@@ -140,7 +140,17 @@ Transition& State::get_transition(long actionid, long outcomeid){
     if(actionid >= (long) actions.size()){
         actions.resize(actionid+1);
     }
-    return this->actions[actionid].get_transition(outcomeid);
+    return actions[actionid].get_transition(outcomeid);
+}
+
+const Transition& State::get_transition(long actionid, long outcomeid) const{
+    /**
+       Returns the transition. The transition must exist.
+     */
+    if(actionid < 0l || actionid >= (long) actions.size()){
+        throw invalid_argument("invalid action number");
+    }
+    return actions[actionid].get_transition(outcomeid);
 }
 
 void State::add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){

@@ -125,20 +125,7 @@ prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long s
     return tran.probabilities[sampleid];
 }
 
-Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
-    /**
-       Return a transition for state, action, and outcome. It is created if
-       necessary.
-     */
 
-    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
-
-    if(newid >= (long) this->states.size()){
-        (this->states).resize(fromid+1);
-    }
-
-    return this->states[fromid].get_transition(actionid, outcomeid);
-}
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
@@ -241,38 +228,29 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
     }
 }
 
-Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid){
+Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
     /**
-       Returns transition states, probabilities, and rewards
+       Return a transition for state, action, and outcome. It is created if
+       necessary.
      */
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
-    }
-    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    if(outcomeid < 0l || outcomeid >= (long) this->states[stateid].actions[actionid].outcomes.size()){
-        throw invalid_argument("invalid outcome number");
+
+    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
+
+    if(fromid >= (long) this->states.size()){
+        (this->states).resize(fromid+1);
     }
 
-    return (this->states[stateid].actions[actionid].outcomes[outcomeid]);
+    return this->states[fromid].get_transition(actionid, outcomeid);
 }
 
 const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{
     /**
-       Returns transition states, probabilities, and rewards
+       Returns the transition. The transition must exist.
      */
     if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
+        throw invalid_argument("Invalid state number");
     }
-    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    if(outcomeid < 0l || outcomeid >= (long) this->states[stateid].actions[actionid].outcomes.size()){
-        throw invalid_argument("invalid outcome number");
-    }
-
-    return (this->states[stateid].actions[actionid].outcomes[outcomeid]);
+    return states[stateid].get_transition(actionid,outcomeid);
 }
 
 

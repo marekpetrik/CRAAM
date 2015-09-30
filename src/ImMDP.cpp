@@ -10,9 +10,8 @@ namespace craam{
 namespace impl{
 
 
-IMDP::IMDP(const shared_ptr<const RMDP>& mdp, const vector<long>& observations,
-            const Transition& initial){
-
+IMDP::IMDP(const shared_ptr<const RMDP>& mdp, const vector<long>& observations, const Transition& initial)
+            : mdp(mdp), observations(observations), initial(initial){
     /**
         Constructs the MDP with implementability constraints.
 
@@ -26,7 +25,7 @@ IMDP::IMDP(const shared_ptr<const RMDP>& mdp, const vector<long>& observations,
 
     // *** check consistency of provided parameters ***
     // check that the number of observations coefficients it correct
-    if(mdp->state_count() != observations.size())
+    if(mdp->state_count() != (long) observations.size())
         throw invalid_argument("Number of observation indexes must match the number of states.");
     // check that the observation indices are not negative
     if(*min_element(observations.begin(), observations.end()) < 0)
@@ -56,11 +55,11 @@ unique_ptr<RMDP> IMDP::to_robust(){
     // keep track of the number of outcomes for each
     vector<long> outcome_count(obs_count, 0);
     // keep track of which outcome a state is mapped to
-    vector<long> outcome_id(mdp->state_count, -1);
+    vector<long> outcome_id(mdp->state_count(), -1);
     // keep track of actions - needs to make sure that they are all the same
     vector<long> action_counts(obs_count, -1);  // -1 means not initialized
 
-    for(size_t state_index=0; state_index < mdp->state_count(); state_index++){
+    for(size_t state_index=0; (long) state_index < mdp->state_count(); state_index++){
         auto obs = observations[state_index];
 
         // check the number of actions
