@@ -26,6 +26,10 @@ public:
 
     MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state, const Transition& initial);
 
+    MDPI(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial);
+    
+protected:
+    static void check_parameters(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial);
 };
 
 
@@ -37,17 +41,19 @@ class MDPI_R : public MDPI{
 
 public:
 
+
     MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state,
             const Transition& initial);
+
+    MDPI_R(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial);
 
     const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
 
-
-
 protected:
+
 
     RMDP robust_mdp;    // TODO: this would ideally be a constant
     vector<long> state2outcome;

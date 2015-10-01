@@ -12,10 +12,33 @@ namespace craam{
 namespace impl{
 
 
+void MDPI::check_parameters(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial){
+    /**
+         Checks whether the parameters are correct. Throws an exception if the parmaters
+         are wrong.
+     */
+
+    // *** check consistency of provided parameters ***
+    // check that the number of observ2state coefficients it correct
+    if(mdp.state_count() != (long) observ2state.size())
+        throw invalid_argument("Number of observation indexes must match the number of states.");
+    // check that the observation indices are not negative
+    if(*min_element(observ2state.begin(), observ2state.end()) < 0)
+        throw invalid_argument("Observation indices must be non-negative");
+    // check then initial transition
+    if(initial.max_index() >= mdp.state_count())
+        throw invalid_argument("An initial transition to a non-existent state.");
+    if(!initial.is_normalized())
+        throw invalid_argument("The initial transition must be normalized.");
+
+}
+
+
 MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state, const Transition& initial)
             : mdp(mdp), observ2state(observ2state), initial(initial){
     /**
-        Constructs the MDP with implementability constraints.
+        Constructs the MDP with implementability constraints. This constructor makes it 
+        possible to share the MDP with other data structures.
 
         \param mdp A non-robust base MDP model. It cannot be shared to prevent
                     direct modification.
@@ -26,26 +49,48 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state, 
                         in this transition are ignored (and should be 0).
     */
 
-    // *** check consistency of provided parameters ***
-    // check that the number of observ2state coefficients it correct
-    if(mdp->state_count() != (long) observ2state.size())
-        throw invalid_argument("Number of observation indexes must match the number of states.");
-    // check that the observation indices are not negative
-    if(*min_element(observ2state.begin(), observ2state.end()) < 0)
-        throw invalid_argument("Observation indices must be non-negative");
-    // check then initial transition
-    if(initial.max_index() >= mdp->state_count())
-        throw invalid_argument("An initial transition to a non-existent state.");
-    if(!initial.is_normalized())
-        throw invalid_argument("The initial transition must be normalized.");
+    check_parameters(*mdp, observ2state, initial);
+}
 
+MDPI::MDPI(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial)
+            : mdp(new RMDP(mdp)), 
+            observ2state(observ2state), initial(initial){
+    /**
+        Constructs the MDP with implementability constraints. The MDP model is
+        copied (using the copy constructor) and stored internally.
+
+        \param mdp A non-robust base MDP model. It cannot be shared to prevent
+                    direct modification.
+        \param observ2state Maps each state to the index of the corresponding observation.
+                        A valid policy will take the same action in all states
+                        with a single observation. The index is 0-based.
+        \param initial A representation of the initial distribution. The rewards
+                        in this transition are ignored (and should be 0).
+    */
+
+    check_parameters(mdp, observ2state, initial);
 }
 
 MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state,
             const Transition& initial) : MDPI(mdp, observ2state, initial){
+    /**
+        Calls the base constructor and also constructs the corresponding
+        robust MDP
+     */
 
     initialize_robustmdp();
 }
+
+MDPI_R::MDPI_R(const RMDP& mdp, const vector<long>& observ2state,
+            const Transition& initial) : MDPI(mdp, observ2state, initial){
+    /**
+        Calls the base constructor and also constructs the corresponding
+        robust MDP
+     */
+
+    initialize_robustmdp();
+}
+
 
 void MDPI_R::initialize_robustmdp(){
     /**

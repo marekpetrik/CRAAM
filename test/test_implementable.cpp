@@ -35,8 +35,17 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
 
     mdp->add_transition_d(0,0,1,1.0,1.0);
     mdp->add_transition_d(1,0,0,1.0,1.0);
+    BOOST_CHECK_EQUAL(mdp->state_count(), 2);
 
     MDPI im(const_pointer_cast<const RMDP>(mdp), observations, initial);
+
+    MDPI im2(*mdp,observations,initial);
+
+    // check that we really have a copy
+    mdp->add_transition_d(1,0,2,1.0,1.0);
+    BOOST_CHECK_EQUAL(mdp->state_count(), 3);
+    BOOST_CHECK_EQUAL(im.mdp->state_count(), 3);
+    BOOST_CHECK_EQUAL(im2.mdp->state_count(), 2);
 }
 
 
