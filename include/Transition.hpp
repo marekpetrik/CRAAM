@@ -27,7 +27,8 @@ public:
 
     Transition(){};
 
-    Transition(vector<long> indices, vector<prec_t> probabilities, vector<prec_t> rewards);
+    Transition(const vector<long>& indices, const vector<prec_t>& probabilities, 
+                const vector<prec_t>& rewards);
 
     void add_sample(long stateid, prec_t probability, prec_t reward);
 

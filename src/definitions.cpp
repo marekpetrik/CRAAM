@@ -132,6 +132,8 @@ template <typename T> vector<size_t> sort_indexes(vector<T> const& v) {
     return idx;
 }
 
+template vector<size_t> sort_indexes<long>(vector<long> const&);
+
 template <typename T> vector<size_t> sort_indexes_desc(vector<T> const& v)
 {
     /** \brief Sort indices by values in descending order

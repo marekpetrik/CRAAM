@@ -79,7 +79,8 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
 
     shared_ptr<RMDP> mdp(new RMDP());
     vector<long> observations({0,0,1});
-    Transition initial(vector<long>{0,1},vector<prec_t>{1.0/3.0,1.0/3.0,1.0/3.0},vector<prec_t>{0,0,0});
+    Transition initial(vector<long>{0,1,2},vector<prec_t>{1.0/3.0,1.0/3.0,1.0/3.0},
+                        vector<prec_t>{0,0,0});
 
     // action 0
     mdp->add_transition_d(0,0,0,0.5,1.0);
