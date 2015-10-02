@@ -12,18 +12,18 @@ namespace craam{
 namespace impl{
 
 
-void MDPI::check_parameters(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial){
+void MDPI::check_parameters(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial){
     /**
          Checks whether the parameters are correct. Throws an exception if the parmaters
          are wrong.
      */
 
     // *** check consistency of provided parameters ***
-    // check that the number of observ2state coefficients it correct
-    if(mdp.state_count() != (long) observ2state.size())
+    // check that the number of state2observ coefficients it correct
+    if(mdp.state_count() != (long) state2observ.size())
         throw invalid_argument("Number of observation indexes must match the number of states.");
     // check that the observation indices are not negative
-    if(*min_element(observ2state.begin(), observ2state.end()) < 0)
+    if(*min_element(state2observ.begin(), state2observ.end()) < 0)
         throw invalid_argument("Observation indices must be non-negative");
     // check then initial transition
     if(initial.max_index() >= mdp.state_count())
@@ -34,45 +34,45 @@ void MDPI::check_parameters(const RMDP& mdp, const vector<long>& observ2state, c
 }
 
 
-MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state, const Transition& initial)
-            : mdp(mdp), observ2state(observ2state), initial(initial){
+MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ, const Transition& initial)
+            : mdp(mdp), state2observ(state2observ), initial(initial){
     /**
         Constructs the MDP with implementability constraints. This constructor makes it 
         possible to share the MDP with other data structures.
 
         \param mdp A non-robust base MDP model. It cannot be shared to prevent
                     direct modification.
-        \param observ2state Maps each state to the index of the corresponding observation.
+        \param state2observ Maps each state to the index of the corresponding observation.
                         A valid policy will take the same action in all states
                         with a single observation. The index is 0-based.
         \param initial A representation of the initial distribution. The rewards
                         in this transition are ignored (and should be 0).
     */
 
-    check_parameters(*mdp, observ2state, initial);
+    check_parameters(*mdp, state2observ, initial);
 }
 
-MDPI::MDPI(const RMDP& mdp, const vector<long>& observ2state, const Transition& initial)
+MDPI::MDPI(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial)
             : mdp(new RMDP(mdp)), 
-            observ2state(observ2state), initial(initial){
+            state2observ(state2observ), initial(initial){
     /**
         Constructs the MDP with implementability constraints. The MDP model is
         copied (using the copy constructor) and stored internally.
 
         \param mdp A non-robust base MDP model. It cannot be shared to prevent
                     direct modification.
-        \param observ2state Maps each state to the index of the corresponding observation.
+        \param state2observ Maps each state to the index of the corresponding observation.
                         A valid policy will take the same action in all states
                         with a single observation. The index is 0-based.
         \param initial A representation of the initial distribution. The rewards
                         in this transition are ignored (and should be 0).
     */
 
-    check_parameters(mdp, observ2state, initial);
+    check_parameters(mdp, state2observ, initial);
 }
 
-MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2state,
-            const Transition& initial) : MDPI(mdp, observ2state, initial){
+MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ,
+            const Transition& initial) : MDPI(mdp, state2observ, initial){
     /**
         Calls the base constructor and also constructs the corresponding
         robust MDP
@@ -81,8 +81,8 @@ MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& observ2sta
     initialize_robustmdp();
 }
 
-MDPI_R::MDPI_R(const RMDP& mdp, const vector<long>& observ2state,
-            const Transition& initial) : MDPI(mdp, observ2state, initial){
+MDPI_R::MDPI_R(const RMDP& mdp, const vector<long>& state2observ,
+            const Transition& initial) : MDPI(mdp, state2observ, initial){
     /**
         Calls the base constructor and also constructs the corresponding
         robust MDP
@@ -100,8 +100,8 @@ void MDPI_R::initialize_robustmdp(){
     // check that there is no robustness
     // make sure that the action sets for each observation are the same
 
-    // Determine the number of observ2state
-    auto obs_count = *max_element(observ2state.begin(), observ2state.end()) + 1;
+    // Determine the number of state2observ
+    auto obs_count = *max_element(state2observ.begin(), state2observ.end()) + 1;
 
 
     // keep track of the number of outcomes for each
@@ -112,7 +112,7 @@ void MDPI_R::initialize_robustmdp(){
     vector<long> action_counts(obs_count, -1);  // -1 means not initialized
 
     for(size_t state_index=0; (long) state_index < mdp->state_count(); state_index++){
-        auto obs = observ2state[state_index];
+        auto obs = state2observ[state_index];
 
         // check the number of actions
         auto ac = mdp->action_count(state_index);
@@ -138,7 +138,7 @@ void MDPI_R::initialize_robustmdp(){
             // copy the original transitions (they are automatically consolidated while being added)
             for(size_t k=0; k< old_tran.size(); k++){
 
-                new_tran.add_sample(observ2state[old_tran.indices[k]],
+                new_tran.add_sample(state2observ[old_tran.indices[k]],
                                     old_tran.probabilities[k],
                                     old_tran.rewards[k]);
             }
