@@ -30,43 +30,24 @@ enum SolutionType {
  */
 class Solution {
 public:
-    vector<prec_t> valuefunction;
-    vector<long> policy;                        // index of the actions for each states
-    vector<long> outcomes;                      // index of the outcome for each state
-    vector<vector<prec_t>> outcome_dists;       // distribution of outcomes for each state
-    prec_t residual;
-    long iterations;
+    const vector<prec_t> valuefunction;
+    const vector<long> policy;                        // index of the actions for each states
+    const vector<long> outcomes;                      // index of the outcome for each state
+    const vector<vector<prec_t>> outcome_dists;       // distribution of outcomes for each state
+    const prec_t residual;
+    const long iterations;
 
-    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy, vector<long> const& outcomes){
-        this->valuefunction = valuefunction;
-        this->policy = policy;
-        this->outcomes = outcomes;
-    };
+    //Solution(){};
 
-    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy, vector<vector<prec_t>> const& outcome_dists){
-        this->valuefunction = valuefunction;
-        this->policy = policy;
-        this->outcome_dists = outcome_dists;
-    };
+    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy,
+             vector<long> const& outcomes, prec_t residual = -1, long iterations = -1) :
+        valuefunction(valuefunction), policy(policy), outcomes(outcomes),
+        outcome_dists(0),residual(residual),iterations(iterations) {};
 
-    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy, vector<long> const& outcomes, prec_t residual, long iterations){
-        this->valuefunction = valuefunction;
-        this->policy = policy;
-        this->outcomes = outcomes;
-        this->residual = residual;
-        this->iterations = iterations;
-    };
-
-    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy, vector<vector<prec_t>> const& outcome_dists, prec_t residual, long iterations){
-        this->valuefunction = valuefunction;
-        this->policy = policy;
-        this->outcome_dists = outcome_dists;
-        this->residual = residual;
-        this->iterations = iterations;
-    };
-
-    Solution(){
-    };
+    Solution(vector<prec_t> const& valuefunction, vector<long> const& policy,
+             const vector<vector<prec_t>>& outcome_dists, prec_t residual = -1, long iterations = -1):
+        valuefunction(valuefunction), policy(policy), outcomes(0),
+        outcome_dists(outcome_dists),residual(residual),iterations(iterations){};
 };
 
 /**

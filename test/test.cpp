@@ -79,42 +79,42 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.vi_jac_rob(initial,0.9, 20,0);
+    auto&&re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
 
     vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
-    CHECK_CLOSE_COLLECTION(val_rob2,re.valuefunction,1e-3);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re2.policy.begin(),re2.policy.end());
 
     // many iterations
     vector<prec_t> val_rob3{8.91,9.9,11.0};
 
     // robust
-    re = rmdp.vi_gs_rob(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    re = rmdp.vi_jac_rob(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re4 = rmdp.vi_jac_rob(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
 
     // optimistic
-    re = rmdp.vi_gs_opt(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    re = rmdp.vi_jac_opt(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re6 = rmdp.vi_jac_opt(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
     // average
-    re = rmdp.vi_gs_ave(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re7 = rmdp.vi_gs_ave(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re7.policy.begin(),re7.policy.end());
 
-    re = rmdp.vi_jac_ave(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re8 = rmdp.vi_jac_ave(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
@@ -142,42 +142,42 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    re = rmdp.mpi_jac_rob(initial,0.9, 20,0, 0,0);
+    auto&& re2 = rmdp.mpi_jac_rob(initial,0.9, 20,0, 0,0);
 
     vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
-    CHECK_CLOSE_COLLECTION(val_rob2,re.valuefunction,1e-3);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re2.policy.begin(),re2.policy.end());
 
     // many iterations
     vector<prec_t> val_rob3{8.91,9.9,11.0};
 
     // robust
-    re = rmdp.vi_gs_rob(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    re = rmdp.vi_jac_rob(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re4 = rmdp.vi_jac_rob(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
 
     // optimistic
-    re = rmdp.vi_gs_opt(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    re = rmdp.vi_jac_opt(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re6 = rmdp.vi_jac_opt(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
     // average
-    re = rmdp.vi_gs_ave(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re7 = rmdp.vi_gs_ave(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re7.policy.begin(),re7.policy.end());
 
-    re = rmdp.vi_jac_ave(initial,0.9, 10000,0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    auto&& re8 = rmdp.vi_jac_ave(initial,0.9, 10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_nonrobust) {
@@ -444,25 +444,25 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
     rmdp.set_uniform_thresholds(0);
-    result1 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],15.0,1e-3);
+    auto&& result3 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result3.valuefunction[0],15.0,1e-3);
 
-    result2 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0],15.0,1e-3);
+    auto&& result4 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result4.valuefunction[0],15.0,1e-3);
 
     rmdp.set_uniform_thresholds(1);
-    result1 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
+    auto&& result5 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result5.valuefunction[0],10.0,1e-3);
 
-    result2 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+    auto&& result6 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result6.valuefunction[0], 20.0, 1e-3);
 
     rmdp.set_uniform_thresholds(0.5);
-    result1 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],12.5,1e-3);
+    auto&& result7 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result7.valuefunction[0],12.5,1e-3);
 
-    result2 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0],17.5,1e-3);
+    auto&& result8 = rmdp.vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result8.valuefunction[0],17.5,1e-3);
 }
 
 BOOST_AUTO_TEST_CASE(test_string){
@@ -545,103 +545,102 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     vector<prec_t> value(5,0.0);
     const prec_t gamma = 0.9;
-    Solution sol;
 
     // *** ROBUST ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol1 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol1.valuefunction, robust_2_0, 0.001);
+    Solution&& sol2 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, robust_2_0, 0.001);
+    Solution&& sol3 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, robust_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol4 = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol4.valuefunction, robust_2_0, 0.001);
+    Solution&& sol5 = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol5.valuefunction, robust_2_0, 0.001);
+    Solution&& sol6 = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol6.valuefunction, robust_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
+    Solution&& sol7 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol7.valuefunction, robust_1_0, 0.001);
+    Solution&& sol8 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol8.valuefunction, robust_1_0, 0.001);
+    Solution&& sol9 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol9.valuefunction, robust_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
+    Solution&& sol10 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol10.valuefunction, robust_0_5, 0.001);
+    Solution&& sol11 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol11.valuefunction, robust_0_5, 0.001);
+    Solution&& sol12 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol12.valuefunction, robust_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol13 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol13.valuefunction, robust_0_0, 0.001);
+    Solution&& sol14 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol14.valuefunction, robust_0_0, 0.001);
+    Solution&& sol15 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol15.valuefunction, robust_0_0, 0.001);
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol16 = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol16.valuefunction, robust_0_0, 0.001);
+    Solution&& sol17 = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol17.valuefunction, robust_0_0, 0.001);
+    Solution&& sol18 = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol18.valuefunction, robust_0_0, 0.001);
 
 
     // *** OPTIMISTIC ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol19 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol19.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol20 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol20.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol21 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol21.valuefunction, optimistic_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol22 = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol22.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol23 = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol23.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol24 = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol24.valuefunction, optimistic_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol25 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol25.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol26 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol26.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol27 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol27.valuefunction, optimistic_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol28 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol28.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol29 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol29.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol30 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol30.valuefunction, optimistic_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol31 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol31.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol32 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol32.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol33 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol33.valuefunction, optimistic_0_0, 0.001);
 }
 
 BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
@@ -685,103 +684,102 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     vector<prec_t> value(6,0.0);
     const prec_t gamma = 0.9;
-    Solution sol;
 
     // *** ROBUST ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol1 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol1.valuefunction, robust_2_0, 0.001);
+    Solution&& sol2 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, robust_2_0, 0.001);
+    Solution&& sol3 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, robust_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol4 = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol4.valuefunction, robust_2_0, 0.001);
+    Solution&& sol5 = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol5.valuefunction, robust_2_0, 0.001);
+    Solution&& sol6 = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol6.valuefunction, robust_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
+    Solution&& sol7 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol7.valuefunction, robust_1_0, 0.001);
+    Solution&& sol8 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol8.valuefunction, robust_1_0, 0.001);
+    Solution&& sol9 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol9.valuefunction, robust_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
+    Solution&& sol10 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol10.valuefunction, robust_0_5, 0.001);
+    Solution&& sol11 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol11.valuefunction, robust_0_5, 0.001);
+    Solution&& sol12 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol12.valuefunction, robust_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol13 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol13.valuefunction, robust_0_0, 0.001);
+    Solution&& sol14 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol14.valuefunction, robust_0_0, 0.001);
+    Solution&& sol15 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol15.valuefunction, robust_0_0, 0.001);
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol16 = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol16.valuefunction, robust_0_0, 0.001);
+    Solution&& sol17 = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol17.valuefunction, robust_0_0, 0.001);
+    Solution&& sol18 = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol18.valuefunction, robust_0_0, 0.001);
 
 
     // *** OPTIMISTIC ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol19 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol19.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol20 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol20.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol21 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol21.valuefunction, optimistic_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol22 = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol22.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol23 = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol23.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol24 = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol24.valuefunction, optimistic_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol25 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol25.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol26 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol26.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol27 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol27.valuefunction, optimistic_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol28 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol28.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol29 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol29.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol30 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol30.valuefunction, optimistic_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol31 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol31.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol32 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol32.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol33 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol33.valuefunction, optimistic_0_0, 0.001);
 
 }
 
@@ -841,25 +839,25 @@ BOOST_AUTO_TEST_CASE(test_rmdp_copy){
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
     rmdp->set_uniform_thresholds(0);
-    result1 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],15.0,1e-3);
+    auto&& result3 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result3.valuefunction[0],15.0,1e-3);
 
-    result2 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0],15.0,1e-3);
+    auto&& result4 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result4.valuefunction[0],15.0,1e-3);
 
     rmdp->set_uniform_thresholds(1);
-    result1 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
+    auto&& result5 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result5.valuefunction[0],10.0,1e-3);
 
-    result2 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+    auto&& result6 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result6.valuefunction[0], 20.0, 1e-3);
 
     rmdp->set_uniform_thresholds(0.5);
-    result1 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0],12.5,1e-3);
+    auto&& result7 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result7.valuefunction[0],12.5,1e-3);
 
-    result2 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0],17.5,1e-3);
+    auto&& result8 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
+    BOOST_CHECK_CLOSE(result8.valuefunction[0],17.5,1e-3);
 }
 
 
@@ -910,102 +908,101 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
 
     vector<prec_t> value(6,0.0);
     const prec_t gamma = 0.9;
-    Solution sol;
 
     // *** ROBUST ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol1 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol1.valuefunction, robust_2_0, 0.001);
+    Solution&& sol2 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, robust_2_0, 0.001);
+    Solution&& sol3 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, robust_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
-    sol = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_2_0, 0.001);
+    Solution&& sol4 = rmdp->vi_jac_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol4.valuefunction, robust_2_0, 0.001);
+    Solution&& sol5 = rmdp->vi_gs_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol5.valuefunction, robust_2_0, 0.001);
+    Solution&& sol6 = rmdp->mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol6.valuefunction, robust_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_1_0, 0.001);
+    Solution&& sol7 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol7.valuefunction, robust_1_0, 0.001);
+    Solution&& sol8 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol8.valuefunction, robust_1_0, 0.001);
+    Solution&& sol9 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol9.valuefunction, robust_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_5, 0.001);
+    Solution&& sol10 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol10.valuefunction, robust_0_5, 0.001);
+    Solution&& sol11 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol11.valuefunction, robust_0_5, 0.001);
+    Solution&& sol12 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol12.valuefunction, robust_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol13 = rmdp->vi_jac_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol13.valuefunction, robust_0_0, 0.001);
+    Solution&& sol14 = rmdp->vi_gs_l1_rob(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol14.valuefunction, robust_0_0, 0.001);
+    Solution&& sol15 = rmdp->mpi_jac_l1_rob(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol15.valuefunction, robust_0_0, 0.001);
 
     // should be the same for the average
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
-    sol = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, robust_0_0, 0.001);
+    Solution&& sol16 = rmdp->vi_jac_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol16.valuefunction, robust_0_0, 0.001);
+    Solution&& sol17 = rmdp->vi_gs_ave(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol17.valuefunction, robust_0_0, 0.001);
+    Solution&& sol18 = rmdp->mpi_jac_ave(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol18.valuefunction, robust_0_0, 0.001);
 
 
     // *** OPTIMISTIC ******************
 
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol19 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol19.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol20 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol20.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol21 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol21.valuefunction, optimistic_2_0, 0.001);
 
     // should be the same without the l1 bound
     rmdp->set_uniform_distribution(2.0);
-    sol = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
-    sol = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol22 = rmdp->vi_jac_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol22.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol23 = rmdp->vi_gs_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol23.valuefunction, optimistic_2_0, 0.001);
+    Solution&& sol24 = rmdp->mpi_jac_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol24.valuefunction, optimistic_2_0, 0.001);
 
     rmdp->set_uniform_distribution(1.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol25 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol25.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol26 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol26.valuefunction, optimistic_1_0, 0.001);
+    Solution&& sol27 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol27.valuefunction, optimistic_1_0, 0.001);
 
     rmdp->set_uniform_distribution(0.5);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol28 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol28.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol29 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol29.valuefunction, optimistic_0_5, 0.001);
+    Solution&& sol30 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol30.valuefunction, optimistic_0_5, 0.001);
 
     rmdp->set_uniform_distribution(0.0);
-    sol = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
-    sol = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
-    CHECK_CLOSE_COLLECTION(sol.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol31 = rmdp->vi_jac_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol31.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol32 = rmdp->vi_gs_l1_opt(value,gamma,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol32.valuefunction, optimistic_0_0, 0.001);
+    Solution&& sol33 = rmdp->mpi_jac_l1_opt(value,gamma,1000,1e-5,1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol33.valuefunction, optimistic_0_0, 0.001);
 
 }
