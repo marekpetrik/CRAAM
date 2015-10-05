@@ -1,11 +1,13 @@
+#include "RMDP.hpp"
+
 #include <limits>
 #include <algorithm>
 #include <string>
 #include <sstream>
 #include <utility>
 #include <iostream>
+#include <armadillo>
 
-#include "RMDP.hpp"
 
 namespace craam {
 

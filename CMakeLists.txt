@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 find_package(OpenMP)
 find_package(Boost COMPONENTS unit_test_framework)
 find_package(Doxygen)
+find_package(Armadillo REQUIRED)
 
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
@@ -83,10 +84,12 @@ endif()
 
 # **** RELEASE VERSION OF THE LIBRARY ****
 add_library (craam ${SRCS} )
+target_link_libraries(craam ${ARMADILLO_LIBRARIES})
 set_target_properties(craam PROPERTIES CMAKE_BUILD_TYPE Release)
 
 # **** DEBUG VERSION OF THE LIBRARY ****
 add_library (craam_debug ${SRCS} )
+target_link_libraries(craam_debug ${ARMADILLO_LIBRARIES})
 set_target_properties(craam_debug PROPERTIES CMAKE_BUILD_TYPE Debug)
 
 # **** TEST ****
