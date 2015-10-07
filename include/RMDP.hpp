@@ -30,14 +30,16 @@ enum SolutionType {
  */
 class Solution {
 public:
-    const vector<prec_t> valuefunction;
-    const vector<long> policy;                        // index of the actions for each states
-    const vector<long> outcomes;                      // index of the outcome for each state
-    const vector<vector<prec_t>> outcome_dists;       // distribution of outcomes for each state
-    const prec_t residual;
-    const long iterations;
-
-    //Solution(){};
+    vector<prec_t> valuefunction;
+    vector<long> policy;                        // index of the actions for each states
+    vector<long> outcomes;                      // index of the outcome for each state
+    vector<vector<prec_t>> outcome_dists;       // distribution of outcomes for each state
+    prec_t residual;
+    long iterations;
+   
+    Solution():
+        valuefunction(0), policy(0), outcomes(0),
+        outcome_dists(0),residual(-1),iterations(-1) {};
 
     Solution(vector<prec_t> const& valuefunction, vector<long> const& policy,
              vector<long> const& outcomes, prec_t residual = -1, long iterations = -1) :
@@ -48,6 +50,7 @@ public:
              const vector<vector<prec_t>>& outcome_dists, prec_t residual = -1, long iterations = -1):
         valuefunction(valuefunction), policy(policy), outcomes(0),
         outcome_dists(outcome_dists),residual(residual),iterations(iterations){};
+
 };
 
 /**
