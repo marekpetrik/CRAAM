@@ -53,6 +53,10 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
     if(probability < -0.001) throw invalid_argument("probabilities must be non-negative.");
     if(stateid < 0) throw invalid_argument("State id must be non-negative.");
 
+    // if the probability is 0, just do not add it
+    if(probability <= 0){
+        return;
+    }
 
     // test for the last index; the index is not in the transition yet and belong to the end
     if(indices.size() == 0 || this->indices.back() < stateid){
@@ -130,6 +134,14 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
     }
     return value;
+}
+
+size_t Transition::size(){
+    /**
+     Returns the number of target states with non-zero transition
+     probabilities. 
+     */
+     return indices.size();
 }
 
 }

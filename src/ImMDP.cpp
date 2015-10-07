@@ -138,9 +138,9 @@ void MDPI_R::initialize_robustmdp(){
             // copy the original transitions (they are automatically consolidated while being added)
             for(size_t k=0; k< old_tran.size(); k++){
 
-                new_tran.add_sample(state2observ[old_tran.indices[k]],
-                                    old_tran.probabilities[k],
-                                    old_tran.rewards[k]);
+                new_tran.add_sample(state2observ[old_tran.get_indices()[k]],
+                                    old_tran.get_probabilities()[k],
+                                    old_tran.get_rewards()[k]);
             }
 
         }

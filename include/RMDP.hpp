@@ -91,7 +91,6 @@ public:
     void add_transition_d(long fromid, long actionid, long toid, prec_t probability, prec_t reward);
     void add_transitions(vector<long> const& fromids, vector<long> const& actionids, vector<long> const& outcomeids, vector<long> const& toids, vector<prec_t> const& probs, vector<prec_t> const& rews);
 
-
     // manipulate MDP attributes
     void set_distribution(long fromid, long actionid, vector<prec_t> const& distribution, prec_t threshold);
     void set_threshold(long stateid, long actionid, prec_t threshold);
@@ -112,7 +111,6 @@ public:
     long action_count(long stateid) const;
     long outcome_count(long stateid, long actionid) const;
     long transition_count(long stateid, long actionid, long outcomeid) const;
-    long sample_count(long stateid, long actionid, long outcomeid) const;
 
     // normalization
     bool is_normalized() const;

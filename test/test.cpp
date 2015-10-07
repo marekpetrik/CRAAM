@@ -225,48 +225,48 @@ BOOST_AUTO_TEST_CASE(check_add_transition) {
 
     const Transition& transition = rmdp.get_transition(0,0,0);
 
-    BOOST_CHECK(is_sorted(transition.indices.begin(), transition.indices.end()) );
-    BOOST_CHECK_EQUAL(transition.indices.size(), 2);
-    BOOST_CHECK_EQUAL(transition.probabilities.size(), 2);
-    BOOST_CHECK_EQUAL(transition.rewards.size(), 2);
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
 
     // check updating the last element
     rmdp.add_transition(0,0,0,7,0.4,4);
 
-    BOOST_CHECK(is_sorted(transition.indices.begin(), transition.indices.end()) );
-    BOOST_CHECK_EQUAL(transition.indices.size(), 2);
-    BOOST_CHECK_EQUAL(transition.probabilities.size(), 2);
-    BOOST_CHECK_EQUAL(transition.rewards.size(), 2);
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
     vector<double> tr{1.0,3.6};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.rewards.begin(), transition.rewards.end(), tr.begin(), tr.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
     vector<double> tp{0.1,0.5};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.probabilities.begin(), transition.probabilities.end(), tp.begin(), tp.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 
 
     // check inserting an element into the middle
     rmdp.add_transition(0,0,0,6,0.1,0.5);
 
-    BOOST_CHECK(is_sorted(transition.indices.begin(), transition.indices.end()) );
-    BOOST_CHECK_EQUAL(transition.indices.size(), 3);
-    BOOST_CHECK_EQUAL(transition.probabilities.size(), 3);
-    BOOST_CHECK_EQUAL(transition.rewards.size(), 3);
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
     tr = vector<double>{1.0,0.5,3.6};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.rewards.begin(), transition.rewards.end(), tr.begin(), tr.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
     tp = vector<double>{0.1,0.1,0.5};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.probabilities.begin(), transition.probabilities.end(), tp.begin(), tp.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 
 
     // check updating an element in the middle
     rmdp.add_transition(0,0,0,6,0.1,1.5);
 
-    BOOST_CHECK(is_sorted(transition.indices.begin(), transition.indices.end()) );
-    BOOST_CHECK_EQUAL(transition.indices.size(), 3);
-    BOOST_CHECK_EQUAL(transition.probabilities.size(), 3);
-    BOOST_CHECK_EQUAL(transition.rewards.size(), 3);
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
     tr = vector<double>{1.0,1.0,3.6};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.rewards.begin(), transition.rewards.end(), tr.begin(), tr.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
     tp = vector<double>{0.1,0.2,0.5};
-    BOOST_CHECK_EQUAL_COLLECTIONS(transition.probabilities.begin(), transition.probabilities.end(), tp.begin(), tp.end());
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_resize) {

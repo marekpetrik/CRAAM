@@ -21,10 +21,6 @@ const prec_t tolerance = 1e-5;
 class Transition {
 
 public:
-    vector<long> indices;
-    vector<prec_t> probabilities;
-    vector<prec_t> rewards;
-
     Transition(){};
 
     Transition(const vector<long>& indices, const vector<prec_t>& probabilities, 
@@ -43,9 +39,21 @@ public:
     }
 
     long max_index() const{
-        /** Returns the maximal indices involved in the transition.  */
+        /** Returns the maximal indexes involved in the transition.  */
         return indices.back();
     }
+
+    size_t size();
+
+    const vector<long>& get_indices() const {return indices;};
+    const vector<prec_t>& get_probabilities() const {return probabilities;};
+    const vector<prec_t>& get_rewards() const {return rewards;};
+    void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
+
+protected:
+    vector<long> indices;
+    vector<prec_t> probabilities;
+    vector<prec_t> rewards;
 };
 
 }
