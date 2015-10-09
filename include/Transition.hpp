@@ -34,6 +34,7 @@ public:
     bool is_normalized() const;
 
     prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount = 1.0) const;
+    prec_t mean_reward() const;
 
     size_t size() const{
         /** Returns the number of target states with non-zero transition
@@ -45,6 +46,10 @@ public:
         /** Returns the maximal indexes involved in the transition.  */
         return indices.back();
     }
+
+    // probability manipulation
+    vector<prec_t> probabilities_vector(size_t size) const;
+    void probabilities_addto(prec_t scale, vector<prec_t>& transition) const;
 
     const vector<long>& get_indices() const {return indices;};
     const vector<prec_t>& get_probabilities() const {return probabilities;};

@@ -20,13 +20,13 @@ void MDPI::check_parameters(const RMDP& mdp, const vector<long>& state2observ, c
 
     // *** check consistency of provided parameters ***
     // check that the number of state2observ coefficients it correct
-    if(mdp.state_count() != (long) state2observ.size())
+    if(mdp.state_count() !=  state2observ.size())
         throw invalid_argument("Number of observation indexes must match the number of states.");
     // check that the observation indices are not negative
     if(*min_element(state2observ.begin(), state2observ.end()) < 0)
         throw invalid_argument("Observation indices must be non-negative");
     // check then initial transition
-    if(initial.max_index() >= mdp.state_count())
+    if(initial.max_index() >= (long) mdp.state_count())
         throw invalid_argument("An initial transition to a non-existent state.");
     if(!initial.is_normalized())
         throw invalid_argument("The initial transition must be normalized.");
@@ -111,13 +111,13 @@ void MDPI_R::initialize_robustmdp(){
     // keep track of actions - needs to make sure that they are all the same
     vector<long> action_counts(obs_count, -1);  // -1 means not initialized
 
-    for(size_t state_index=0; (long) state_index < mdp->state_count(); state_index++){
+    for(size_t state_index=0; state_index < mdp->state_count(); state_index++){
         auto obs = state2observ[state_index];
 
         // check the number of actions
         auto ac = mdp->action_count(state_index);
         if(action_counts[obs] >= 0){
-            if(action_counts[obs] != ac){
+            if(action_counts[obs] != (long) ac){
                 throw invalid_argument("Inconsistent number of actions: " + to_string(state_index) +
                                        " instead of " + to_string(action_counts[obs]) +
                                        " in state " + to_string(state_index));}
@@ -126,7 +126,7 @@ void MDPI_R::initialize_robustmdp(){
         }
 
         // maps the transitions
-        for(size_t action_index=0; (long) action_index < ac; action_index++){
+        for(long action_index=0; action_index < (long) ac; action_index++){
             // check to make sure that there is no robustness
             if(mdp->outcome_count(state_index,action_index) > 1)
                 throw invalid_argument("Robust base MDP is not supported; multiple outcomes in state " +

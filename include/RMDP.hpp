@@ -114,10 +114,10 @@ public:
     prec_t get_threshold(long stateid, long actionid) const;
 
     // object counts
-    long state_count() const;
-    long action_count(long stateid) const;
-    long outcome_count(long stateid, long actionid) const;
-    long transition_count(long stateid, long actionid, long outcomeid) const;
+    size_t state_count() const;
+    size_t action_count(long stateid) const;
+    size_t outcome_count(long stateid, long actionid) const;
+    size_t transition_count(long stateid, long actionid, long outcomeid) const;
 
     // normalization
     bool is_normalized() const;
@@ -129,15 +129,16 @@ public:
     void transitions_to_csv_file(const string& filename, bool header = true) const;
 
     // copying
+    // TODO: deprecate these methods
     unique_ptr<RMDP> copy() const;
     void copy_into(RMDP& result) const;
 
     // string representation
     string to_string() const;
 
-    // occupancy frequency
-    //vector<prec_t> of_jac(prec_t discount, vector<long> policy, vector<long> nature);
-
+    // fixed-policy functions
+    vector<prec_t> of_gs(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature, long iterations) const;
+    vector<prec_t> rewards_state(const vector<long>& policy, const vector<long>& nature) const;
 
     // value iteration
     Solution vi_gs_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;

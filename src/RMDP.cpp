@@ -23,18 +23,18 @@ prec_t Solution::total_return(const Transition& initial) const{
     return initial.compute_value(valuefunction);
 }
 
-long RMDP::state_count() const{
+size_t RMDP::state_count() const{
     return this->states.size();
 }
 
-long RMDP::action_count(long stateid) const{
+size_t RMDP::action_count(long stateid) const{
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
     }
     return this->states[stateid].actions.size();
 }
 
-long RMDP::outcome_count(long stateid, long actionid) const{
+size_t RMDP::outcome_count(long stateid, long actionid) const{
     if(stateid < 0l || stateid >= (long) this->states.size()){
         throw invalid_argument("invalid state number");
     }
@@ -44,7 +44,7 @@ long RMDP::outcome_count(long stateid, long actionid) const{
     return this->states[stateid].actions[actionid].outcomes.size();
 }
 
-long RMDP::transition_count(long stateid, long actionid, long outcomeid) const{
+size_t RMDP::transition_count(long stateid, long actionid, long outcomeid) const{
     /**
        Returns the number of samples (state to state transitions) for the
               given parameters.
@@ -946,8 +946,8 @@ Solution RMDP::mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount,
     // TODO: a vector of r-values?
     vector<vector<prec_t>> outcomes(this->states.size());
 
-    vector<prec_t> oddvalue = valuefunction;        // set in even iterations (0 is even)
-    vector<prec_t> evenvalue = valuefunction;       // set in odd iterations
+    vector<prec_t> oddvalue(valuefunction);        // set in even iterations (0 is even)
+    vector<prec_t> evenvalue(valuefunction);       // set in odd iterations
 
     vector<prec_t> residuals(valuefunction.size());
 
@@ -1343,6 +1343,58 @@ Solution RMDP::mpi_jac_l1_opt(vector<prec_t> const& valuefunction, prec_t discou
      */
 
      return mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(valuefunction, discount, iterations_pi, maxresidual_pi, iterations_vi, maxresidual_vi);
+}
+
+
+vector<prec_t> RMDP::of_gs(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature, long iterations) const{
+    /**
+        Computes occupancy frequencies using Gauss-seidel method to solve:
+        (I - gamma P^T) x = alpha
+        The update is:
+        x_{k+1} = alpha + gamma P^T x_k
+
+        The iteration loops over states in the opposite direction as vi_gs in order 
+        for both methods to be efficient for a constant order of the states.
+
+        \param init Initial distribution (alpha)
+        \param discount Discount factor (gamma)
+        \param policy Policy of the decision maker
+        \param nature Policy of nature
+     */
+    
+    // initialize
+    const auto&& initial_d = init.probabilities_vector(state_count());
+    vector<prec_t> frequency(state_count(),0.0);
+
+    for(long i=0; i < iterations; i++){       
+
+        for(long s=state_count()-1; s >= 0; s--){
+            const Transition& t = get_transition(s, policy[s], nature[s]);
+
+            // add the scaled transition probabilities
+            t.probabilities_addto(frequency[s],frequency);
+            frequency[s] += initial_d[s];
+        }
+    }
+    return frequency;
+}
+
+vector<prec_t> RMDP::rewards_state(const vector<long>& policy, const vector<long>& nature) const{
+    /**
+        Constructs the rewards vector for each state for the RMDP.
+        
+        \param policy Policy of the decision maker
+        \param nature Policy of nature
+     */
+    
+    const auto n = state_count();
+    vector<prec_t> rewards(n);
+
+    #pragma omp parallel for
+    for(long s=0; s < n; s++){
+        rewards[s] = get_transition(s,policy[s],nature[s]).mean_reward();
+    }
+    return rewards;
 }
 
 }

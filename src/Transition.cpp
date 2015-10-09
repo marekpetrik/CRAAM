@@ -118,7 +118,7 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
 
       When there are no target states, the function terminates with an error.
 
-      \param valuefunction Value function, or an arbitrary vector of values
+        \param valuefunction Value function, or an arbitrary vector of values
       \param discount Discount factor, optional (default value 1)
      */
 
@@ -127,10 +127,8 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
     //TODO: check how much complexity these statements are adding
     if(scount == 0)
         throw range_error("No transitions defined.");
-    if(max_index() > (long) valuefunction.size())
-        throw range_error("Transition to a state outside of the bounds of the value function.");
 
-    prec_t value = (prec_t) 0.0;
+    prec_t value = 0.0;
 
     for(size_t c = 0; c < scount; c++){
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
@@ -138,4 +136,51 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
     return value;
 }
 
+prec_t Transition::mean_reward() const{
+    /**
+      Computes the mean return from this transition
+     */
+
+    auto scount = indices.size();
+
+    if(scount == 0)
+        throw range_error("No transitions defined.");
+
+    prec_t value = 0.0;
+
+    for(size_t c = 0; c < scount; c++){
+        value +=  probabilities[c] * rewards[c];
+    }
+    return value;
 }
+
+vector<prec_t> Transition::probabilities_vector(size_t size) const{
+    /**
+        Constructs and returns a dense vector of probabilities.
+
+        \param size Size of the constructed vector
+     */
+    vector<prec_t> result(size, 0.0);
+
+    for(size_t i = 0; i < this->size(); i++){
+        result[indices[i]] = probabilities[i];
+    }
+
+    return result;
+}
+void Transition::probabilities_addto(prec_t scale, vector<prec_t>& transition) const{
+    /** 
+        Scales transition probabilities and adds them to the provided vector.
+
+        \param scale Multiplicative modification of transition probabilities
+        \param transition Transition probabilities being added to. This value
+                            is modified within the function.
+     */
+
+    for(size_t i = 0; i < size(); i++){
+        transition[indices[i]] += scale*probabilities[i];
+    }
+}
+
+}   
+
