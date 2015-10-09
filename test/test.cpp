@@ -41,22 +41,22 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
 
     // check maximum selection
     Action a1({t1,t2}),a2({t1,t3});
-    BOOST_CHECK(a1.maximal(valuefunction, 0.9).first == 1);
-    BOOST_CHECK(a1.minimal(valuefunction,0.9).first == 0);
-    BOOST_CHECK(a2.maximal(valuefunction, 0.9).first == 1);
-    BOOST_CHECK(a2.minimal(valuefunction,0.9).first == 0);
+    BOOST_CHECK_EQUAL(a1.maximal(valuefunction, 0.9).first, 1);
+    BOOST_CHECK_EQUAL(a1.minimal(valuefunction,0.9).first, 0);
+    BOOST_CHECK_EQUAL(a2.maximal(valuefunction, 0.9).first, 1);
+    BOOST_CHECK_EQUAL(a2.minimal(valuefunction,0.9).first, 0);
 
     Action a3({t2});
     State s1({a1,a2,a3});
     auto v1 = get<2>(s1.max_max(valuefunction,0.9));
     auto v2 = get<2>(s1.max_min(valuefunction,0.9));
-    BOOST_CHECK (-0.01 <= v1-2.13);
-    BOOST_CHECK (v1-2.13 <= 0.01);
-    BOOST_CHECK (-0.01 <= v2-1.75);
-    BOOST_CHECK (v2-1.75 <= 0.01);
+    BOOST_CHECK_LE (-0.01, v1-2.13);
+    BOOST_CHECK_LE (v1-2.13, 0.01);
+    BOOST_CHECK_LE (-0.01, v2-1.75);
+    BOOST_CHECK_LE (v2-1.75, 0.01);
 }
 
-BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
+BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     RMDP rmdp(3);
 
     // nonrobust
@@ -68,6 +68,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     rmdp.add_transition_d(1,0,0,1,1);
     rmdp.add_transition_d(2,0,1,1,1);
 
+    Transition initial({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
 
     vector<prec_t> initial{0,0,0};
 
@@ -78,8 +79,17 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_nonrobust) {
     vector<long> pol_rob{1,1,1};
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+    
+    // check if we get the same return from the solution as from the
+    // occupancy frequencies 
+    auto&& rewards = rmdp.rewards_state(re.policy,re.outcomes);
+    auto&& occupancy_freq = rmdp.of_gs(initial,0.9,re.policy,re.outcomes);
+    auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0);
 
-    auto&&re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
+
+    BOOST_CHECK_CLOSE (re.total_return(initial), cmp_tr);
+
+    auto&& re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
 
     vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
