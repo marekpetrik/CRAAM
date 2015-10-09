@@ -6,7 +6,6 @@
 #include <sstream>
 #include <utility>
 #include <iostream>
-#include <armadillo>
 
 
 namespace craam {
@@ -1022,4 +1021,328 @@ Solution RMDP::mpi_jac_cst(vector<prec_t> const& valuefunction, prec_t discount,
 template Solution RMDP::mpi_jac_cst<SolutionType::Robust,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Average,worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
+
+
+Solution RMDP::vi_gs_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Gauss-Seidel value iteration variant (not parallelized). The outcomes are
+       selected using worst-case nature.
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize easily.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    return vi_gs_gen<SolutionType::Robust>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_gs_opt(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Gauss-Seidel value iteration variant (not parallelized). The outcomes are
+       selected using best-case nature.
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize easily.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    return vi_gs_gen<SolutionType::Optimistic>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_gs_ave(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Gauss-Seidel value iteration variant (not parallelized). The outcomes are
+       selected using average-case nature.
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to paralelize easily.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    return vi_gs_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_gs_l1_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Robust Gauss-Seidel value iteration variant (not parallelized). The natures policy is
+       constrained using L1 constraints and is worst-case.
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    return vi_gs_cst<SolutionType::Robust, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_gs_l1_opt(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Optimistic Gauss-Seidel value iteration variant (not parallelized). The natures policy is
+       constrained using L1 constraints and is best-case.
+
+       This function is suitable for computing the value function of a finite state MDP. If
+       the states are ordered correctly, one iteration is enough to compute the optimal value function.
+       Since the value function is updated from the first state to the last, the states should be ordered
+       in reverse temporal order.
+
+       Because this function updates the array value during the iteration, it may be
+       difficult to parallelize.
+
+       This is a generic version, which works for best/worst-case optimization and
+       arbitrary constraints on nature (given by the function nature). Average case constrained
+       nature is not supported.
+
+       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+    return vi_gs_cst<SolutionType::Optimistic, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_jac_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Robust Jacobi value iteration variant. The nature behaves as worst-case.
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+     return vi_jac_gen<SolutionType::Robust>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_jac_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Optimistic Jacobi value iteration variant. The nature behaves as best-case.
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+     return vi_jac_gen<SolutionType::Optimistic>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_jac_ave(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Average Jacobi value iteration variant. The nature behaves as average-case.
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+     return vi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations, maxresidual);
+}
+
+
+Solution RMDP::vi_jac_l1_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Robust Jacobi value iteration variant with constrained nature. The nature is constrained
+       by an L1 norm.
+
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+     return vi_jac_cst<SolutionType::Robust, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+}
+
+Solution RMDP::vi_jac_l1_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+    /**
+       Optimistic Jacobi value iteration variant with constrained nature. The nature is constrained
+       by an L1 norm.
+
+       This method uses OpenMP to parallelize the computation.
+
+       \param valuefunction Initial value function.
+       \param discount Discount factor.
+       \param iterations Maximal number of iterations to run
+       \param maxresidual Stop when the maximal residual falls below this value.
+     */
+
+     return vi_jac_cst<SolutionType::Optimistic, worstcase_l1>(valuefunction, discount, iterations, maxresidual);
+}
+
+
+// modified policy iteration
+Solution RMDP::mpi_jac_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+    /**
+       Robust modified policy iteration using Jacobi value iteration in the inner loop.
+       The nature behaves as worst-case.
+
+       This method generalizes modified policy iteration to robust MDPs.
+       In the value iteration step, both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
+     */
+
+     return mpi_jac_gen<SolutionType::Robust>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                 iterations_vi, maxresidual_vi);
+
+}
+
+Solution RMDP::mpi_jac_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+    /**
+       Optimistic modified policy iteration using Jacobi value iteration in the inner loop.
+       The nature behaves as best-case.
+
+       This method generalizes modified policy iteration to robust MDPs.
+       In the value iteration step, both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
+     */
+
+     return mpi_jac_gen<SolutionType::Optimistic>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                 iterations_vi, maxresidual_vi);
+
+}
+
+Solution RMDP::mpi_jac_ave(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+
+    /**
+       Average modified policy iteration using Jacobi value iteration in the inner loop.
+       The nature behaves as average-case.
+
+       This method generalizes modified policy iteration to robust MDPs.
+       In the value iteration step, both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
+     */
+
+     return mpi_jac_gen<SolutionType::Average>(valuefunction, discount, iterations_pi, maxresidual_pi,
+                 iterations_vi, maxresidual_vi);
+}
+
+
+Solution RMDP::mpi_jac_l1_rob(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+    /**
+       Robust modified policy iteration using Jacobi value iteration in the inner loop and constrained nature.
+       The constraints are defined by the L1 norm and the nature is worst-case.
+
+       This method generalized modified policy iteration to the robust MDP. In the value iteration step,
+       both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
+     */
+
+     return mpi_jac_cst<SolutionType::Robust,worstcase_l1>(valuefunction, discount, iterations_pi, maxresidual_pi, iterations_vi, maxresidual_vi);
+}
+
+Solution RMDP::mpi_jac_l1_opt(vector<prec_t> const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+    /**
+       Optimistic modified policy iteration using Jacobi value iteration in the inner loop and constrained nature.
+       The constraints are defined by the L1 norm and the nature is best-case.
+
+       This method generalized modified policy iteration to the robust MDP. In the value iteration step,
+       both the action *and* the outcome are fixed.
+
+       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param iterations_pi Maximal number of policy iteration steps
+       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+       \param iterations_vi Maximal number of inner loop value iterations
+       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                    This value should be smaller than maxresidual_pi
+
+       \return Computed (approximate) solution
+     */
+
+     return mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(valuefunction, discount, iterations_pi, maxresidual_pi, iterations_vi, maxresidual_vi);
+}
+
 }
