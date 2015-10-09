@@ -7,7 +7,6 @@
 #include <utility>
 #include <iostream>
 
-
 namespace craam {
 
 prec_t Solution::total_return(const Transition& initial) const{
@@ -1368,12 +1367,15 @@ vector<prec_t> RMDP::of_gs(const Transition& init, prec_t discount, const vector
 
     for(long i=0; i < iterations; i++){       
 
+        //TODO cout << "F " << frequency[0] << " " << frequency[1] << " " << frequency[2] << endl;
+
         for(long s=state_count()-1; s >= 0; s--){
             const Transition& t = get_transition(s, policy[s], nature[s]);
 
             // add the scaled transition probabilities
-            t.probabilities_addto(frequency[s],frequency);
-            frequency[s] += initial_d[s];
+            auto old = frequency[s];
+            t.probabilities_addto(discount*frequency[s],frequency);
+            frequency[s] += initial_d[s] - old;
         }
     }
     return frequency;
@@ -1391,7 +1393,7 @@ vector<prec_t> RMDP::rewards_state(const vector<long>& policy, const vector<long
     vector<prec_t> rewards(n);
 
     #pragma omp parallel for
-    for(long s=0; s < n; s++){
+    for(size_t s=0; s < n; s++){
         rewards[s] = get_transition(s,policy[s],nature[s]).mean_reward();
     }
     return rewards;

@@ -118,7 +118,7 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
 
       When there are no target states, the function terminates with an error.
 
-        \param valuefunction Value function, or an arbitrary vector of values
+      \param valuefunction Value function, or an arbitrary vector of values
       \param discount Discount factor, optional (default value 1)
      */
 
