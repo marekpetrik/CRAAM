@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
     State s1({a1,a2,a3});
     auto v1 = get<2>(s1.max_max(valuefunction,0.9));
     auto v2 = get<2>(s1.max_min(valuefunction,0.9));
-    BOOST_CHECK( -0.01 <= v1-2.13);
+    BOOST_CHECK (-0.01 <= v1-2.13);
     BOOST_CHECK (v1-2.13 <= 0.01);
     BOOST_CHECK (-0.01 <= v2-1.75);
     BOOST_CHECK (v2-1.75 <= 0.01);

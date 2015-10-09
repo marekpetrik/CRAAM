@@ -11,6 +11,19 @@
 
 namespace craam {
 
+prec_t Solution::total_return(const Transition& initial) const{
+    /**
+        Computes the total return of the solution given the initial
+        distribution.
+
+        \param initial The initial distribution
+     */
+    if(initial.max_index() >= (long) valuefunction.size())
+        throw invalid_argument("Too many indexes in the initial distribution.");
+
+    return initial.compute_value(valuefunction);
+}
+
 long RMDP::state_count() const{
     return this->states.size();
 }

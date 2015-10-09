@@ -23,7 +23,8 @@ class Transition {
 public:
     Transition(){};
 
-    Transition(const vector<long>& indices, const vector<prec_t>& probabilities, 
+    Transition(const vector<long>& indices, 
+                const vector<prec_t>& probabilities, 
                 const vector<prec_t>& rewards);
 
     void add_sample(long stateid, prec_t probability, prec_t reward);
@@ -32,9 +33,11 @@ public:
     void normalize();
     bool is_normalized() const;
 
-    prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount) const;
+    prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount = 1.0) const;
 
     size_t size() const{
+        /** Returns the number of target states with non-zero transition
+         probabilities.  */
         return indices.size();
     }
 
@@ -42,8 +45,6 @@ public:
         /** Returns the maximal indexes involved in the transition.  */
         return indices.back();
     }
-
-    size_t size();
 
     const vector<long>& get_indices() const {return indices;};
     const vector<prec_t>& get_probabilities() const {return probabilities;};

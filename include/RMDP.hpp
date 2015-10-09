@@ -30,6 +30,7 @@ enum SolutionType {
  */
 class Solution {
 public:
+    //TODO: rename outcomes and outcomes_dist to natpolicy (= nature policy)
     vector<prec_t> valuefunction;
     vector<long> policy;                        // index of the actions for each states
     vector<long> outcomes;                      // index of the outcome for each state
@@ -51,6 +52,7 @@ public:
         valuefunction(valuefunction), policy(policy), outcomes(0),
         outcome_dists(outcome_dists),residual(residual),iterations(iterations){};
 
+    prec_t total_return(const Transition& initial) const;
 };
 
 /**

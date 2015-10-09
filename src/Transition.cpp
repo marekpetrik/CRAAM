@@ -11,7 +11,6 @@
 namespace craam {
 
 
-
 Transition::Transition(const vector<long>& indices, const vector<prec_t>& probabilities, 
                         const vector<prec_t>& rewards){
     /** 
@@ -118,6 +117,9 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
       Computes value for the transition and a value function.
 
       When there are no target states, the function terminates with an error.
+
+      \param valuefunction Value function, or an arbitrary vector of values
+      \param discount Discount factor, optional (default value 1)
      */
 
     auto scount = indices.size();
@@ -134,14 +136,6 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
     }
     return value;
-}
-
-size_t Transition::size(){
-    /**
-     Returns the number of target states with non-zero transition
-     probabilities. 
-     */
-     return indices.size();
 }
 
 }
