@@ -16,30 +16,30 @@ class Action {
 
 public:
     vector<Transition> outcomes;
-    vector<prec_t> distribution;
+    numvec distribution;
     prec_t threshold;
 
     Action(): threshold(0) {};
     Action(vector<Transition> outcomes) : outcomes(outcomes), threshold(0) {};
 
     // plain solution
-    pair<long,prec_t> maximal(vector<prec_t> const& valuefunction, prec_t discount) const;
-    pair<long,prec_t> minimal(vector<prec_t> const& valuefunction, prec_t discount) const;
+    pair<long,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
+    pair<long,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
 
     // average
-    prec_t average(vector<prec_t> const& valuefunction, prec_t discount, vector<prec_t> const& distribution) const;
-    prec_t average(vector<prec_t> const& valuefunction, prec_t discount) const{
+    prec_t average(numvec const& valuefunction, prec_t discount, numvec const& distribution) const;
+    prec_t average(numvec const& valuefunction, prec_t discount) const{
         return average(valuefunction,discount,distribution);
     }
 
     // fixed-outcome
-    prec_t fixed(vector<prec_t> const& valuefunction, prec_t discount, int index) const;
+    prec_t fixed(numvec const& valuefunction, prec_t discount, int index) const;
 
     // **** weighted constrained
-    template<NatureConstr nature> pair<vector<prec_t>,prec_t>
-    maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
+    template<NatureConstr nature> pair<numvec,prec_t>
+    maximal_cst(numvec const& valuefunction, prec_t discount) const;
 
-    pair<vector<prec_t>,prec_t> maximal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
+    pair<numvec,prec_t> maximal_l1(numvec const& valuefunction, prec_t discount) const{
         /** Computes the maximal outcome distribution given l1 constraints on the distribution
 
            Assumes that the number of outcomes is non-zero.
@@ -54,10 +54,10 @@ public:
     };
 
 
-    template<NatureConstr nature> pair<vector<prec_t>,prec_t>
-    minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const;
+    template<NatureConstr nature> pair<numvec,prec_t>
+    minimal_cst(numvec const& valuefunction, prec_t discount) const;
 
-    pair<vector<prec_t>,prec_t> minimal_l1(vector<prec_t> const& valuefunction, prec_t discount) const{
+    pair<numvec,prec_t> minimal_l1(numvec const& valuefunction, prec_t discount) const{
        /** Computes the minimal outcome distribution given l1 constraints on the distribution
 
        Assumes that the number of outcomes is non-zero.
@@ -76,7 +76,7 @@ public:
     const Transition& get_transition(long outcomeid) const;
 
 
-    void set_distribution(vector<prec_t> const& distribution, prec_t threshold);
+    void set_distribution(numvec const& distribution, prec_t threshold);
 
     void set_threshold(prec_t threshold){
         this->threshold = threshold;

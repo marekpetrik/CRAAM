@@ -24,8 +24,8 @@ public:
     Transition(){};
 
     Transition(const vector<long>& indices, 
-                const vector<prec_t>& probabilities, 
-                const vector<prec_t>& rewards);
+                const numvec& probabilities, 
+                const numvec& rewards);
 
     void add_sample(long stateid, prec_t probability, prec_t reward);
 
@@ -33,7 +33,7 @@ public:
     void normalize();
     bool is_normalized() const;
 
-    prec_t compute_value(vector<prec_t> const& valuefunction, prec_t discount = 1.0) const;
+    prec_t compute_value(numvec const& valuefunction, prec_t discount = 1.0) const;
     prec_t mean_reward() const;
 
     size_t size() const{
@@ -48,18 +48,18 @@ public:
     }
 
     // probability manipulation
-    vector<prec_t> probabilities_vector(size_t size) const;
-    void probabilities_addto(prec_t scale, vector<prec_t>& transition) const;
+    numvec probabilities_vector(size_t size) const;
+    void probabilities_addto(prec_t scale, numvec& transition) const;
 
     const vector<long>& get_indices() const {return indices;};
-    const vector<prec_t>& get_probabilities() const {return probabilities;};
-    const vector<prec_t>& get_rewards() const {return rewards;};
+    const numvec& get_probabilities() const {return probabilities;};
+    const numvec& get_rewards() const {return rewards;};
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
 
 protected:
     vector<long> indices;
-    vector<prec_t> probabilities;
-    vector<prec_t> rewards;
+    numvec probabilities;
+    numvec rewards;
 };
 
 }

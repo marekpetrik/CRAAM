@@ -60,6 +60,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     RMDP rmdp(3);
 
     // nonrobust
+    // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
     rmdp.add_transition_d(0,1,1,1,0);
     rmdp.add_transition_d(1,1,2,1,0);
     rmdp.add_transition_d(2,1,2,1,1.1);
@@ -73,7 +74,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     vector<prec_t> initial{0,0,0};
 
     // small number of iterations (not the true value function)
-    auto&& re = rmdp.vi_gs_rob(initial,0.9,300,0);
+    auto&& re = rmdp.vi_gs_rob(initial,0.9,20,0);
 
     vector<prec_t> val_rob{7.68072,8.67072,9.77072};
     vector<long> pol_rob{1,1,1};
@@ -90,7 +91,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     // many iterations
     const vector<prec_t> val_rob3{8.91,9.9,11.0};
     const vector<prec_t> occ_freq3{0.333333333,0.6333333333,9.03333333333333};
-    const prec_t ret3 = 9.9363;
+    const prec_t ret_true = 9.93666666;
     
 
     // robust
@@ -121,15 +122,17 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
+    // check the computed returns
+    BOOST_CHECK_CLOSE (re3.total_return(init_d), ret_true, 1e-3);
+
     // check if we get the same return from the solution as from the
     // occupancy frequencies 
-    auto&& occupancy_freq = rmdp.of_gs(init_d,0.9,re.policy,re.outcomes,100);
+    auto&& occupancy_freq = rmdp.ofreq_mat(init_d,0.9,re.policy,re.outcomes);
     CHECK_CLOSE_COLLECTION(occupancy_freq, occ_freq3, 1e-3);
 
-    auto&& rewards = rmdp.rewards_state(re.policy,re.outcomes);
-    auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0);
-
-    BOOST_CHECK_CLOSE (re.total_return(init_d), cmp_tr,1e-3);
+    auto&& rewards = rmdp.rewards_state(re3.policy,re3.outcomes);
+    auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
+    BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
 
 }
 

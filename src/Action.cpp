@@ -8,12 +8,11 @@
 
 using namespace std;
 
-
 namespace craam {
 
 template<NatureConstr nature>
-pair<vector<prec_t>,prec_t>
-Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
+pair<numvec,prec_t>
+Action::maximal_cst(numvec const& valuefunction, prec_t discount) const{
     /**
        Computes the maximal outcome distribution constraints on the nature's distribution
 
@@ -32,7 +31,7 @@ Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     if(outcomes.size() == 0)
         throw range_error("Action with no outcomes not allowed when maximizing.");
 
-    vector<prec_t> outcomevalues(outcomes.size());
+    numvec outcomevalues(outcomes.size());
 
     for(size_t i = 0; i < outcomes.size(); i++){
         const auto& outcome = outcomes[i];
@@ -46,9 +45,9 @@ Action::maximal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
 }
 
 // explicit instantiation of the template
-template pair<vector<prec_t>,prec_t> Action::maximal_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
+template pair<numvec,prec_t> Action::maximal_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
-void Action::set_distribution(vector<prec_t> const& distribution, prec_t threshold){
+void Action::set_distribution(numvec const& distribution, prec_t threshold){
     /**
        Sets the base distribution over the outcomes for this particular action. This distribution
        is used by some methods to compute a limited worst-case solution.
@@ -65,23 +64,22 @@ void Action::set_distribution(vector<prec_t> const& distribution, prec_t thresho
         return;
     }
 
-    if(distribution.size() != outcomes.size()){
+    if(distribution.size() != outcomes.size())
         throw invalid_argument("invalid distribution size");
-    }
+    
     auto sum = accumulate(distribution.begin(),distribution.end(), 0.0);
-    if(sum < 0.99 || sum > 1.001){
+    if(sum < 0.99 || sum > 1.001)
         throw invalid_argument("invalid distribution");
-    }
+    
     auto minimum = *min_element(distribution.begin(),distribution.end());
-    if(minimum < 0){
+    if(minimum < 0)
         throw invalid_argument("distribution must be non-negative");
-    }
 
     this->distribution = distribution;
     this->threshold = threshold;
 }
 
-pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t discount) const {
+pair<long,prec_t> Action::maximal(numvec const& valuefunction, prec_t discount) const {
     /**
         Computes the maximal outcome for the value function.
 
@@ -111,7 +109,7 @@ pair<long,prec_t> Action::maximal(vector<prec_t> const& valuefunction, prec_t di
 }
 
 
-pair<long,prec_t> Action::minimal(vector<prec_t> const& valuefunction, prec_t discount) const {
+pair<long,prec_t> Action::minimal(numvec const& valuefunction, prec_t discount) const {
     /**
         Computes the minimal outcome for the value function
 
@@ -144,7 +142,7 @@ pair<long,prec_t> Action::minimal(vector<prec_t> const& valuefunction, prec_t di
     return make_pair(result,minvalue);
 }
 
-prec_t Action::average(vector<prec_t> const& valuefunction, prec_t discount, vector<prec_t> const& distribution) const {
+prec_t Action::average(numvec const& valuefunction, prec_t discount, numvec const& distribution) const {
     /**
         Computes the minimal outcome for the value function.
 
@@ -187,7 +185,7 @@ prec_t Action::average(vector<prec_t> const& valuefunction, prec_t discount, vec
     return averagevalue;
 }
 
-prec_t Action::fixed(vector<prec_t> const& valuefunction, prec_t discount, int index) const{
+prec_t Action::fixed(numvec const& valuefunction, prec_t discount, int index) const{
     /**
         Computes the action value for a fixed index outcome.
 
@@ -222,9 +220,8 @@ const Transition& Action::get_transition(long outcomeid) const{
     /**
        Returns the transition. The transition must exist.
      */
-    if(outcomeid < 0l || outcomeid >= (long) outcomes.size()){
+    if(outcomeid < 0l || outcomeid >= (long) outcomes.size())
         throw invalid_argument("invalid outcome number");
-    }
 
     return outcomes[outcomeid];
 }
@@ -237,14 +234,14 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
 
-    if(outcomeid >= (long) outcomes.size()){
+    if(outcomeid >= (long) outcomes.size())
         outcomes.resize(outcomeid + 1);
-    }
+    
     outcomes[outcomeid].add_sample(toid, probability, reward);
 }
 
-template<NatureConstr nature> pair<vector<prec_t>,prec_t>
-Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
+template<NatureConstr nature> pair<numvec,prec_t>
+Action::minimal_cst(numvec const& valuefunction, prec_t discount) const{
     /**
        Computes the minimal outcome distribution constraints on the nature's distribution
 
@@ -262,9 +259,9 @@ Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
     if(distribution.size() != outcomes.size())
         throw range_error("Outcome distribution has incorrect size.");
     if(outcomes.size() == 0)
-        return make_pair(vector<prec_t>(0), -numeric_limits<prec_t>::infinity());
+        return make_pair(numvec(0), -numeric_limits<prec_t>::infinity());
 
-    vector<prec_t> outcomevalues(outcomes.size());
+    numvec outcomevalues(outcomes.size());
 
     for(size_t i = 0; i < outcomes.size(); i++){
         const auto& outcome = outcomes[i];
@@ -275,7 +272,7 @@ Action::minimal_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
 }
 
 // explicit instantiation of the template
-template pair<vector<prec_t>,prec_t> Action::minimal_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
+template pair<numvec,prec_t> Action::minimal_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
 
 }

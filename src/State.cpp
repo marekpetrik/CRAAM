@@ -5,11 +5,11 @@
 
 namespace craam {
 
-tuple<long,long,prec_t> State::max_max(vector<prec_t> const& valuefunction, prec_t discount) const{
+tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t discount) const{
     /**
-       Finds the maximal optimistic action
+       Finds the maximal optimistic action.
 
-       When there are no action then the return is assumed to be 0
+       When there are no action then the return is assumed to be 0.
 
        \return (Action index, outcome index, value)
      */
@@ -34,7 +34,7 @@ tuple<long,long,prec_t> State::max_max(vector<prec_t> const& valuefunction, prec
     return make_tuple(result,result_outcome,maxvalue);
 }
 
-tuple<long,long,prec_t> State::max_min(vector<prec_t> const& valuefunction, prec_t discount) const{
+tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t discount) const{
     /**
        Finds the maximal pessimistic action
 
@@ -62,7 +62,7 @@ tuple<long,long,prec_t> State::max_min(vector<prec_t> const& valuefunction, prec
     return make_tuple(result,result_outcome,maxvalue);
 }
 
-pair<long,prec_t> State::max_average(vector<prec_t> const& valuefunction, prec_t discount) const{
+pair<long,prec_t> State::max_average(numvec const& valuefunction, prec_t discount) const{
     /**
        Finds the action with the maximal average return
      *
@@ -90,7 +90,7 @@ pair<long,prec_t> State::max_average(vector<prec_t> const& valuefunction, prec_t
 }
 
 // functions used in modified policy iteration
-prec_t State::fixed_average(vector<prec_t> const& valuefunction, prec_t discount, long actionid, vector<prec_t> const& distribution) const{
+prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long actionid, numvec const& distribution) const{
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
@@ -103,7 +103,7 @@ prec_t State::fixed_average(vector<prec_t> const& valuefunction, prec_t discount
     return actions[actionid].average(valuefunction, discount, distribution);
 }
 
-prec_t State::fixed_average(vector<prec_t> const& valuefunction, prec_t discount, long actionid) const{
+prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long actionid) const{
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
@@ -117,7 +117,7 @@ prec_t State::fixed_average(vector<prec_t> const& valuefunction, prec_t discount
 }
 
 
-prec_t State::fixed_fixed(vector<prec_t> const& valuefunction, prec_t discount, long actionid, long outcomeid) const{
+prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long actionid, long outcomeid) const{
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
@@ -177,7 +177,7 @@ void State::set_thresholds(prec_t threshold){
 }
 
 template<NatureConstr nature>
-tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
+tuple<long,numvec,prec_t> State::max_max_cst(numvec const& valuefunction, prec_t discount) const{
     /**
        Finds the maximal optimistic action given the l1 constraints.
 
@@ -189,7 +189,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
        \return Action index, outcome distribution and the mean value for the maximal bounded solution
      */
     if(this->actions.size() == 0){
-        return make_tuple(-1,vector<prec_t>(0),0.0);
+        return make_tuple(-1,numvec(0),0.0);
     }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
@@ -197,7 +197,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
 
 
     // TODO: change this to an rvalue?
-    vector<prec_t> outcomeresult;
+    numvec outcomeresult;
 
 
     for(size_t i = 0; i < this->actions.size(); i++){
@@ -215,11 +215,11 @@ tuple<long,vector<prec_t>,prec_t> State::max_max_cst(vector<prec_t> const& value
     return make_tuple(actionresult,outcomeresult,maxvalue);
 }
 
-template tuple<long,vector<prec_t>,prec_t>
-State::max_max_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
+template tuple<long,numvec,prec_t>
+State::max_max_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
 template<NatureConstr nature>
-tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& valuefunction, prec_t discount) const{
+tuple<long,numvec,prec_t> State::max_min_cst(numvec const& valuefunction, prec_t discount) const{
     /**
        Finds the maximal pessimistic action given l1 constraints
 
@@ -233,14 +233,14 @@ tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& value
        \return (Action index, outcome index, value)
      */
     if(this->actions.size() == 0){
-        return make_tuple(-1,vector<prec_t>(0),0.0);
+        return make_tuple(-1,numvec(0),0.0);
     }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long actionresult = -1l;
 
     // TODO: change this to an rvalue?
-    vector<prec_t> outcomeresult;
+    numvec outcomeresult;
 
     for(size_t i = 0; i < this->actions.size(); i++){
         const auto& action = actions[i];
@@ -258,7 +258,7 @@ tuple<long,vector<prec_t>,prec_t> State::max_min_cst(vector<prec_t> const& value
 
 }
 
-template tuple<long,vector<prec_t>,prec_t>
-State::max_min_cst<worstcase_l1>(vector<prec_t> const& valuefunction, prec_t discount) const;
+template tuple<long,numvec,prec_t>
+State::max_min_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
 }
