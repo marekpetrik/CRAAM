@@ -1345,15 +1345,9 @@ Solution RMDP::mpi_jac_l1_opt(vector<prec_t> const& valuefunction, prec_t discou
 }
 
 
-vector<prec_t> RMDP::of_gs(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature, long iterations) const{
+vector<prec_t> RMDP::ofreq_mat(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature) const{
     /**
-        Computes occupancy frequencies using Gauss-seidel method to solve:
-        (I - gamma P^T) x = alpha
-        The update is:
-        x_{k+1} = alpha + gamma P^T x_k
-
-        The iteration loops over states in the opposite direction as vi_gs in order 
-        for both methods to be efficient for a constant order of the states.
+        Computes occupancy frequencies using matrix representation
 
         \param init Initial distribution (alpha)
         \param discount Discount factor (gamma)
@@ -1362,22 +1356,15 @@ vector<prec_t> RMDP::of_gs(const Transition& init, prec_t discount, const vector
      */
     
     // initialize
-    const auto&& initial_d = init.probabilities_vector(state_count());
-    vector<prec_t> frequency(state_count(),0.0);
+    const auto&& initial_d = vec(init.probabilities_vector(state_count()));
 
-    for(long i=0; i < iterations; i++){       
+    unique_ptr<SpMat<prec_t>> t_mat(transition_mat_t(policy,natpolicy));
 
-        //TODO cout << "F " << frequency[0] << " " << frequency[1] << " " << frequency[2] << endl;
+    (*t_mat) *= -discount;
+    (*t_mat) += speye(state_count());
 
-        for(long s=state_count()-1; s >= 0; s--){
-            const Transition& t = get_transition(s, policy[s], nature[s]);
+    const auto&& frequency = spsolve(t_mat,initial_d);
 
-            // add the scaled transition probabilities
-            auto old = frequency[s];
-            t.probabilities_addto(discount*frequency[s],frequency);
-            frequency[s] += initial_d[s] - old;
-        }
-    }
     return frequency;
 }
 
@@ -1397,6 +1384,53 @@ vector<prec_t> RMDP::rewards_state(const vector<long>& policy, const vector<long
         rewards[s] = get_transition(s,policy[s],nature[s]).mean_reward();
     }
     return rewards;
+}
+
+
+unique_ptr<SpMat<prec_t>> RMDP::transition_mat(const vector<long>& policy, const vector<long>& nature) const{
+    /**
+         Constructs the transition matrix for the policy.
+        
+        \param policy Policy of the decision maker
+        \param nature Policy of nature
+     */
+
+    const size_t n = state_count();
+    unique_ptr<SpMat<prec_t>> result(new SpMat<prec_t>(n,n));
+
+    for(size_t s=0; s < n; s++){
+        const Transition& t = get_transition(s,policy[s],nature[s]);
+        const auto& indexes = t.get_indices();
+        const auto& probabilities = t.get_probabilities();
+
+        for(size_t j=0; j < t.size(); j++){
+            (*result)[s,indexes[j]] = probabilities[j];         
+        }
+    }
+    return result;
+}
+
+unique_ptr<SpMat<prec_t>> RMDP::transition_mat_t(const vector<long>& policy, const vector<long>& nature) const{
+    /**
+         Constructs a transpose of the transition matrix for the policy.
+        
+        \param policy Policy of the decision maker
+        \param nature Policy of nature
+     */
+
+    const size_t n = state_count();
+    unique_ptr<SpMat<prec_t>> result(new SpMat<prec_t>(n,n));
+
+    for(size_t s=0; s < n; s++){
+        const Transition& t = get_transition(s,policy[s],nature[s]);
+        const auto& indexes = t.get_indices();
+        const auto& probabilities = t.get_probabilities();
+
+        for(size_t j=0; j < t.size(); j++){
+            (*result)[indexes[j],s] = probabilities[j];         
+        }
+    }
+    return result;
 }
 
 }

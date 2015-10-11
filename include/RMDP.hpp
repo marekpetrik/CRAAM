@@ -1,12 +1,10 @@
 #pragma once
 #include <vector>
 #include <istream>
-#include <ostream>
 #include <fstream>
 #include <memory>
-#include <cmath>
 #include <tuple>
-#include <algorithm>
+#include <armadillo>
 
 #include "definitions.hpp"
 #include "State.hpp"
@@ -15,13 +13,9 @@ using namespace std;
 
 namespace craam {
 
-enum Uncertainty {
-    simplex = 0
-};
-
 /**
  Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
- worst-case behavior of nature, optimistic corresponds the the best case, and average
+ worst-case behavior of nature, optimistic corresponds the best case, and average
  represents a weighted mean of the returns.
  */
 enum SolutionType {
@@ -129,7 +123,7 @@ public:
     void transitions_to_csv_file(const string& filename, bool header = true) const;
 
     // copying
-    // TODO: deprecate these methods
+    // TODO: deprecate these methods and replace with the copy constructor
     unique_ptr<RMDP> copy() const;
     void copy_into(RMDP& result) const;
 
@@ -137,8 +131,10 @@ public:
     string to_string() const;
 
     // fixed-policy functions
-    vector<prec_t> of_gs(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature, long iterations) const;
+    vector<prec_t> ofreq_mat(const Transition& init, prec_t discount, const vector<long>& policy, const vector<long>& nature) const;
     vector<prec_t> rewards_state(const vector<long>& policy, const vector<long>& nature) const;
+    unique_ptr<SpMat<prec_t>> transition_mat(const vector<long>& policy, const vector<long>& nature) const;
+    unique_ptr<SpMat<prec_t>> transition_mat_t(const vector<long>& policy, const vector<long>& nature) const;
 
     // value iteration
     Solution vi_gs_rob(vector<prec_t> valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
