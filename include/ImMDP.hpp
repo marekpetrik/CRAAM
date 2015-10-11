@@ -19,17 +19,22 @@ namespace impl{
 class MDPI{
 
 public:
-    const shared_ptr<const RMDP> mdp;
-    const vector<long> state2observ;
-    const Transition initial;
+    MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ, const Transition& initial);
 
+    MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 
-    MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ, const Transition& initial);
+    size_t obs_count() const { return maxobs };
+    size_t state_count() const {return mdp->state_count()};
 
-    MDPI(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial);
+    indvec obspol_to_statepol(indvec obspol);
     
 protected:
-    static void check_parameters(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial);
+    shared_ptr<const RMDP> mdp;
+    indvec state2observ;
+    long maxobs;
+    Transition initial;
+
+    static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 };
 
 
@@ -41,22 +46,22 @@ class MDPI_R : public MDPI{
 
 public:
 
-
-    MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ,
+    MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
             const Transition& initial);
 
-    MDPI_R(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial);
+    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 
     const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
 
+    Solution solve_reweighted(long iterations) const;
+
 protected:
 
-
     RMDP robust_mdp;    // TODO: this would ideally be a constant
-    vector<long> state2outcome;
+    indvec state2outcome;
 
     void initialize_robustmdp();
 };

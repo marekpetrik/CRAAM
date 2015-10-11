@@ -12,7 +12,7 @@ namespace craam{
 namespace impl{
 
 
-void MDPI::check_parameters(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial){
+void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial){
     /**
          Checks whether the parameters are correct. Throws an exception if the parmaters
          are wrong.
@@ -30,12 +30,11 @@ void MDPI::check_parameters(const RMDP& mdp, const vector<long>& state2observ, c
         throw invalid_argument("An initial transition to a non-existent state.");
     if(!initial.is_normalized())
         throw invalid_argument("The initial transition must be normalized.");
-
 }
 
-
-MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ, const Transition& initial)
-            : mdp(mdp), state2observ(state2observ), initial(initial){
+MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ, const Transition& initial)
+            : mdp(mdp), state2observ(state2observ), initial(initial), 
+              maxobs(*max_element(state2observ.begin(), state2observ.end()){
     /**
         Constructs the MDP with implementability constraints. This constructor makes it 
         possible to share the MDP with other data structures.
@@ -52,9 +51,8 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ, 
     check_parameters(*mdp, state2observ, initial);
 }
 
-MDPI::MDPI(const RMDP& mdp, const vector<long>& state2observ, const Transition& initial)
-            : mdp(new RMDP(mdp)), 
-            state2observ(state2observ), initial(initial){
+MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial)
+            : MDPI(shared_ptr<const RMDP>(new RMDP(mdp)),state2observ, initial){
     /**
         Constructs the MDP with implementability constraints. The MDP model is
         copied (using the copy constructor) and stored internally.
@@ -67,11 +65,9 @@ MDPI::MDPI(const RMDP& mdp, const vector<long>& state2observ, const Transition& 
         \param initial A representation of the initial distribution. The rewards
                         in this transition are ignored (and should be 0).
     */
-
-    check_parameters(mdp, state2observ, initial);
 }
 
-MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& state2observ,
+MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial){
     /**
         Calls the base constructor and also constructs the corresponding
@@ -81,7 +77,24 @@ MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const vector<long>& state2obse
     initialize_robustmdp();
 }
 
-MDPI_R::MDPI_R(const RMDP& mdp, const vector<long>& state2observ,
+indvec MDPI::obspol2statepol(indvec obspol) const{
+    /** 
+        Converts a policy defined in terms of observations to a policy defined in
+        terms of states.
+
+        \param obspol Policy that maps observations to actions to take
+     */
+
+     numvec statepol(state_count());
+
+     for(int s=0; s < state_count(); s++){
+         statepol[s] = obspol[state2observ[s]];
+     }
+
+     return statepol;
+}
+
+MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial){
     /**
         Calls the base constructor and also constructs the corresponding
@@ -105,11 +118,11 @@ void MDPI_R::initialize_robustmdp(){
 
 
     // keep track of the number of outcomes for each
-    vector<long> outcome_count(obs_count, 0);
+    indvec outcome_count(obs_count, 0);
     // keep track of which outcome a state is mapped to
-    vector<long> state2outcome(mdp->state_count(), -1);
+    indvec state2outcome(mdp->state_count(), -1);
     // keep track of actions - needs to make sure that they are all the same
-    vector<long> action_counts(obs_count, -1);  // -1 means not initialized
+    indvec action_counts(obs_count, -1);  // -1 means not initialized
 
     for(size_t state_index=0; state_index < mdp->state_count(); state_index++){
         auto obs = state2observ[state_index];
@@ -147,6 +160,41 @@ void MDPI_R::initialize_robustmdp(){
         state2outcome[state_index] = outcome_count[obs]++;
     }
 }
+
+void MDPI_R::update_importance_weigts(numvec weights){
+    /**
+        Updates the weights on outcomes in the robust MDP based on the state
+        weights provided.
+
+        This method modifies the stored robust MDP.
+     */
+}
+
+Solution MDPI_R::solve_reweighted(long iterations){
+    /**
+        Uses a simple iterative algorithm to solve the MDPI. 
+
+        The algorithm starts with a policy composed of actions all 0, and
+        then updates the distribution of robust outcomes (corresponding to MDP states),
+        and computes the optimal solution for thus weighted RMDP.
+
+        This method modifies the stored robust MDP.
+        
+        \param iterations Maximal number of iterations; also stops if the policy no longer changes
+
+        \returns Solution; recall that the policy is in terms of the observations
+     */
+
+    indvec obspol(maxobs, 0);   // current policy in terms of observations
+    indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
+
+    // TODO: add a method in RMDP to compute the distribution of a non-robust policy 
+    const indvec nature(state_count(), 0); 
+    
+    // compute distribution
+    auto&& importanceweights = mdp->ofreq_mat(initial, statepol, nature);
+}
+
 
 }}
 

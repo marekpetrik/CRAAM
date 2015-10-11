@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_save_load_save_load) {
     BOOST_CHECK_EQUAL(string1, string2);
 }
 
-BOOST_AUTO_TEST_CASE( test_value_function ) {
+BOOST_AUTO_TEST_CASE(test_value_function) {
     RMDP rmdp(1);
 
     rmdp.add_transition(0,0,0,0,1,1);
