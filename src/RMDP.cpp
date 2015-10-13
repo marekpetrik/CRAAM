@@ -538,14 +538,19 @@ Solution RMDP::vi_gs_gen(numvec valuefunction, prec_t discount, unsigned long it
        difficult to parallelize.
 
        \param valuefunction Initial value function. Passed by value,
-                            because it is modified.
+                            because it is modified. If it has size 0, then it is assumed
+                            to be all 0s.
        \param discount Discount factor.
        \param iterations Maximal number of iterations to run
        \param maxresidual Stop when the maximal residual falls below this value.
      */
 
-    if(valuefunction.size() != states.size())
-        throw invalid_argument("Incorrect dimensions of value function.");
+    if(valuefunction.size() > 0){
+        if(valuefunction.size() != states.size())
+            throw invalid_argument("Incorrect dimensions of value function.");
+    }else{
+        valuefunction.assign(state_count(), 0.0);
+    }
 
     indvec policy(states.size());
     indvec outcomes(states.size());
@@ -602,16 +607,21 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
        arbitrary constraints on nature (given by the function nature). Average case constrained
        nature is not supported.
 
-       \param valuefunction Initial value function. Passed by value, because it is modified.
+       \param valuefunction Initial value function. Passed by value, because it is modified. When
+                               it has zero length, it is assumed to be all zeros.
        \param discount Discount factor.
        \param iterations Maximal number of iterations to run
        \param maxresidual Stop when the maximal residual falls below this value.
      */
-    if(valuefunction.size() != this->states.size())
-        throw invalid_argument("incorrect size of value function");
+    if(valuefunction.size() > 0){
+        if(valuefunction.size() != states.size())
+            throw invalid_argument("incorrect size of value function");
+    }else{
+        valuefunction.assign(state_count(), 0);
+    }
 
-    indvec policy(this->states.size());
-    vector<numvec> outcome_dists(this->states.size());
+    indvec policy(states.size());
+    vector<numvec> outcome_dists(states.size());
 
     prec_t residual = numeric_limits<prec_t>::infinity();
     size_t i;
@@ -654,21 +664,28 @@ Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned
        Jacobi value iteration variant. The behavior of the nature depends on the values
        of parameter type. This method uses OpenMP to parallelize the computation.
 
-       \param valuefunction Initial value function.
+       \param valuefunction Initial value function, if size zero, then considered to be all zeros.
        \param discount Discount factor.
        \param iterations Maximal number of iterations to run
        \param maxresidual Stop when the maximal residual falls below this value.
      */
+    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
+        throw invalid_argument("Incorrect size of value function.");
 
-    if(valuefunction.size() != states.size()){
-        throw invalid_argument("incorrect dimension of the value function.");
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
+
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0); 
+        evenvalue.assign(states.size(),0);
     }
 
     indvec policy(states.size());
     indvec outcomes(states.size());
 
-    numvec oddvalue = valuefunction;        // set in even iterations (0 is even)
-    numvec evenvalue = valuefunction;       // set in odd iterations
     numvec residuals(valuefunction.size());
 
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -735,15 +752,23 @@ Solution RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned
        \param maxresidual Stop when the maximal residual falls below this value.
      */
 
-    if(valuefunction.size() != this->states.size()){
-        throw invalid_argument("incorrect dimension of the value function.");
+    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
+        throw invalid_argument("Incorrect size of value function.");
+
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
+
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0); 
+        evenvalue.assign(states.size(),0);
     }
 
-    indvec policy(this->states.size());
-    vector<numvec> outcome_dists(this->states.size());
+    indvec policy(states.size());
+    vector<numvec> outcome_dists(states.size());
 
-    numvec oddvalue = valuefunction;            // set in even iterations (0 is even)
-    numvec evenvalue = valuefunction;           // set in odd iterations
     numvec residuals(valuefunction.size());
 
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -802,7 +827,7 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
 
        Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 
-       \param valuefunction Initial value function
+       \param valuefunction Initial value function, use a vector of length 0 if the value is not provided
        \param discount Discount factor
        \param iterations_pi Maximal number of policy iteration steps
        \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
@@ -813,15 +838,22 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
        \return Computed (approximate) solution
      */
 
-    if(valuefunction.size() != this->states.size())
+    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
         throw invalid_argument("Incorrect size of value function.");
 
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
 
-    indvec policy(this->states.size());
-    indvec outcomes(this->states.size());
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0); 
+        evenvalue.assign(states.size(),0);
+    }
 
-    numvec oddvalue = valuefunction;        // set in even iterations (0 is even)
-    numvec evenvalue = valuefunction;       // set in odd iterations
+    indvec policy(states.size());
+    indvec outcomes(states.size());
 
     numvec residuals(valuefunction.size());
 
@@ -936,17 +968,25 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
        \return Computed (approximate) solution
      */
 
-    if(valuefunction.size() != this->states.size()) throw invalid_argument("incorrect size of value function");
-
     if(type == SolutionType::Average) throw invalid_argument("computing average is not supported by this function");
 
-    indvec policy(this->states.size());
+    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
+        throw invalid_argument("Incorrect size of value function.");
 
-    // TODO: a vector of r-values?
-    vector<numvec> outcomes(this->states.size());
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
 
-    numvec oddvalue(valuefunction);        // set in even iterations (0 is even)
-    numvec evenvalue(valuefunction);       // set in odd iterations
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0); 
+        evenvalue.assign(states.size(),0);
+    }
+
+    indvec policy(states.size());
+
+    vector<numvec> outcomes(states.size());
 
     numvec residuals(valuefunction.size());
 
@@ -959,7 +999,7 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
 
     for(i = 0; i < iterations_pi; i++){
 
-        std::swap<numvec*>(targetvalue, sourcevalue);
+        std::swap(targetvalue, sourcevalue);
 
         prec_t residual_vi = numeric_limits<prec_t>::infinity();
 
@@ -969,7 +1009,7 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
             const auto& state = states[s];
 
             // TODO: change to an rvalue?
-             tuple<long,numvec,prec_t> newvalue;
+            tuple<long,numvec,prec_t> newvalue;
 
             switch(type){
             case SolutionType::Robust:

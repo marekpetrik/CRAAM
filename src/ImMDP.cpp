@@ -161,7 +161,7 @@ void MDPI_R::initialize_robustmdp(){
     }
 }
 
-void MDPI_R::update_importance_weigts(numvec weights){
+void MDPI_R::update_importance_weigts(const numvec& weights){
     /**
         Updates the weights on outcomes in the robust MDP based on the state
         weights provided.
@@ -191,8 +191,14 @@ Solution MDPI_R::solve_reweighted(long iterations){
     // TODO: add a method in RMDP to compute the distribution of a non-robust policy 
     const indvec nature(state_count(), 0); 
     
-    // compute distribution
+    // compute state distribution
     auto&& importanceweights = mdp->ofreq_mat(initial, statepol, nature);
+
+    update_importance_weigts(importanceweights);
+
+    robust_mdp.mpi_jac_ave()
+
+
 }
 
 

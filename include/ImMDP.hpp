@@ -26,7 +26,7 @@ public:
     size_t obs_count() const { return maxobs };
     size_t state_count() const {return mdp->state_count()};
 
-    indvec obspol_to_statepol(indvec obspol);
+    indvec obspol2statepol(indvec obspol) const;
     
 protected:
     shared_ptr<const RMDP> mdp;
@@ -56,7 +56,9 @@ public:
         return robust_mdp;
     };
 
-    Solution solve_reweighted(long iterations) const;
+    void update_importance_weigts(const numvec& weights);
+
+    Solution solve_reweighted(long iterations);
 
 protected:
 
