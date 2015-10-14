@@ -452,7 +452,8 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
 
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
-    rmdp.set_distribution(0,0,dist,2);
+    rmdp.get_state(0).get_action(0).set_distribution(dist);
+    rmdp.get_state(0).get_action(0).set_threshold(2);
 
     vector<prec_t> initial = {0};
 
@@ -491,11 +492,13 @@ BOOST_AUTO_TEST_CASE(test_string){
 
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
-    rmdp.set_distribution(0,0,dist,2);
+    rmdp.get_state(0).get_action(0).set_distribution(dist);
+    rmdp.get_state(0).get_action(0).set_threshold(2);
 
     rmdp.add_transition(1,0,0,0,1,1);
     rmdp.add_transition(1,0,1,0,1,2);
-    rmdp.set_distribution(1,0,dist,2);
+    rmdp.get_state(1).get_action(0).set_distribution(dist);
+    rmdp.get_state(1).get_action(0).set_threshold(2);
 
     auto s = rmdp.to_string();
     BOOST_CHECK_EQUAL(s.length(), 40);
@@ -824,17 +827,17 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
     store.seekg(0);
     auto rmdp = RMDP::transitions_from_csv(store,false);
 
-    BOOST_CHECK_EQUAL(rmdp->get_reward(3,0,0,0), 10.0);
-    rmdp->set_reward(3,0,0,0,15.1);
-    BOOST_CHECK_EQUAL(rmdp->get_reward(3,0,0,0), 15.1);
+    BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_outcome(0).get_reward(0), 10.0);
+    rmdp->get_state(3).get_action(0).get_outcome(0).set_reward(0,15.1);
+    BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_outcome(0).get_reward(0), 15.1);
 
-    BOOST_CHECK_EQUAL(rmdp->get_reward(0,1,0,1), 2.0);
-    rmdp->set_reward(0,1,0,1,19.1);
-    BOOST_CHECK_EQUAL(rmdp->get_reward(0,1,0,1), 19.1);
+    BOOST_CHECK_EQUAL(rmdp->get_state(0).get_action(1).get_outcome(0).get_reward(1), 2.0);
+    rmdp->get_state(0).get_action(1).get_outcome(0).set_reward(1,19.1);
+    BOOST_CHECK_EQUAL(rmdp->get_state(0).get_action(1).get_outcome(0).get_reward(1), 19.1);
 
-    BOOST_CHECK_EQUAL(rmdp->get_threshold(3,0), 0);
-    rmdp->set_threshold(3,0,1.0);
-    BOOST_CHECK_EQUAL(rmdp->get_threshold(3,0), 1.0);
+    BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_threshold(), 0);
+    rmdp->get_state(3).get_action(0).set_threshold(1.0);
+    BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_threshold(), 1.0);
 
 }
 
@@ -845,17 +848,18 @@ BOOST_AUTO_TEST_CASE(test_rmdp_copy){
 
     rmdp_original.add_transition(0,0,0,0,1,1);
     rmdp_original.add_transition(0,0,1,0,1,2);
-    rmdp_original.set_distribution(0,0,dist,2);
+    rmdp_original.get_state(0).get_action(0).set_distribution(dist);
+    rmdp_original.get_state(0).get_action(0).set_threshold(2);
 
-    auto rmdp = rmdp_original.copy();
+    unique_ptr<RMDP> rmdp(new RMDP(rmdp_original));
 
     vector<prec_t> initial = {0};
 
     auto&& result1 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
 
     auto&& result2 = rmdp->vi_gs_l1_opt(initial,0.9, 1000, 0);
-    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0],20.0,1e-3);
 
     rmdp->set_uniform_thresholds(0);
     auto&& result3 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
@@ -913,10 +917,10 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     auto rmdp1 = RMDP::transitions_from_csv(store,false);
 
     // copying to make sure that copy works
-    auto rmdp = rmdp1->copy();
+    unique_ptr<RMDP> rmdp(new RMDP(*rmdp1));
 
     // change rewards to make sure that it is really a copy
-    rmdp1->set_reward(1,0,0,0,9.0);
+    rmdp1->get_state(1).get_action(0).get_outcome(0).set_reward(0,9.0);
 
     // print the problem definition for debugging
     //cout << string_representation << endl;

@@ -90,28 +90,22 @@ public:
     void add_transition_d(long fromid, long actionid, long toid, prec_t probability, prec_t reward);
     void add_transitions(indvec const& fromids, indvec const& actionids, indvec const& outcomeids, indvec const& toids, numvec const& probs, numvec const& rews);
 
-    // manipulate MDP attributes
-    void set_distribution(long fromid, long actionid, numvec const& distribution, prec_t threshold);
-    void set_threshold(long stateid, long actionid, prec_t threshold);
+    // manipulate weights
     void set_uniform_distribution(prec_t threshold);
     void set_uniform_thresholds(prec_t threshold);
-    void set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward);
-
-    // querying parameters
-    prec_t get_reward(long stateid, long actionid, long outcomeid, long sampleid) const;
-    prec_t get_toid(long stateid, long actionid, long outcomeid, long sampleid) const;
-    prec_t get_probability(long stateid, long actionid, long outcomeid, long sampleid) const;
-    Transition& get_transition(long stateid, long actionid, long outcomeid);
-    const Transition& get_transition(long stateid, long actionid, long outcomeid) const;
-    prec_t get_threshold(long stateid, long actionid) const;
+    
+    // get parameters
+    Transition& get_transition(long stateid, long actionid, long outcomeid)
+        {return get_state(stateid).get_action(actionid).get_outcome(outcomeid);};
+    const Transition& get_transition(long stateid, long actionid, long outcomeid) const
+        {return get_state(stateid).get_action(actionid).get_outcome(outcomeid);};
+    State& get_state(long stateid) {return states[stateid];};
+    const State& get_state(long stateid) const {return states[stateid];};
 
     // object counts
     size_t state_count() const;
-    size_t action_count(long stateid) const;
-    size_t outcome_count(long stateid, long actionid) const;
-    size_t transition_count(long stateid, long actionid, long outcomeid) const;
 
-    // normalization
+    // normalization of transition probabilities
     bool is_normalized() const;
     void normalize();
 
@@ -119,11 +113,6 @@ public:
     static unique_ptr<RMDP> transitions_from_csv(istream& input, bool header = true);
     void transitions_to_csv(ostream& output, bool header = true) const;
     void transitions_to_csv_file(const string& filename, bool header = true) const;
-
-    // copying
-    // TODO: deprecate these methods and replace with the copy constructor
-    unique_ptr<RMDP> copy() const;
-    void copy_into(RMDP& result) const;
 
     // string representation
     string to_string() const;
@@ -154,8 +143,10 @@ public:
     Solution mpi_jac_l1_rob(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
     Solution mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
-protected:
+public:
+
     vector<State> states;
+protected:
 
     template<SolutionType type> 
     Solution vi_gs_gen(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;

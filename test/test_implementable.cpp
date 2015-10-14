@@ -44,8 +44,8 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
     // check that we really have a copy
     mdp->add_transition_d(1,0,2,1.0,1.0);
     BOOST_CHECK_EQUAL(mdp->state_count(), 3);
-    BOOST_CHECK_EQUAL(im.mdp->state_count(), 3);
-    BOOST_CHECK_EQUAL(im2.mdp->state_count(), 2);
+    BOOST_CHECK_EQUAL(im.get_mdp()->state_count(), 3);
+    BOOST_CHECK_EQUAL(im2.get_mdp()->state_count(), 2);
 }
 
 
@@ -63,8 +63,8 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
     const RMDP& rmdp = imr.get_robust_mdp();
 
     BOOST_CHECK_EQUAL(rmdp.state_count(), 1);
-    BOOST_CHECK_EQUAL(rmdp.action_count(0), 1);
-    BOOST_CHECK_EQUAL(rmdp.outcome_count(0,0), 2);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 1);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(0).outcome_count(), 2);
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
@@ -100,11 +100,11 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     const RMDP& rmdp = imr.get_robust_mdp();
 
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
-    BOOST_CHECK_EQUAL(rmdp.action_count(0), 2);
-    BOOST_CHECK_EQUAL(rmdp.action_count(1), 1);
-    BOOST_CHECK_EQUAL(rmdp.outcome_count(0,0), 2);
-    BOOST_CHECK_EQUAL(rmdp.outcome_count(0,1), 2);
-    BOOST_CHECK_EQUAL(rmdp.outcome_count(1,0), 1);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 2);
+    BOOST_CHECK_EQUAL(rmdp.get_state(1).action_count(), 1);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(0).outcome_count(), 2);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(1).outcome_count(), 2);
+    BOOST_CHECK_EQUAL(rmdp.get_state(1).get_action(0).outcome_count(), 1);
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 

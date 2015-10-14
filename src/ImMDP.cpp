@@ -34,7 +34,7 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const T
 
 MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ, const Transition& initial)
             : mdp(mdp), state2observ(state2observ), initial(initial), 
-              maxobs(*max_element(state2observ.begin(), state2observ.end()){
+              obscount(1+*max_element(state2observ.begin(), state2observ.end())){
     /**
         Constructs the MDP with implementability constraints. This constructor makes it 
         possible to share the MDP with other data structures.
@@ -85,9 +85,9 @@ indvec MDPI::obspol2statepol(indvec obspol) const{
         \param obspol Policy that maps observations to actions to take
      */
 
-     numvec statepol(state_count());
+     indvec statepol(state_count());
 
-     for(int s=0; s < state_count(); s++){
+     for(size_t s=0; s < state_count(); s++){
          statepol[s] = obspol[state2observ[s]];
      }
 
@@ -128,7 +128,7 @@ void MDPI_R::initialize_robustmdp(){
         auto obs = state2observ[state_index];
 
         // check the number of actions
-        auto ac = mdp->action_count(state_index);
+        auto ac = mdp->get_state(state_index).action_count();
         if(action_counts[obs] >= 0){
             if(action_counts[obs] != (long) ac){
                 throw invalid_argument("Inconsistent number of actions: " + to_string(state_index) +
@@ -141,7 +141,7 @@ void MDPI_R::initialize_robustmdp(){
         // maps the transitions
         for(long action_index=0; action_index < (long) ac; action_index++){
             // check to make sure that there is no robustness
-            if(mdp->outcome_count(state_index,action_index) > 1)
+            if(mdp->get_state(state_index).get_action(action_index).outcome_count() > 1)
                 throw invalid_argument("Robust base MDP is not supported; multiple outcomes in state " +
                                        to_string(state_index) + " and action " + to_string(action_index) );
 
@@ -168,9 +168,32 @@ void MDPI_R::update_importance_weigts(const numvec& weights){
 
         This method modifies the stored robust MDP.
      */
+    
+    if(weights.size() != state_count()){
+        throw invalid_argument("Size of distribution must match the number of states.");
+    }
+
+    // loop over all mdp states and set weights
+    for(size_t i; i < weights.size(); i++){
+        const auto rmdp_stateid = state2observ[i];
+        const auto rmdp_outcomeid = state2outcome[i];
+        // loop over all actions
+
+        auto& rstate = robust_mdp.get_state(rmdp_stateid);
+        for(auto& a : rstate.actions){
+            a.set_distribution(rmdp_outcomeid, weights[i]);
+        }
+    }
+
+    // now normalize the weights to they sum to one
+    for(auto& s : robust_mdp.states){
+        for(auto& a : s.actions){
+            a.normalize_distribution();
+        }
+    }
 }
 
-Solution MDPI_R::solve_reweighted(long iterations){
+Solution MDPI_R::solve_reweighted(long iterations, prec_t discount){
     /**
         Uses a simple iterative algorithm to solve the MDPI. 
 
@@ -185,20 +208,20 @@ Solution MDPI_R::solve_reweighted(long iterations){
         \returns Solution; recall that the policy is in terms of the observations
      */
 
-    indvec obspol(maxobs, 0);   // current policy in terms of observations
+    indvec obspol(obscount, 0);   // current policy in terms of observations
     indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
 
     // TODO: add a method in RMDP to compute the distribution of a non-robust policy 
     const indvec nature(state_count(), 0); 
     
     // compute state distribution
-    auto&& importanceweights = mdp->ofreq_mat(initial, statepol, nature);
+    auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 
     update_importance_weigts(importanceweights);
 
-    robust_mdp.mpi_jac_ave()
+    Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,100,0,100,0);
 
-
+    return s;
 }
 
 

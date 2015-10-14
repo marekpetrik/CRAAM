@@ -16,8 +16,6 @@ class Action {
 
 public:
     vector<Transition> outcomes;
-    numvec distribution;
-    prec_t threshold;
 
     Action(): threshold(0) {};
     Action(vector<Transition> outcomes) : outcomes(outcomes), threshold(0) {};
@@ -41,7 +39,6 @@ public:
 
     pair<numvec,prec_t> maximal_l1(numvec const& valuefunction, prec_t discount) const{
         /** Computes the maximal outcome distribution given l1 constraints on the distribution
-
            Assumes that the number of outcomes is non-zero.
 
            \param valuefunction Value function reference
@@ -49,7 +46,6 @@ public:
 
            \return Outcome distribution and the mean value for the minimal bounded solution
          */
-
         return maximal_cst<worstcase_l1>(valuefunction, discount);
     };
 
@@ -71,16 +67,24 @@ public:
     }
 
     void add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward);
+    const Transition& get_outcome(long outcomeid) const {return outcomes[outcomeid];};
+    Transition& get_outcome(long outcomeid) {return outcomes[outcomeid];};
+    size_t outcome_count() const {return outcomes.size();};
 
     Transition& get_transition(long outcomeid);
     const Transition& get_transition(long outcomeid) const;
+    
+    void set_distribution(numvec const& distribution);
+    void set_distribution(long outcomeid, prec_t weight);
+    const numvec& get_distribution() const {return distribution;};
+    void normalize_distribution();
 
+    prec_t get_threshold() const {return threshold;};
+    void set_threshold(prec_t threshold){ this->threshold = threshold; }
 
-    void set_distribution(numvec const& distribution, prec_t threshold);
-
-    void set_threshold(prec_t threshold){
-        this->threshold = threshold;
-    }
+protected:
+    numvec distribution;
+    prec_t threshold;
 };
 
 }

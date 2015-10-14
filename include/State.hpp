@@ -14,12 +14,9 @@ namespace craam {
 /** A state in an MDP */
 class State {
 public:
-    vector<Action> actions;
 
-    State(){};
-    State(vector<Action> actions){
-        this->actions = actions;
-    }
+    State() : actions(0) {};
+    State(vector<Action> actions) : actions(actions) { };
 
     tuple<long,long,prec_t> max_max(numvec const& valuefunction, prec_t discount) const;
     tuple<long,long,prec_t> max_min(numvec const& valuefunction, prec_t discount) const;
@@ -46,10 +43,17 @@ public:
 
     void add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
 
+    const Action& get_action(long actionid) const {return actions[actionid];};
+    Action& get_action(long actionid) {return actions[actionid];};
+    size_t action_count() const { return actions.size();};
+
     Transition& get_transition(long actionid, long outcomeid);
     const Transition& get_transition(long actionid, long outcomeid) const;
 
     void set_thresholds(prec_t threshold);
+
+public: // TODO: change to protected
+    vector<Action> actions;
 };
 
 

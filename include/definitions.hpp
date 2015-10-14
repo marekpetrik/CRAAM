@@ -10,7 +10,7 @@ namespace craam {
 typedef double prec_t;
 
 /** Default numericalk vector */
-typedef vector<prec_t> numvec;
+typedef vector<prec_t> numvec; // TODO: switch to valarray or an atlas array
 
 /** Default index vector */
 typedef vector<long> indvec;

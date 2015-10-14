@@ -47,7 +47,7 @@ Action::maximal_cst(numvec const& valuefunction, prec_t discount) const{
 // explicit instantiation of the template
 template pair<numvec,prec_t> Action::maximal_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
-void Action::set_distribution(numvec const& distribution, prec_t threshold){
+void Action::set_distribution(numvec const& distribution){
     /**
        Sets the base distribution over the outcomes for this particular action. This distribution
        is used by some methods to compute a limited worst-case solution.
@@ -76,7 +76,6 @@ void Action::set_distribution(numvec const& distribution, prec_t threshold){
         throw invalid_argument("distribution must be non-negative");
 
     this->distribution = distribution;
-    this->threshold = threshold;
 }
 
 pair<long,prec_t> Action::maximal(numvec const& valuefunction, prec_t discount) const {
@@ -274,5 +273,23 @@ Action::minimal_cst(numvec const& valuefunction, prec_t discount) const{
 // explicit instantiation of the template
 template pair<numvec,prec_t> Action::minimal_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
+void Action::set_distribution(long outcomeid, prec_t weight){
+    /**
+        Sets the weight associated with an outcome.
+     */
+     distribution[outcomeid] = weight;
+
+}
+void Action::normalize_distribution(){
+    /**
+       Normalizes outcome weights to sum to one.
+     */
+    auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
+ 
+    if(weightsum > 0.0){
+        for(auto& p : distribution)
+            p /= weightsum;   
+    }
+}
 
 }

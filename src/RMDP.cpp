@@ -26,106 +26,6 @@ size_t RMDP::state_count() const{
     return this->states.size();
 }
 
-size_t RMDP::action_count(long stateid) const{
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
-    }
-    return this->states[stateid].actions.size();
-}
-
-size_t RMDP::outcome_count(long stateid, long actionid) const{
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
-    }
-    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    return this->states[stateid].actions[actionid].outcomes.size();
-}
-
-size_t RMDP::transition_count(long stateid, long actionid, long outcomeid) const{
-    /**
-       Returns the number of samples (state to state transitions) for the
-              given parameters.
-
-       \param fromid Starting state ID
-       \param actionid Action ID
-       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-       \param sampleid Sample (a single state transition) ID
-     */
-
-    return get_transition(stateid, actionid, outcomeid).size();
-}
-
-void RMDP::set_reward(long stateid, long actionid, long outcomeid, long sampleid, prec_t reward){
-    /**
-       Sets the reward for the given sample id.
-       \param fromid Starting state ID
-       \param actionid Action ID
-       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-       \param sampleid Sample (a single state transition) ID
-       \param reward The new reward
-     */
-
-    Transition& tran = get_transition(stateid,actionid,outcomeid);
-
-    if(sampleid < 0l || sampleid >= (long) tran.size()){
-        throw invalid_argument("invalid sample number");
-    }
-    tran.set_reward(sampleid,  reward);
-}
-
-
-prec_t RMDP::get_reward(long stateid, long actionid, long outcomeid, long sampleid) const {
-    /**
-       Returns the reward for the given sample id.
-       \param fromid Starting state ID
-       \param actionid Action ID
-       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-       \param sampleid Sample (a single state transition) ID
-     */
-    const Transition& tran = get_transition(stateid,actionid,outcomeid);
-
-    if(sampleid < 0l || sampleid >= (long) tran.size()){
-        throw invalid_argument("invalid sample number");
-    }
-    return tran.get_rewards()[sampleid];
-}
-
-prec_t RMDP::get_toid(long stateid, long actionid, long outcomeid, long sampleid) const {
-    /**
-       Returns the target state for the given sample id.
-       \param fromid Starting state ID
-       \param actionid Action ID
-       \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-       \param sampleid Sample (a single state transition) ID
-     */
-    const Transition& tran = get_transition(stateid,actionid,outcomeid);
-
-    if(sampleid < 0l || sampleid >= (long) tran.size()){
-        throw invalid_argument("invalid sample number");
-    }
-    return tran.get_indices()[sampleid];
-}
-
-prec_t RMDP::get_probability(long stateid, long actionid, long outcomeid, long sampleid) const {
-    /**
-        Returns the probability for the given sample id.
-
-        \param fromid Starting state
-        \param actionid Action
-        \param outcomeid Outcome (A single outcome corresponds to a regular MDP)
-        \param sampleid Sample (a single state transition) ID
-     */
-    const Transition& tran = get_transition(stateid,actionid,outcomeid);
-
-    if(sampleid < 0l || sampleid >= (long) tran.size()){
-        throw invalid_argument("invalid sample number");
-    }
-    return tran.get_probabilities()[sampleid];
-}
-
-
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
     /**
@@ -152,15 +52,16 @@ void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid,
 
 void RMDP::add_transition_d(long fromid, long actionid, long toid, prec_t probability, prec_t reward){
     /** Adds a non-robust transition.  */
-    this->add_transition(fromid, actionid, 0, toid, probability, reward);
+    add_transition(fromid, actionid, 0, toid, probability, reward);
 }
 
 
 bool RMDP::is_normalized() const{
     /**
-       Check if all transitions in the process are normalized.
+       Check if all transitions in the process sum to one.
 
-       Note that if there are no actions, or no outcomes for a state, the RMDP still may be normalized.
+       Note that if there are no actions, or no outcomes for a state, 
+       the RMDP still may be normalized.
 
        \return True if and only if all transitions are normalized.
      */
@@ -177,7 +78,7 @@ bool RMDP::is_normalized() const{
 }
 void RMDP::normalize(){
     /**
-       Normalize all transitions for all states, actions, outcomes.
+       Normalize all transitions to sum to one for all states, actions, outcomes.
      */
 
      for(auto& s : states){
@@ -188,6 +89,7 @@ void RMDP::normalize(){
         }
     }
 }
+
 
 void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indvec const& outcomeids, indvec const& toids, numvec const& probs, numvec const& rews){
     /**
@@ -209,16 +111,6 @@ void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indve
         this->add_transition(fromids[l],actionids[l],outcomeids[l],toids[l],probs[l],rews[l]);
 }
 
-void RMDP::set_distribution(long fromid, long actionid, numvec const& distribution, prec_t threshold){
-    if(fromid >= (long) this->states.size() || fromid < 0){
-        throw invalid_argument("no such state");
-    }
-    if(actionid >= (long) states[fromid].actions.size() || actionid < 0){
-        throw invalid_argument("no such action");
-    }
-    states[fromid].actions[actionid].set_distribution(distribution, threshold);
-}
-
 void RMDP::set_uniform_thresholds(prec_t threshold){
     /**
        Sets thresholds for all states uniformly
@@ -226,31 +118,6 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
     for(auto& s : this->states){
         s.set_thresholds(threshold);
     }
-}
-
-Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
-    /**
-       Return a transition for state, action, and outcome. It is created if
-       necessary.
-     */
-
-    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
-
-    if(fromid >= (long) this->states.size()){
-        (this->states).resize(fromid+1);
-    }
-
-    return this->states[fromid].get_transition(actionid, outcomeid);
-}
-
-const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{
-    /**
-       Returns the transition. The transition must exist.
-     */
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("Invalid state number");
-    }
-    return states[stateid].get_transition(actionid,outcomeid);
 }
 
 
@@ -374,88 +241,27 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
     }
 }
 
-unique_ptr<RMDP> RMDP::copy() const {
-    /**
-       Creates a copy of the MDP.
-     */
-
-    unique_ptr<RMDP> result(new RMDP(this->state_count()));
-
-    this->copy_into(*result);
-
-    return result;
-}
-
-void RMDP::copy_into(RMDP& result) const {
-    /**
-       Copies the values of the RMDP to a new one. The new RMDP should be empty.
-     */
-
-    // make sure that the created MDP is empty
-
-    // *** copy transitions ***
-    //idstatefrom
-    for(size_t i = 0l; i < this->states.size(); i++){
-        const auto& actions = (this->states[i]).actions;
-
-        //idaction
-        for(size_t j = 0; j < actions.size(); j++){
-            const auto& outcomes = actions[j].outcomes;
-
-            //idoutcome
-            for(size_t k = 0; k < outcomes.size(); k++){
-                const auto& tran = outcomes[k];
-
-                const auto& indices = tran.get_indices();
-                const auto& rewards = tran.get_rewards();
-                const auto& probabilities = tran.get_probabilities();
-
-                //idstateto
-                for (size_t l = 0; l < tran.size(); l++){
-                    result.add_transition(i,j,k,indices[l],probabilities[l],rewards[l]);
-                }
-            }
-        }
-    }
-
-    // *** copy distributions and thresholds ***
-    for(size_t i = 0l; i < this->states.size(); i++){
-        const auto& actions_origin = (this->states[i]).actions;
-        auto& actions_dest = (result.states[i]).actions;
-
-        //idaction
-        for(size_t j = 0; j < actions_origin.size(); j++){
-            const auto& action_origin = actions_origin[j];
-            auto& action_dest = actions_dest[j];
-
-            action_dest.distribution = action_origin.distribution;
-            action_dest.threshold = action_origin.threshold;
-        }
-    }
-}
 
 string RMDP::to_string() const {
     /** Returns a brief string representation of the MDP.
 
        This method is mostly suitable for analyzing small MDPs.
-
      */
     string result;
 
-    for(size_t i = 0; i < this->states.size(); i++){
-        auto s = this->states[i];
+    for(size_t i = 0; i < states.size(); i++){
+        auto& s = get_state(i);
         result.append(std::to_string(i));
         result.append(" : ");
-        auto actions = s.actions;
-        result.append(std::to_string(actions.size()));
+        result.append(std::to_string(s.action_count()));
         result.append("\n");
-        for(size_t j = 0; j < actions.size(); j++){
+        for(size_t j = 0; j < s.action_count(); j++){
             result.append("    ");
             result.append(std::to_string(j));
             result.append(" : ");
-            result.append(std::to_string(actions[j].outcomes.size()));
+            result.append(std::to_string(s.get_action(j).outcomes.size()));
             result.append(" / ");
-            result.append(std::to_string(actions[j].distribution.size()));
+            result.append(std::to_string(s.get_action(j).get_distribution().size()));
             result.append("\n");
         }
     }
@@ -473,7 +279,8 @@ void RMDP::set_uniform_distribution(prec_t threshold){
             auto outcomecount = a.outcomes.size();
             prec_t p = 1.0 / (prec_t) outcomecount;
             numvec distribution(outcomecount, p);
-            a.set_distribution(distribution, threshold);
+            a.set_distribution(distribution);
+            a.set_threshold(threshold);
         }
     }
 }
@@ -490,37 +297,6 @@ void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
 
     transitions_to_csv(ofs,header);
     ofs.close();
-}
-
-void RMDP::set_threshold(long stateid, long actionid, prec_t threshold){
-    /**
-       Sets a new threshold value
-     */
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
-    }
-    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    if(threshold < 0.0 || threshold > 2.0) {
-        throw invalid_argument("threshold must be between 0 and 2");
-    }
-
-    this->states[stateid].actions[actionid].threshold = threshold;
-}
-
-prec_t RMDP::get_threshold(long stateid, long actionid) const {
-    /**
-       Returns the threshold value
-     */
-    if(stateid < 0l || stateid >= (long) this->states.size()){
-        throw invalid_argument("invalid state number");
-    }
-    if(actionid < 0l || actionid >= (long) this->states[stateid].actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-
-    return (this->states[stateid].actions[actionid].threshold);
 }
 
 template<SolutionType type>
@@ -629,8 +405,8 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
     for(i = 0; i < iterations && residual > maxresidual; i++){
 
         residual = 0;
-        for(auto s=0l; s < (long) this->states.size(); s++){
-            const auto& state = this->states[s];
+        for(auto s=0l; s < (long) state_count(); s++){
+            const auto& state = states[s];
 
             tuple<long,numvec,prec_t> newvalue;
             switch(type){

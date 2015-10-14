@@ -54,7 +54,9 @@ public:
     const vector<long>& get_indices() const {return indices;};
     const numvec& get_probabilities() const {return probabilities;};
     const numvec& get_rewards() const {return rewards;};
+
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
+    prec_t get_reward(long sampleid) const {return rewards[sampleid];};
 
 protected:
     vector<long> indices;

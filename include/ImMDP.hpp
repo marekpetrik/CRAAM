@@ -23,16 +23,22 @@ public:
 
     MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 
-    size_t obs_count() const { return maxobs };
-    size_t state_count() const {return mdp->state_count()};
+    size_t obs_count() const { return obscount; };
+    size_t state_count() const {return mdp->state_count(); };
 
     indvec obspol2statepol(indvec obspol) const;
+
+    shared_ptr<const RMDP> get_mdp() {return mdp;};
     
 protected:
+    /** the underlying MDP */
     shared_ptr<const RMDP> mdp;
+    /** maps index of a state to the index of the observation */
     indvec state2observ;
-    long maxobs;
+    /** initial distribution */
     Transition initial;
+    /** number of observations */
+    long obscount;
 
     static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 };
@@ -58,11 +64,13 @@ public:
 
     void update_importance_weigts(const numvec& weights);
 
-    Solution solve_reweighted(long iterations);
+    Solution solve_reweighted(long iterations, prec_t discount);
 
 protected:
-
-    RMDP robust_mdp;    // TODO: this would ideally be a constant
+    /** the robust representation of the MDPI */
+    RMDP robust_mdp;    
+    /** maps the index of the mdp state to the index of the observation
+        withing the state corresponding to the observation */
     indvec state2outcome;
 
     void initialize_robustmdp();
