@@ -48,7 +48,6 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
     BOOST_CHECK_EQUAL(im2.get_mdp()->state_count(), 2);
 }
 
-
 BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     shared_ptr<RMDP> mdp(new RMDP());
@@ -82,6 +81,7 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     Transition initial(vector<long>{0,1,2},vector<prec_t>{1.0/3.0,1.0/3.0,1.0/3.0},
                         vector<prec_t>{0,0,0});
 
+    BOOST_TEST_CHECKPOINT("Constructing transitions");
     // action 0
     mdp->add_transition_d(0,0,0,0.5,1.0);
     mdp->add_transition_d(0,0,1,0.5,1.0);
@@ -95,10 +95,12 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     mdp->add_transition_d(0,1,2,1.0,1.2);
     mdp->add_transition_d(1,1,2,1.0,1.2);
 
+    BOOST_TEST_CHECKPOINT("Constructing MDPI_R.");
     MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
 
     const RMDP& rmdp = imr.get_robust_mdp();
 
+    BOOST_TEST_CHECKPOINT("Checking MDP properties.");
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 2);
     BOOST_CHECK_EQUAL(rmdp.get_state(1).action_count(), 1);
@@ -108,10 +110,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-
     vector<prec_t> target_v_opt{20.0,12.0};
     vector<prec_t> target_v_rob{12.0,12.0};
 
+    BOOST_TEST_CHECKPOINT("Solving RMDP");
     Solution&& so = rmdp.mpi_jac_opt(iv,0.9,100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 

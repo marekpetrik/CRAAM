@@ -80,30 +80,19 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.9.0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic")
     endif()
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -D_GLIBCXX_DEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -rdynamic -D_GLIBCXX_DEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 endif()
 
-# **** RELEASE VERSION OF THE LIBRARY ****
 add_library (craam ${SRCS} )
 target_link_libraries(craam ${ARMADILLO_LIBRARIES})
-set_target_properties(craam PROPERTIES CMAKE_BUILD_TYPE Release)
-
-# **** DEBUG VERSION OF THE LIBRARY ****
-add_library (craam_debug ${SRCS} )
-target_link_libraries(craam_debug ${ARMADILLO_LIBRARIES})
-set_target_properties(craam_debug PROPERTIES CMAKE_BUILD_TYPE Debug)
 
 # **** TEST ****
 if (BUILD_TESTS)
-    add_executable (unit_tests_debug ${TSTS} )
-    target_link_libraries(unit_tests_debug ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam_debug)
-    
     add_executable (unit_tests ${TSTS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
     
     add_custom_target (testit   COMMAND unit_tests --show_progress --detect_memory_leaks --detect_fp_exceptions
-                                COMMAND unit_tests_debug --show_progress --detect_memory_leaks --detect_fp_exceptions
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
     

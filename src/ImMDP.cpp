@@ -22,9 +22,9 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const T
     // check that the number of state2observ coefficients it correct
     if(mdp.state_count() !=  state2observ.size())
         throw invalid_argument("Number of observation indexes must match the number of states.");
-    // check that the observation indices are not negative
+    // check that the observation indexes are not negative
     if(*min_element(state2observ.begin(), state2observ.end()) < 0)
-        throw invalid_argument("Observation indices must be non-negative");
+        throw invalid_argument("Observation indexes must be non-negative");
     // check then initial transition
     if(initial.max_index() >= (long) mdp.state_count())
         throw invalid_argument("An initial transition to a non-existent state.");
@@ -98,7 +98,7 @@ MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial){
     /**
         Calls the base constructor and also constructs the corresponding
-        robust MDP
+        robust MDP.
      */
 
     initialize_robustmdp();
@@ -116,7 +116,6 @@ void MDPI_R::initialize_robustmdp(){
     // Determine the number of state2observ
     auto obs_count = *max_element(state2observ.begin(), state2observ.end()) + 1;
 
-
     // keep track of the number of outcomes for each
     indvec outcome_count(obs_count, 0);
     // keep track of which outcome a state is mapped to
@@ -133,7 +132,8 @@ void MDPI_R::initialize_robustmdp(){
             if(action_counts[obs] != (long) ac){
                 throw invalid_argument("Inconsistent number of actions: " + to_string(state_index) +
                                        " instead of " + to_string(action_counts[obs]) +
-                                       " in state " + to_string(state_index));}
+                                       " in state " + to_string(state_index));
+            }
         }else{
             action_counts[obs] = ac;
         }
@@ -145,7 +145,7 @@ void MDPI_R::initialize_robustmdp(){
                 throw invalid_argument("Robust base MDP is not supported; multiple outcomes in state " +
                                        to_string(state_index) + " and action " + to_string(action_index) );
 
-            const Transition& old_tran = mdp->get_transition(state_index,action_index, 0);
+            const Transition& old_tran = mdp->get_transition(state_index,action_index,0);
             Transition& new_tran = robust_mdp.get_transition(obs,action_index,outcome_count[obs]);
 
             // copy the original transitions (they are automatically consolidated while being added)
