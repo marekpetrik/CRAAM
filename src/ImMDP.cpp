@@ -33,10 +33,10 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const T
 }
 
 MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ, const Transition& initial)
-            : mdp(mdp), state2observ(state2observ), initial(initial), 
+            : mdp(mdp), state2observ(state2observ), initial(initial),
               obscount(1+*max_element(state2observ.begin(), state2observ.end())){
     /**
-        Constructs the MDP with implementability constraints. This constructor makes it 
+        Constructs the MDP with implementability constraints. This constructor makes it
         possible to share the MDP with other data structures.
 
         \param mdp A non-robust base MDP model. It cannot be shared to prevent
@@ -78,7 +78,7 @@ MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
 }
 
 indvec MDPI::obspol2statepol(indvec obspol) const{
-    /** 
+    /**
         Converts a policy defined in terms of observations to a policy defined in
         terms of states.
 
@@ -168,7 +168,7 @@ void MDPI_R::update_importance_weigts(const numvec& weights){
 
         This method modifies the stored robust MDP.
      */
-    
+
     if(weights.size() != state_count()){
         throw invalid_argument("Size of distribution must match the number of states.");
     }
@@ -195,14 +195,14 @@ void MDPI_R::update_importance_weigts(const numvec& weights){
 
 Solution MDPI_R::solve_reweighted(long iterations, prec_t discount){
     /**
-        Uses a simple iterative algorithm to solve the MDPI. 
+        Uses a simple iterative algorithm to solve the MDPI.
 
         The algorithm starts with a policy composed of actions all 0, and
         then updates the distribution of robust outcomes (corresponding to MDP states),
         and computes the optimal solution for thus weighted RMDP.
 
         This method modifies the stored robust MDP.
-        
+
         \param iterations Maximal number of iterations; also stops if the policy no longer changes
 
         \returns Solution; recall that the policy is in terms of the observations
@@ -211,9 +211,9 @@ Solution MDPI_R::solve_reweighted(long iterations, prec_t discount){
     indvec obspol(obscount, 0);   // current policy in terms of observations
     indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
 
-    // TODO: add a method in RMDP to compute the distribution of a non-robust policy 
-    const indvec nature(state_count(), 0); 
-    
+    // TODO: add a method in RMDP to compute the distribution of a non-robust policy
+    const indvec nature(state_count(), 0);
+
     // compute state distribution
     auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 

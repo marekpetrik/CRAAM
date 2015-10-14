@@ -60,7 +60,7 @@ bool RMDP::is_normalized() const{
     /**
        Check if all transitions in the process sum to one.
 
-       Note that if there are no actions, or no outcomes for a state, 
+       Note that if there are no actions, or no outcomes for a state,
        the RMDP still may be normalized.
 
        \return True if and only if all transitions are normalized.
@@ -226,7 +226,7 @@ void RMDP::transitions_to_csv(ostream& output, bool header) const{
             //idoutcome
             for(size_t k = 0; k < outcomes.size(); k++){
                 const auto& tran = outcomes[k];
-                
+
                 auto& indices = tran.get_indices();
                 const auto& rewards = tran.get_rewards();
                 const auto& probabilities = tran.get_probabilities();
@@ -455,7 +455,7 @@ Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned
         oddvalue = valuefunction;
         evenvalue = valuefunction;
     }else{
-        oddvalue.assign(states.size(),0); 
+        oddvalue.assign(states.size(),0);
         evenvalue.assign(states.size(),0);
     }
 
@@ -538,7 +538,7 @@ Solution RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned
         oddvalue = valuefunction;
         evenvalue = valuefunction;
     }else{
-        oddvalue.assign(states.size(),0); 
+        oddvalue.assign(states.size(),0);
         evenvalue.assign(states.size(),0);
     }
 
@@ -624,7 +624,7 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
         oddvalue = valuefunction;
         evenvalue = valuefunction;
     }else{
-        oddvalue.assign(states.size(),0); 
+        oddvalue.assign(states.size(),0);
         evenvalue.assign(states.size(),0);
     }
 
@@ -756,7 +756,7 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
         oddvalue = valuefunction;
         evenvalue = valuefunction;
     }else{
-        oddvalue.assign(states.size(),0); 
+        oddvalue.assign(states.size(),0);
         evenvalue.assign(states.size(),0);
     }
 
@@ -1170,7 +1170,7 @@ numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& po
         \param policy Policy of the decision maker
         \param nature Policy of nature
      */
-    
+
     // initialize
     // TODO: the copy here could be easily eliminated, is it worth it?
     const auto&& initial_d = arma::vec(init.probabilities_vector(state_count()));
@@ -1188,11 +1188,11 @@ numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& po
 numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
     /**
         Constructs the rewards vector for each state for the RMDP.
-        
+
         \param policy Policy of the decision maker
         \param nature Policy of nature
      */
-    
+
     const auto n = state_count();
     numvec rewards(n);
 
@@ -1206,7 +1206,7 @@ numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
 unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const indvec& nature) const{
     /**
          Constructs the transition matrix for the policy.
-        
+
         \param policy Policy of the decision maker
         \param nature Policy of nature
      */
@@ -1220,7 +1220,7 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const
         const auto& probabilities = t.get_probabilities();
 
         for(size_t j=0; j < t.size(); j++){
-            (*result)(s,indexes[j]) = probabilities[j];         
+            (*result)(s,indexes[j]) = probabilities[j];
         }
     }
     return result;
@@ -1229,7 +1229,7 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const
 unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat_t(const indvec& policy, const indvec& nature) const{
     /**
          Constructs a transpose of the transition matrix for the policy.
-        
+
         \param policy Policy of the decision maker
         \param nature Policy of nature
      */
@@ -1243,10 +1243,36 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat_t(const indvec& policy, con
         const auto& probabilities = t.get_probabilities();
 
         for(size_t j=0; j < t.size(); j++){
-            (*result)(indexes[j],s) = probabilities[j];         
+            (*result)(indexes[j],s) = probabilities[j];
         }
     }
     return result;
 }
+
+Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
+    /**
+       Return a transition for state, action, and outcome. It is created if
+       necessary.
+     */
+
+    if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
+
+    if(fromid >= (long) this->states.size()){
+        (this->states).resize(fromid+1);
+    }
+
+    return this->states[fromid].get_transition(actionid, outcomeid);
+}
+
+const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{
+    /**
+       Returns the transition. The transition must exist.
+     */
+    if(stateid < 0l || stateid >= (long) this->states.size()){
+        throw invalid_argument("Invalid state number");
+    }
+    return states[stateid].get_transition(actionid,outcomeid);
+}
+
 
 }

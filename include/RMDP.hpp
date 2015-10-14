@@ -36,7 +36,7 @@ public:
     vector<numvec> outcome_dists;       // distribution of outcomes for each state
     prec_t residual;
     long iterations;
-   
+
     Solution():
         valuefunction(0), policy(0), outcomes(0),
         outcome_dists(0),residual(-1),iterations(-1) {};
@@ -93,12 +93,10 @@ public:
     // manipulate weights
     void set_uniform_distribution(prec_t threshold);
     void set_uniform_thresholds(prec_t threshold);
-    
+
     // get parameters
-    Transition& get_transition(long stateid, long actionid, long outcomeid)
-        {return get_state(stateid).get_action(actionid).get_outcome(outcomeid);};
-    const Transition& get_transition(long stateid, long actionid, long outcomeid) const
-        {return get_state(stateid).get_action(actionid).get_outcome(outcomeid);};
+    Transition& get_transition(long stateid, long actionid, long outcomeid);
+    const Transition& get_transition(long stateid, long actionid, long outcomeid) const;
     State& get_state(long stateid) {return states[stateid];};
     const State& get_state(long stateid) const {return states[stateid];};
 
@@ -148,17 +146,17 @@ public:
     vector<State> states;
 protected:
 
-    template<SolutionType type> 
+    template<SolutionType type>
     Solution vi_gs_gen(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-    template<SolutionType type, NatureConstr nature> 
+    template<SolutionType type, NatureConstr nature>
     Solution vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-    template<SolutionType type, NatureConstr nature> 
+    template<SolutionType type, NatureConstr nature>
     Solution mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
-    template<SolutionType type,NatureConstr nature> 
-    Solution vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const; 
-    template<SolutionType type> 
+    template<SolutionType type,NatureConstr nature>
+    Solution vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+    template<SolutionType type>
     Solution vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-    template<SolutionType type> 
+    template<SolutionType type>
     Solution mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
 };
