@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <iostream>
+#include <iterator>
 
 using namespace std;
 
@@ -193,7 +194,7 @@ void MDPI_R::update_importance_weigts(const numvec& weights){
     }
 }
 
-Solution MDPI_R::solve_reweighted(long iterations, prec_t discount){
+indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
     /**
         Uses a simple iterative algorithm to solve the MDPI.
 
@@ -203,27 +204,45 @@ Solution MDPI_R::solve_reweighted(long iterations, prec_t discount){
 
         This method modifies the stored robust MDP.
 
-        \param iterations Maximal number of iterations; also stops if the policy no longer changes
+        \param iterations Maximal number of iterations;
+                    also stops if the policy no longer changes
 
-        \returns Solution; recall that the policy is in terms of the observations
+        \returns Policy for observations (an index of each action for each observation)
      */
 
-    indvec obspol(obscount, 0);   // current policy in terms of observations
-    indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
-
-    // TODO: add a method in RMDP to compute the distribution of a non-robust policy
+   // TODO: add a method in RMDP to compute the distribution of a non-robust policy
     const indvec nature(state_count(), 0);
 
-    // compute state distribution
-    auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+    indvec obspol_ret(0);         // current policy in terms of observations
+    indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
 
-    update_importance_weigts(importanceweights);
+    for(long iter=0; iter < iterations; iter++){
 
-    Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,100,0,100,0);
+        // compute state distribution
+        auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 
-    return s;
+        // update importance weights
+        update_importance_weigts(importanceweights);
+
+        // compute solution of the robust MDP with the new weights
+        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);
+
+        // update the policy for the underlying states
+        auto&& obspol = s.policy;
+
+        // map the observation policy to the individual states
+        for(size_t statei=0; statei < state_count(); statei++){
+            statepol[statei] = obspol[state2observ[statei]];
+        }
+
+        // update the return value in the last iteration
+        if(iter == iterations-1){
+            obspol_ret = obspol;
+        }
+
+    }
+    return obspol_ret;
 }
-
 
 }}
 

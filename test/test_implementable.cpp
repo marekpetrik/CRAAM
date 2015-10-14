@@ -3,6 +3,7 @@
 #include "Transition.hpp"
 
 #include <iostream>
+#include <iterator>
 
 using namespace std;
 using namespace craam;
@@ -144,6 +145,10 @@ BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
     MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
 
     BOOST_TEST_CHECKPOINT("Solving MDPI_R.");
-    imr.solve_reweighted(10, 0.9);
+    auto&& pol = imr.solve_reweighted(10, 0.9);
 
+    indvec polvec{0,0};
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol.begin(), pol.end(),polvec.begin(),polvec.end());
+    //ostream_iterator<prec_t> output(cout, ", ");
+    //copy(pol.begin(), pol.end(), output);
 }

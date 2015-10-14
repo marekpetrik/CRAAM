@@ -29,7 +29,7 @@ public:
     indvec obspol2statepol(indvec obspol) const;
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
-    
+
 protected:
     /** the underlying MDP */
     shared_ptr<const RMDP> mdp;
@@ -64,11 +64,11 @@ public:
 
     void update_importance_weigts(const numvec& weights);
 
-    Solution solve_reweighted(long iterations, prec_t discount);
+    indvec solve_reweighted(long iterations, prec_t discount);
 
 protected:
     /** the robust representation of the MDPI */
-    RMDP robust_mdp;    
+    RMDP robust_mdp;
     /** maps the index of the mdp state to the index of the observation
         withing the state corresponding to the observation */
     indvec state2outcome;
