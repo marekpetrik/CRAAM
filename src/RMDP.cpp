@@ -462,7 +462,7 @@ Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned
     indvec policy(states.size());
     indvec outcomes(states.size());
 
-    numvec residuals(valuefunction.size());
+    numvec residuals(states.size());
 
     prec_t residual = numeric_limits<prec_t>::infinity();
     size_t i;
@@ -631,7 +631,7 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
     indvec policy(states.size());
     indvec outcomes(states.size());
 
-    numvec residuals(valuefunction.size());
+    numvec residuals(states.size());
 
     prec_t residual_pi = numeric_limits<prec_t>::infinity();
 
