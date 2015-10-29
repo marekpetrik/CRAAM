@@ -73,8 +73,8 @@ public:
 
     Transition& get_transition(long outcomeid);
     const Transition& get_transition(long outcomeid) const;
-    
-    void set_distribution(numvec const& distribution);
+
+    void set_distribution(const numvec& distribution);
     void set_distribution(long outcomeid, prec_t weight);
     const numvec& get_distribution() const {return distribution;};
     void normalize_distribution();

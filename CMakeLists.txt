@@ -84,8 +84,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 endif()
 
-add_library (craam ${SRCS} )
-target_link_libraries(craam ${ARMADILLO_LIBRARIES})
+add_library (craam SHARED ${SRCS} )
+target_link_libraries(craam ${ARMADILLO_LIBRARIES} )
 
 # **** TEST ****
 if (BUILD_TESTS)
