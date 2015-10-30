@@ -11,7 +11,7 @@
 namespace craam {
 
 
-Transition::Transition(const vector<long>& indices, const vector<prec_t>& probabilities, 
+Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities, 
                         const vector<prec_t>& rewards){
     /** 
         Creates a single transition from raw data. 
@@ -34,6 +34,28 @@ Transition::Transition(const vector<long>& indices, const vector<prec_t>& probab
     for(auto&& k : sorted)
         add_sample(indices[k],probabilities[k],rewards[k]);
 }
+
+Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities){
+    /** 
+        Creates a single transition from raw data with uniformly zero rewards. 
+
+        Because the transition indexes are stored increasingly sorted, this method
+        must sort (and aggregate duplicate) the indices. 
+
+        \param indices The indexes of states to transition to
+        \param probabilities The probabilities of transitions
+
+     */
+
+    if(indices.size() != probabilities.size() || indices.size() != rewards.size())
+        throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
+
+    auto sorted = sort_indexes(indices);
+
+    for(auto&& k : sorted)
+        add_sample(indices[k],probabilities[k],0.0);
+}
+
 
 void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
     /**

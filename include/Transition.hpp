@@ -23,9 +23,13 @@ class Transition {
 public:
     Transition(){};
 
-    Transition(const vector<long>& indices, 
+    Transition(const indvec& indices, 
                 const numvec& probabilities, 
                 const numvec& rewards);
+
+    Transition(const indvec& indices, 
+                const numvec& probabilities);
+
 
     void add_sample(long stateid, prec_t probability, prec_t reward);
 
@@ -51,7 +55,7 @@ public:
     numvec probabilities_vector(size_t size) const;
     void probabilities_addto(prec_t scale, numvec& transition) const;
 
-    const vector<long>& get_indices() const {return indices;};
+    const indvec& get_indices() const {return indices;};
     const numvec& get_probabilities() const {return probabilities;};
     const numvec& get_rewards() const {return rewards;};
 
@@ -59,7 +63,7 @@ public:
     prec_t get_reward(long sampleid) const {return rewards[sampleid];};
 
 protected:
-    vector<long> indices;
+    indvec indices;
     numvec probabilities;
     numvec rewards;
 };

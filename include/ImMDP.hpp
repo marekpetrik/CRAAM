@@ -30,6 +30,12 @@ public:
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
 
+    static unique_ptr<MDPI> from_csv(istream& input_mdp, istream& input_state2obs, istream& input_initial);
+    static unique_ptr<MDPI> from_csv_file(const string& input_mdp, const string& input_state2obs, const string& input_initial);
+
+    void to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial) const;
+    void to_csv_file(const string& output_mdp, const string& output_state2obs, const string& output_initial) const;
+
 protected:
     /** the underlying MDP */
     shared_ptr<const RMDP> mdp;
@@ -55,7 +61,7 @@ public:
     MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
             const Transition& initial);
 
-    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 
     const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
