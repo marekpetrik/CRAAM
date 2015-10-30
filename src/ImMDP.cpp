@@ -162,7 +162,7 @@ void MDPI_R::initialize_robustmdp(){
     }
 }
 
-void MDPI_R::update_importance_weigts(const numvec& weights){
+void MDPI_R::update_importance_weights(const numvec& weights){
     /**
         Updates the weights on outcomes in the robust MDP based on the state
         weights provided.
@@ -222,7 +222,7 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
         auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 
         // update importance weights
-        update_importance_weigts(importanceweights);
+        update_importance_weights(importanceweights);
 
         // compute solution of the robust MDP with the new weights
         Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);

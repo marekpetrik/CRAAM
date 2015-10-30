@@ -108,9 +108,10 @@ public:
     void normalize();
 
     // writing a reading files
-    static unique_ptr<RMDP> transitions_from_csv(istream& input, bool header = true);
-    void transitions_to_csv(ostream& output, bool header = true) const;
-    void transitions_to_csv_file(const string& filename, bool header = true) const;
+    static unique_ptr<RMDP> from_csv(istream& input, bool header = true);
+    static unique_ptr<RMDP> from_csv_file(const string& filename, bool header = true);
+    void to_csv(ostream& output, bool header = true) const;
+    void to_csv_file(const string& filename, bool header = true) const;
 
     // string representation
     string to_string() const;

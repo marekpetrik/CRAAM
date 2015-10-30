@@ -121,7 +121,7 @@ void RMDP::set_uniform_thresholds(prec_t threshold){
 }
 
 
-unique_ptr<RMDP> RMDP::transitions_from_csv(istream& input, bool header){
+unique_ptr<RMDP> RMDP::from_csv(istream& input, bool header){
     /**
        Loads an RMDP definition from a simple csv file.
 
@@ -187,7 +187,7 @@ unique_ptr<RMDP> RMDP::transitions_from_csv(istream& input, bool header){
     return result;
 }
 
-void RMDP::transitions_to_csv(ostream& output, bool header) const{
+void RMDP::to_csv(ostream& output, bool header) const{
     /**
        Saves the model to a stream as a simple csv file
 
@@ -285,7 +285,7 @@ void RMDP::set_uniform_distribution(prec_t threshold){
     }
 }
 
-void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
+void RMDP::to_csv_file(const string& filename, bool header ) const{
     /**
        Saves the transition probabilities and rewards to a CSV file
 
@@ -295,8 +295,23 @@ void RMDP::transitions_to_csv_file(const string& filename, bool header ) const{
     ofstream ofs;
     ofs.open(filename);
 
-    transitions_to_csv(ofs,header);
+    to_csv(ofs,header);
     ofs.close();
+}
+
+unique_ptr<RMDP> RMDP::from_csv_file(const string& filename, bool header ) {
+    /**
+       Loads the transition probabilities and rewards from a CSV file
+
+       \param filename Name of the file
+       \param header Whether to create a header of the file too
+     */
+    ifstream ifs;
+    ifs.open(filename);
+    auto result = from_csv(ifs,header);
+    ifs.close();
+
+    return result;
 }
 
 template<SolutionType type>

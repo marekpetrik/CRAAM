@@ -325,10 +325,10 @@ BOOST_AUTO_TEST_CASE(simple_mdp_save_load) {
 
     stringstream store;
 
-    rmdp1.transitions_to_csv(store);
+    rmdp1.to_csv(store);
     store.seekg(0);
 
-    auto rmdp = RMDP::transitions_from_csv(store);
+    auto rmdp = RMDP::from_csv(store);
 
     vector<prec_t> initial(3);
     for(auto & i : initial)
@@ -356,15 +356,15 @@ BOOST_AUTO_TEST_CASE(simple_mdp_save_load_save_load) {
 
     stringstream store;
 
-    rmdp1.transitions_to_csv(store);
+    rmdp1.to_csv(store);
     store.seekg(0);
 
     auto&& string1 = store.str();
-    auto rmdp2 = RMDP::transitions_from_csv(store);
+    auto rmdp2 = RMDP::from_csv(store);
 
     stringstream store2;
 
-    rmdp2->transitions_to_csv(store2);
+    rmdp2->to_csv(store2);
 
     auto&& string2 = store2.str();
 
@@ -556,13 +556,13 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     stringstream store(string_representation);
 
     store.seekg(0);
-    auto rmdp = RMDP::transitions_from_csv(store,false);
+    auto rmdp = RMDP::from_csv(store,false);
 
     // print the problem definition for debugging
     //cout << string_representation << endl;
     //cout << rmdp->state_count() << endl;
     //stringstream store2;
-    //rmdp->transitions_to_csv(store2);
+    //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
     vector<prec_t> value(5,0.0);
@@ -695,13 +695,13 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     stringstream store(string_representation);
 
     store.seekg(0);
-    auto rmdp = RMDP::transitions_from_csv(store,false);
+    auto rmdp = RMDP::from_csv(store,false);
 
     // print the problem definition for debugging
     //cout << string_representation << endl;
     //cout << rmdp->state_count() << endl;
     //stringstream store2;
-    //rmdp->transitions_to_csv(store2);
+    //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
     vector<prec_t> value(6,0.0);
@@ -825,7 +825,7 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
     stringstream store(string_representation);
 
     store.seekg(0);
-    auto rmdp = RMDP::transitions_from_csv(store,false);
+    auto rmdp = RMDP::from_csv(store,false);
 
     BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_outcome(0).get_reward(0), 10.0);
     rmdp->get_state(3).get_action(0).get_outcome(0).set_reward(0,15.1);
@@ -914,7 +914,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     stringstream store(string_representation);
 
     store.seekg(0);
-    auto rmdp1 = RMDP::transitions_from_csv(store,false);
+    auto rmdp1 = RMDP::from_csv(store,false);
 
     // copying to make sure that copy works
     unique_ptr<RMDP> rmdp(new RMDP(*rmdp1));
@@ -926,7 +926,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     //cout << string_representation << endl;
     //cout << rmdp->state_count() << endl;
     //stringstream store2;
-    //rmdp->transitions_to_csv(store2);
+    //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
     vector<prec_t> value(6,0.0);

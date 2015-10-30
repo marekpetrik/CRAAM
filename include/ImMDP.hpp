@@ -62,7 +62,7 @@ public:
         return robust_mdp;
     };
 
-    void update_importance_weigts(const numvec& weights);
+    void update_importance_weights(const numvec& weights);
 
     indvec solve_reweighted(long iterations, prec_t discount);
 
