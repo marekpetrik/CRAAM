@@ -7,15 +7,18 @@
 #include <iostream>
 #include <iterator>
 
-#include <>
+#include "cpp11-range-master/range.hpp"
 
 using namespace std;
+using namespace util::lang;
+
 
 namespace craam{
 namespace impl{
 
 
-void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial){
+void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
+                            const Transition& initial){
     /**
          Checks whether the parameters are correct. Throws an exception if the parmaters
          are wrong.
@@ -35,7 +38,8 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ, const T
         throw invalid_argument("The initial transition must be normalized.");
 }
 
-MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ, const Transition& initial)
+MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+           const Transition& initial)
             : mdp(mdp), state2observ(state2observ), initial(initial),
               obscount(1+*max_element(state2observ.begin(), state2observ.end())){
     /**
@@ -97,9 +101,11 @@ indvec MDPI::obspol2statepol(indvec obspol) const{
      return statepol;
 }
 
-void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial, bool headers){
+void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs,
+                  ostream& output_initial, bool headers) const{
     /**
-    Saves the MDPI to a set of 3 csv files, for transitions, observations, and the initial distribution
+    Saves the MDPI to a set of 3 csv files, for transitions,
+    observations, and the initial distribution
 
     \param output_mdp Transition probabilities and rewards
     \param output_state2obs Mapping states to observations
@@ -111,7 +117,7 @@ void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& outpu
 
     // save state maps
     if(headers){
-        output_state2obs << "idstate, " << "idobs" << endl;
+        output_state2obs << "idstate,idobs" << endl;
     }
     for(auto i : indices(state2observ)){
         output_state2obs << i << "," << state2observ[i] << endl;
@@ -119,7 +125,7 @@ void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& outpu
 
     // save the initial distribution
     if(headers){
-        output_initial << "idstate, " << "probability" << endl;
+        output_initial << "idstate,probability" << endl;
     }
     const indvec& inindices = initial.get_indices();
     const numvec& probabilities = initial.get_probabilities();
@@ -130,9 +136,11 @@ void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& outpu
 
 }
 
-void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs, const string& output_initial, bool headers) const{
+void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs,
+                       const string& output_initial, bool headers) const{
     /**
-    Saves the MDPI to a set of 3 csv files, for transitions, observations, and the initial distribution
+    Saves the MDPI to a set of 3 csv files, for transitions, observations,
+    and the initial distribution
 
     \param output_mdp File name for transition probabilities and rewards
     \param output_state2obs File name for mapping states to observations
@@ -151,9 +159,11 @@ void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs,
     ofs_mdp.close(); ofs_state2obs.close(); ofs_initial.close();
 }
 
-static unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2obs, istream& input_initial, bool headers){
+unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
+                                istream& input_initial, bool headers){
     /**
-    Loads an MDPI from a set of 3 csv files, for transitions, observations, and the initial distribution
+    Loads an MDPI from a set of 3 csv files, for transitions, observations,
+    and the initial distribution
 
     The MDP size is defined by the transitions file.
 
@@ -174,7 +184,6 @@ static unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2
     while(input_state2obs.good()){
         string cellstring;
         stringstream linestream(line);
-        long idstate, idobs;
 
         getline(linestream, cellstring, ',');
         auto idstate = stoi(cellstring);
@@ -193,8 +202,6 @@ static unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2
     while(input_initial.good()){
         string cellstring;
         stringstream linestream(line);
-        long idstate;
-        prec_t prob;
 
         getline(linestream, cellstring, ',');
         auto idstate = stoi(cellstring);
@@ -205,11 +212,13 @@ static unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2
         input_initial >> line;
     }
 
-    auto smdp = static_pointer_cast(make_shared(move(mdp));
-    return make_unique(new MDPI(smdp, state2obs, initial));
+    shared_ptr<const RMDP> csmdp = const_pointer_cast<const RMDP>(
+                            shared_ptr<RMDP>(std::move(mdp)));
+    return make_unique<MDPI>(csmdp, state2obs, initial);
 }
 
-static unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& input_state2obs, const string& input_initial, bool headers){
+unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& input_state2obs,
+                                     const string& input_initial, bool headers){
 
     // open files
     ifstream ifs_mdp(input_mdp),

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(OpenMP)
-find_package(Boost COMPONENTS unit_test_framework ) # TODO: need to include uBLAS refrence
+find_package(Boost COMPONENTS unit_test_framework ) # TODO: need to include uBLAS reference
 find_package(Doxygen)
 #find_package(Armadillo REQUIRED)
 
@@ -36,7 +36,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # use position-independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
-include_directories ("include")
+include_directories ("include" "ext_include" )
 
 # **** SOURCE FILES ****
 set (SRCS 
