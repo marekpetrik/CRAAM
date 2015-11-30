@@ -3,13 +3,13 @@ cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR)
 set(VERSION "0.3.0")
 project (CRAAM)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(OpenMP)
-find_package(Boost COMPONENTS unit_test_framework)
+find_package(Boost COMPONENTS unit_test_framework ) # TODO: need to include uBLAS refrence
 find_package(Doxygen)
-find_package(Armadillo REQUIRED)
+#find_package(Armadillo REQUIRED)
 
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
@@ -84,8 +84,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 endif()
 
-add_library (craam SHARED ${SRCS} )
-target_link_libraries(craam ${ARMADILLO_LIBRARIES} )
+#add_library (craam SHARED ${SRCS} )
+add_library (craam STATIC ${SRCS} )
+#target_link_libraries(craam ${ARMADILLO_LIBRARIES} )
 
 # **** TEST ****
 if (BUILD_TESTS)

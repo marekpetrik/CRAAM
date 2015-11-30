@@ -7,6 +7,8 @@
 #include <iostream>
 #include <iterator>
 
+#include <>
+
 using namespace std;
 
 namespace craam{
@@ -93,6 +95,129 @@ indvec MDPI::obspol2statepol(indvec obspol) const{
      }
 
      return statepol;
+}
+
+void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial, bool headers){
+    /**
+    Saves the MDPI to a set of 3 csv files, for transitions, observations, and the initial distribution
+
+    \param output_mdp Transition probabilities and rewards
+    \param output_state2obs Mapping states to observations
+    \param output_initial Initial distribution
+    */
+
+    // save the MDP
+    mdp->to_csv(output_mdp, headers);
+
+    // save state maps
+    if(headers){
+        output_state2obs << "idstate, " << "idobs" << endl;
+    }
+    for(auto i : indices(state2observ)){
+        output_state2obs << i << "," << state2observ[i] << endl;
+    }
+
+    // save the initial distribution
+    if(headers){
+        output_initial << "idstate, " << "probability" << endl;
+    }
+    const indvec& inindices = initial.get_indices();
+    const numvec& probabilities = initial.get_probabilities();
+
+    for(auto i : indices(inindices)){
+        output_initial << inindices[i] << "," << probabilities[i];
+    }
+
+}
+
+void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs, const string& output_initial, bool headers) const{
+    /**
+    Saves the MDPI to a set of 3 csv files, for transitions, observations, and the initial distribution
+
+    \param output_mdp File name for transition probabilities and rewards
+    \param output_state2obs File name for mapping states to observations
+    \param output_initial File name for initial distribution
+    */
+
+    // open file streams
+    ofstream ofs_mdp(output_mdp),
+                ofs_state2obs(output_state2obs),
+                ofs_initial(output_initial);
+
+    // save the data
+    to_csv(ofs_mdp, ofs_state2obs, ofs_initial, headers);
+
+    // close streams
+    ofs_mdp.close(); ofs_state2obs.close(); ofs_initial.close();
+}
+
+static unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2obs, istream& input_initial, bool headers){
+    /**
+    Loads an MDPI from a set of 3 csv files, for transitions, observations, and the initial distribution
+
+    The MDP size is defined by the transitions file.
+
+    \param input_mdp File name for transition probabilities and rewards
+    \param input_state2obs File name for mapping states to observations
+    \param input_initial File name for initial distribution
+     */
+
+    // read mdp
+    auto mdp = RMDP::from_csv(input_mdp);
+
+    // read state2obs
+    string line;
+    if(headers) input_state2obs >> line; // skip the header
+
+    indvec state2obs(mdp->state_count());
+    input_state2obs >> line;
+    while(input_state2obs.good()){
+        string cellstring;
+        stringstream linestream(line);
+        long idstate, idobs;
+
+        getline(linestream, cellstring, ',');
+        auto idstate = stoi(cellstring);
+        getline(linestream, cellstring, ',');
+        auto idobs = stoi(cellstring);
+        state2obs[idstate] = idobs;
+
+        input_state2obs >> line;
+    }
+
+    // read initial distribution
+    if(headers) input_initial >> line; // skip the header
+
+    Transition initial;
+    input_initial >> line;
+    while(input_initial.good()){
+        string cellstring;
+        stringstream linestream(line);
+        long idstate;
+        prec_t prob;
+
+        getline(linestream, cellstring, ',');
+        auto idstate = stoi(cellstring);
+        getline(linestream, cellstring, ',');
+        auto prob = stof(cellstring);
+        initial.add_sample(idstate, prob, 0.0);
+
+        input_initial >> line;
+    }
+
+    auto smdp = static_pointer_cast(make_shared(move(mdp));
+    return make_unique(new MDPI(smdp, state2obs, initial));
+}
+
+static unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& input_state2obs, const string& input_initial, bool headers){
+
+    // open files
+    ifstream ifs_mdp(input_mdp),
+                ifs_state2obs(input_state2obs),
+                ifs_initial(input_initial);
+
+    // transfer method call
+    return from_csv(ifs_mdp, ifs_state2obs, ifs_initial, headers);
 }
 
 MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,

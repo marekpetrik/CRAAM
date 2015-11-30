@@ -171,26 +171,26 @@ BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
 
     stringstream store1, store2, store3;
 
-    mdpi.to_csv(store1,store2,store3);
+    mdpi1.to_csv(store1,store2,store3);
     store1.seekg(0); store2.seekg(0); store3.seekg(0);
 
     auto&& string11 = store1.str();
     auto&& string12 = store2.str();
     auto&& string13 = store3.str();
 
-    auto mdpi2 = RMDP::from_csv(store1,store2,store3);
+    auto mdpi2 = MDPI::from_csv(store1,store2,store3);
 
     stringstream store21, store22, store23;
 
-    mdpi22->to_csv(store21, store22, store23);
+    mdpi2->to_csv(store21, store22, store23);
 
     auto&& string21 = store21.str();
     auto&& string22 = store22.str();
     auto&& string23 = store23.str();
 
-    BOOST_CHECK_EQUAL(string1, string21);
-    BOOST_CHECK_EQUAL(string2, string22);
-    BOOST_CHECK_EQUAL(string3, string23);
+    BOOST_CHECK_EQUAL(string11, string21);
+    BOOST_CHECK_EQUAL(string12, string22);
+    BOOST_CHECK_EQUAL(string13, string23);
 }
 
 

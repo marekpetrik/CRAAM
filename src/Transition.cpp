@@ -11,20 +11,19 @@
 namespace craam {
 
 
-Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities, 
+Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities,
                         const vector<prec_t>& rewards){
-    /** 
-        Creates a single transition from raw data. 
+    /**
+        Creates a single transition from raw data.
 
         Because the transition indexes are stored increasingly sorted, this method
-        must sort (and aggregate duplicate) the indices. 
+        must sort (and aggregate duplicate) the indices.
 
         \param indices The indexes of states to transition to
         \param probabilities The probabilities of transitions
         \param rewards The associated rewards with each transition
 
      */
-
 
     if(indices.size() != probabilities.size() || indices.size() != rewards.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
@@ -36,11 +35,11 @@ Transition::Transition(const indvec& indices, const vector<prec_t>& probabilitie
 }
 
 Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities){
-    /** 
-        Creates a single transition from raw data with uniformly zero rewards. 
+    /**
+        Creates a single transition from raw data with uniformly zero rewards.
 
         Because the transition indexes are stored increasingly sorted, this method
-        must sort (and aggregate duplicate) the indices. 
+        must sort (and aggregate duplicate) the indices.
 
         \param indices The indexes of states to transition to
         \param probabilities The probabilities of transitions
@@ -191,7 +190,7 @@ vector<prec_t> Transition::probabilities_vector(size_t size) const{
     return result;
 }
 void Transition::probabilities_addto(prec_t scale, vector<prec_t>& transition) const{
-    /** 
+    /**
         Scales transition probabilities and adds them to the provided vector.
 
         \param scale Multiplicative modification of transition probabilities
@@ -204,5 +203,5 @@ void Transition::probabilities_addto(prec_t scale, vector<prec_t>& transition) c
     }
 }
 
-}   
+}
 

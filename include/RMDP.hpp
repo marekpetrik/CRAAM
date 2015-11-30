@@ -4,12 +4,14 @@
 #include <fstream>
 #include <memory>
 #include <tuple>
-#include <armadillo>
 
 #include "definitions.hpp"
 #include "State.hpp"
+#include <boost/numeric/ublas/matrix.hpp>
+
 
 using namespace std;
+using namespace boost::numeric;
 
 namespace craam {
 
@@ -119,8 +121,8 @@ public:
     // fixed-policy functions
     numvec ofreq_mat(const Transition& init, prec_t discount, const indvec& policy, const indvec& nature) const;
     numvec rewards_state(const indvec& policy, const indvec& nature) const;
-    unique_ptr<arma::SpMat<prec_t>> transition_mat(const indvec& policy, const indvec& nature) const;
-    unique_ptr<arma::SpMat<prec_t>> transition_mat_t(const indvec& policy, const indvec& nature) const;
+    unique_ptr<ublas::matrix<prec_t>> transition_mat(const indvec& policy, const indvec& nature) const;
+    unique_ptr<ublas::matrix<prec_t>> transition_mat_t(const indvec& policy, const indvec& nature) const;
 
     // value iteration
     Solution vi_gs_rob(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;

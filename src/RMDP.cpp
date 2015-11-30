@@ -7,6 +7,9 @@
 #include <utility>
 #include <iostream>
 
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/lu.hpp>
+
 namespace craam {
 
 prec_t Solution::total_return(const Transition& initial) const{
@@ -148,37 +151,29 @@ unique_ptr<RMDP> RMDP::from_csv(istream& input, bool header){
 
     input >> line;
     while(input.good()){
-
         string cellstring;
         stringstream linestream(line);
-
         long idstatefrom, idstateto, idaction, idoutcome;
         prec_t probability, reward;
 
         // read idstatefrom
         getline(linestream, cellstring, ',');
         idstatefrom = stoi(cellstring);
-
         // read idaction
         getline(linestream, cellstring, ',');
         idaction = stoi(cellstring);
-
         // read idoutcome
         getline(linestream, cellstring, ',');
         idoutcome = stoi(cellstring);
-
         // read idstateto
         getline(linestream, cellstring, ',');
         idstateto = stoi(cellstring);
-
         // read probability
         getline(linestream, cellstring, ',');
         probability = stof(cellstring);
-
         // read reward
         getline(linestream, cellstring, ',');
         reward = stof(cellstring);
-
         result->add_transition(idstatefrom,idaction,idoutcome,idstateto,probability,reward);
 
         input >> line;
@@ -292,8 +287,7 @@ void RMDP::to_csv_file(const string& filename, bool header ) const{
        \param filename Name of the file
        \param header Whether to create a header of the file too
      */
-    ofstream ofs;
-    ofs.open(filename);
+    ofstream ofs(filename, ofstream::out);
 
     to_csv(ofs,header);
     ofs.close();
@@ -306,9 +300,9 @@ unique_ptr<RMDP> RMDP::from_csv_file(const string& filename, bool header ) {
        \param filename Name of the file
        \param header Whether to create a header of the file too
      */
-    ifstream ifs;
-    ifs.open(filename);
-    auto result = from_csv(ifs,header);
+    ifstream ifs(filename);
+
+    auto result = from_csv(ifs, header);
     ifs.close();
 
     return result;
@@ -1178,7 +1172,9 @@ Solution RMDP::mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount, unsi
 
 numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& policy, const indvec& nature) const{
     /**
-        Computes occupancy frequencies using matrix representation
+        Computes occupancy frequencies using matrix representation of transition probabilities
+
+        This method does not scale to larger state spaces
 
         \param init Initial distribution (alpha)
         \param discount Discount factor (gamma)
@@ -1186,18 +1182,30 @@ numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& po
         \param nature Policy of nature
      */
 
-    // initialize
-    // TODO: the copy here could be easily eliminated, is it worth it?
-    const auto&& initial_d = arma::vec(init.probabilities_vector(state_count()));
 
-    unique_ptr<arma::SpMat<prec_t>> t_mat(transition_mat_t(policy,nature));
+    const auto n = state_count();
 
+    // initial distribution
+    auto&& initial_svec = init.probabilities_vector(n);
+    ublas::vector<prec_t> initial_vec(n);
+    copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
+
+    // get transition matrix
+    unique_ptr<ublas::matrix<prec_t>> t_mat(transition_mat_t(policy,nature));
+
+    // construct main matrix
     (*t_mat) *= -discount;
-    (*t_mat) += arma::speye(state_count(),state_count());
+    (*t_mat) += ublas::identity_matrix<prec_t>(n);
 
-    const auto&& frequency = arma::spsolve(*t_mat,initial_d);
+    // solve set of linear equations
+    ublas::permutation_matrix<prec_t> P(n);
+    ublas::lu_factorize(*t_mat,P);
+    ublas::lu_substitute(*t_mat,P,initial_vec);
 
-    return arma::conv_to<numvec>::from(frequency);
+    // copy the solution back to a vector
+    copy(initial_vec.begin(), initial_vec.end(), initial_svec.begin());
+
+    return initial_svec;
 }
 
 numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
@@ -1218,7 +1226,7 @@ numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
     return rewards;
 }
 
-unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const indvec& nature) const{
+unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, const indvec& nature) const{
     /**
          Constructs the transition matrix for the policy.
 
@@ -1227,7 +1235,7 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const
      */
 
     const size_t n = state_count();
-    unique_ptr<arma::SpMat<prec_t>> result(new arma::SpMat<prec_t>(n,n));
+    unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
 
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
@@ -1241,7 +1249,7 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat(const indvec& policy, const
     return result;
 }
 
-unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat_t(const indvec& policy, const indvec& nature) const{
+unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, const indvec& nature) const{
     /**
          Constructs a transpose of the transition matrix for the policy.
 
@@ -1250,7 +1258,7 @@ unique_ptr<arma::SpMat<prec_t>> RMDP::transition_mat_t(const indvec& policy, con
      */
 
     const size_t n = state_count();
-    unique_ptr<arma::SpMat<prec_t>> result(new arma::SpMat<prec_t>(n,n));
+    unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
 
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
