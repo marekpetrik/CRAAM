@@ -92,7 +92,6 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     const vector<prec_t> val_rob3{8.91,9.9,11.0};
     const vector<prec_t> occ_freq3{0.333333333,0.6333333333,9.03333333333333};
     const prec_t ret_true = 9.93666666;
-    
 
     // robust
     auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);

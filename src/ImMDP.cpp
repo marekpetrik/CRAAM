@@ -309,7 +309,7 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 
     // loop over all mdp states and set weights
-    for(size_t i; i < weights.size(); i++){
+    for(size_t i = 0; i < weights.size(); i++){
         const auto rmdp_stateid = state2observ[i];
         const auto rmdp_outcomeid = state2outcome[i];
         // loop over all actions
