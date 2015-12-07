@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     vector<long> pol_rob{1,1,1};
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
-    
+
     // test jac value iteration
     auto&& re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
 
@@ -101,7 +101,6 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     auto&& re4 = rmdp.vi_jac_rob(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
-
 
     // optimistic
     auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
@@ -125,14 +124,13 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     BOOST_CHECK_CLOSE (re3.total_return(init_d), ret_true, 1e-3);
 
     // check if we get the same return from the solution as from the
-    // occupancy frequencies 
+    // occupancy frequencies
     auto&& occupancy_freq = rmdp.ofreq_mat(init_d,0.9,re.policy,re.outcomes);
     CHECK_CLOSE_COLLECTION(occupancy_freq, occ_freq3, 1e-3);
 
     auto&& rewards = rmdp.rewards_state(re3.policy,re3.outcomes);
     auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
     BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
-
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {

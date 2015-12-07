@@ -10,6 +10,9 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 
+// this is just for a matrix printout / remove if cout is not used
+// #include <boost/numeric/ublas/io.hpp>
+
 namespace craam {
 
 prec_t Solution::total_return(const Transition& initial) const{
@@ -1147,23 +1150,23 @@ Solution RMDP::mpi_jac_l1_rob(numvec const& valuefunction, prec_t discount, unsi
 Solution RMDP::mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                  unsigned long iterations_vi, prec_t maxresidual_vi) const{
     /**
-       Optimistic modified policy iteration using Jacobi value iteration in the inner loop and constrained nature.
-       The constraints are defined by the L1 norm and the nature is best-case.
+    Optimistic modified policy iteration using Jacobi value iteration in the inner loop and constrained nature.
+    The constraints are defined by the L1 norm and the nature is best-case.
 
-       This method generalized modified policy iteration to the robust MDP. In the value iteration step,
-       both the action *and* the outcome are fixed.
+    This method generalized modified policy iteration to the robust MDP. In the value iteration step,
+    both the action *and* the outcome are fixed.
 
-       Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+    Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 
-       \param valuefunction Initial value function
-       \param discount Discount factor
-       \param iterations_pi Maximal number of policy iteration steps
-       \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-       \param iterations_vi Maximal number of inner loop value iterations
-       \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-                    This value should be smaller than maxresidual_pi
+    \param valuefunction Initial value function
+    \param discount Discount factor
+    \param iterations_pi Maximal number of policy iteration steps
+    \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+    \param iterations_vi Maximal number of inner loop value iterations
+    \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+                This value should be smaller than maxresidual_pi
 
-       \return Computed (approximate) solution
+    \return Computed (approximate) solution
      */
 
      return mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(valuefunction, discount, iterations_pi, maxresidual_pi, iterations_vi, maxresidual_vi);
@@ -1172,16 +1175,15 @@ Solution RMDP::mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount, unsi
 
 numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& policy, const indvec& nature) const{
     /**
-        Computes occupancy frequencies using matrix representation of transition probabilities
+    Computes occupancy frequencies using matrix representation of transition probabilities
 
-        This method does not scale to larger state spaces
+    This method does not scale to larger state spaces
 
-        \param init Initial distribution (alpha)
-        \param discount Discount factor (gamma)
-        \param policy Policy of the decision maker
-        \param nature Policy of nature
-     */
-
+    \param init Initial distribution (alpha)
+    \param discount Discount factor (gamma)
+    \param policy Policy of the decision maker
+    \param nature Policy of nature
+    */
 
     const auto n = state_count();
 
@@ -1193,9 +1195,13 @@ numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& po
     // get transition matrix
     unique_ptr<ublas::matrix<prec_t>> t_mat(transition_mat_t(policy,nature));
 
+    //cout << "Transition matrix transpose P^T: " << *t_mat << endl;
+
     // construct main matrix
     (*t_mat) *= -discount;
     (*t_mat) += ublas::identity_matrix<prec_t>(n);
+
+    //cout << "Constructed matrix (A): " << *t_mat << endl;
 
     // solve set of linear equations
     ublas::permutation_matrix<prec_t> P(n);
@@ -1210,10 +1216,10 @@ numvec RMDP::ofreq_mat(const Transition& init, prec_t discount, const indvec& po
 
 numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
     /**
-        Constructs the rewards vector for each state for the RMDP.
+    Constructs the rewards vector for each state for the RMDP.
 
-        \param policy Policy of the decision maker
-        \param nature Policy of nature
+    \param policy Policy of the decision maker
+    \param nature Policy of nature
      */
 
     const auto n = state_count();
@@ -1236,6 +1242,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, con
 
     const size_t n = state_count();
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
+    *result = ublas::zero_matrix<prec_t>(n,n);
 
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
@@ -1251,14 +1258,15 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, con
 
 unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, const indvec& nature) const{
     /**
-         Constructs a transpose of the transition matrix for the policy.
+    Constructs a transpose of the transition matrix for the policy.
 
-        \param policy Policy of the decision maker
-        \param nature Policy of nature
-     */
+    \param policy Policy of the decision maker
+    \param nature Policy of nature
+    */
 
     const size_t n = state_count();
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
+    *result = ublas::zero_matrix<prec_t>(n,n);
 
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
@@ -1267,8 +1275,10 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
 
         for(size_t j=0; j < t.size(); j++){
             (*result)(indexes[j],s) = probabilities[j];
+            //cout << indexes[j] << " " << s << " " << probabilities[j] << endl;
         }
     }
+    //cout << *result << endl;
     return result;
 }
 
