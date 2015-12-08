@@ -3,12 +3,43 @@
 #include <limits>
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
 
 #include "Action.hpp"
 
 using namespace std;
 
 namespace craam {
+
+
+Action::Action(): threshold(NAN), distribution(0) {
+    /**
+    Creates an empty action.
+    */
+}
+
+Action::Action(bool use_distribution):
+        threshold(use_distribution ? 0 : NAN),
+        distribution(0) {
+    /**
+    Creates an empty action.
+
+    \param use_distribution Whether to automatically create and scale
+                            a distribution function
+    */
+}
+
+Action::Action(const vector<Transition>& outcomes, bool use_distribution) :
+        outcomes(outcomes),
+        threshold(use_distribution ? 0 : NAN),
+        distribution(outcomes.size(), 1.0 / (prec_t) outcomes.size()) {
+    /**
+    Initializes outcomes to the provided vector
+
+    \param use_distribution Whether to automatically create and scale
+                            a uniform distribution function to scale to 1
+    */
+}
 
 template<NatureConstr nature>
 pair<numvec,prec_t>
@@ -55,22 +86,15 @@ void Action::set_distribution(numvec const& distribution){
        \param distribution New distribution of outcomes. Must be either the same
                             dimension as the number of outcomes, or length 0. If the length
                             is 0, it is assumed to be a uniform distribution over states.
-       \param threshold Bound on the worst-case distribution on the outcomes.
      */
-
-    if(distribution.size() == 0){
-        this->distribution = distribution;
-        this->threshold = threshold;
-        return;
-    }
 
     if(distribution.size() != outcomes.size())
         throw invalid_argument("invalid distribution size");
-    
+
     auto sum = accumulate(distribution.begin(),distribution.end(), 0.0);
     if(sum < 0.99 || sum > 1.001)
         throw invalid_argument("invalid distribution");
-    
+
     auto minimum = *min_element(distribution.begin(),distribution.end());
     if(minimum < 0)
         throw invalid_argument("distribution must be non-negative");
@@ -204,13 +228,11 @@ prec_t Action::fixed(numvec const& valuefunction, prec_t discount, int index) co
 
 Transition& Action::get_transition(long outcomeid){
     /**
-        Returns a transition for the outcome to the action. If the transition does
-        not exist then it is created.
-     */
-    if(outcomeid < 0)
-        throw invalid_argument("Outcomeid must be non-negative.");
-    if(outcomeid >= (long) outcomes.size())
-        outcomes.resize(outcomeid + 1);
+        Returns a transition for the outcome to the action. The transition
+        must exist
+    */
+    if(outcomeid < 0l || outcomeid >= (long) outcomes.size())
+        throw invalid_argument("invalid outcome number");
 
     return outcomes[outcomeid];
 }
@@ -225,17 +247,37 @@ const Transition& Action::get_transition(long outcomeid) const{
     return outcomes[outcomeid];
 }
 
-void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
+void Action::add_empty_outcome(long outcomeid){
     /**
-        Adds and outcome to the action. If the outcome does not exist, it is
-        created.
-     */
+    Adds a sufficient number of empty outcomes for the outcomeid
+    to be a valid identifier.
+
+    If a distribution is initialized, then it is resized appropriately
+    and the weights for new elements are set to 0.
+    */
+
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
 
     if(outcomeid >= (long) outcomes.size())
         outcomes.resize(outcomeid + 1);
-    
+
+    if(!std::isnan(threshold)){
+        // got to resize the distribution too
+        distribution.resize(outcomeid + 1, 0.0);
+    }
+}
+
+void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
+    /**
+        Adds and outcome to the action. If the outcome does not exist, it is
+        created. Empty transitions are created for all outcome ids
+        that are smaller than the new one and do not already exist.
+
+        If a distribution is initialized, then it is resized appropriately
+        and the weights for new elements are set to 0.
+     */
+    add_empty_outcome(outcomeid);
     outcomes[outcomeid].add_sample(toid, probability, reward);
 }
 
@@ -277,18 +319,27 @@ void Action::set_distribution(long outcomeid, prec_t weight){
     /**
         Sets the weight associated with an outcome.
      */
+     if(std::isnan(threshold)){
+        throw invalid_argument("distribution is not initialized");
+     }
      distribution[outcomeid] = weight;
 
 }
 void Action::normalize_distribution(){
     /**
-       Normalizes outcome weights to sum to one.
+       Normalizes outcome weights to sum to one. Assumes that the distribution
+       is initialized.
      */
+
+    if(std::isnan(threshold)){
+        throw invalid_argument("distribution is not initialized.");
+    }
+
     auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
- 
+
     if(weightsum > 0.0){
         for(auto& p : distribution)
-            p /= weightsum;   
+            p /= weightsum;
     }
 }
 

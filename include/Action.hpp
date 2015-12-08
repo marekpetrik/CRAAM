@@ -11,14 +11,32 @@ using namespace std;
 
 namespace craam {
 
-/** An action in an MDP. */
+/**
+An action in an MDP.
+
+The worst-case behavior is parameterized by a base distribution and a threshold value.
+For example, the worst case can be limited by a threshold of L1 norm deviation from
+the provided distribution.
+
+It is important to note that the base distribution over actions is not initialized
+by default.
+
+The fact that the distribution is not being used is indicated by threshold being NaN.
+
+If the distribution is used, then it is initialized to be uniform over the provided elements;
+when a new outcome is added, then its weight in the distribution is 0.
+*/
 class Action {
 
 public:
+    // TODO: restrict from resizing!
+    /** A care should be taken to not freely modify this value */
     vector<Transition> outcomes;
 
-    Action(): threshold(0) {};
-    Action(vector<Transition> outcomes) : outcomes(outcomes), threshold(0) {};
+public:
+    Action();
+    Action(bool use_distribution);
+    Action(const vector<Transition>& outcomes, bool use_distribution=false);
 
     // plain solution
     pair<long,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
@@ -67,6 +85,8 @@ public:
     }
 
     void add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward);
+    void add_empty_outcome(long outcomeid);
+
     const Transition& get_outcome(long outcomeid) const {return outcomes[outcomeid];};
     Transition& get_outcome(long outcomeid) {return outcomes[outcomeid];};
     size_t outcome_count() const {return outcomes.size();};
@@ -83,8 +103,8 @@ public:
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 
 protected:
-    numvec distribution;
     prec_t threshold;
+    numvec distribution;
 };
 
 }

@@ -74,16 +74,6 @@ MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initia
     */
 }
 
-MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
-            const Transition& initial) : MDPI(mdp, state2observ, initial){
-    /**
-        Calls the base constructor and also constructs the corresponding
-        robust MDP
-     */
-
-    initialize_robustmdp();
-}
-
 indvec MDPI::obspol2statepol(indvec obspol) const{
     /**
         Converts a policy defined in terms of observations to a policy defined in
@@ -229,20 +219,32 @@ unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& inpu
     return from_csv(ifs_mdp, ifs_state2obs, ifs_initial, headers);
 }
 
-MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,
-            const Transition& initial) : MDPI(mdp, state2observ, initial){
+MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+            const Transition& initial) : MDPI(mdp, state2observ, initial),
+            state2outcome(mdp->state_count(),-1){
     /**
-        Calls the base constructor and also constructs the corresponding
-        robust MDP.
+    Calls the base constructor and also constructs the corresponding
+    robust MDP
      */
 
     initialize_robustmdp();
 }
 
 
+MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,
+            const Transition& initial) : MDPI(mdp, state2observ, initial),
+            state2outcome(mdp.state_count(),-1){
+    /**
+    Calls the base constructor and also constructs the corresponding
+    robust MDP.
+    */
+
+    initialize_robustmdp();
+}
+
 void MDPI_R::initialize_robustmdp(){
     /**
-        Constructs a robust version of the implementable MDP.
+    Constructs a robust version of the implementable MDP.
     */
     // *** will check the following properties in the code
     // check that there is no robustness
@@ -253,8 +255,6 @@ void MDPI_R::initialize_robustmdp(){
 
     // keep track of the number of outcomes for each
     indvec outcome_count(obs_count, 0);
-    // keep track of which outcome a state is mapped to
-    indvec state2outcome(mdp->state_count(), -1);
     // keep track of actions - needs to make sure that they are all the same
     indvec action_counts(obs_count, -1);  // -1 means not initialized
 
@@ -312,8 +312,8 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     for(size_t i = 0; i < weights.size(); i++){
         const auto rmdp_stateid = state2observ[i];
         const auto rmdp_outcomeid = state2outcome[i];
-        // loop over all actions
 
+        // loop over all actions
         auto& rstate = robust_mdp.get_state(rmdp_stateid);
         for(auto& a : rstate.actions){
             a.set_distribution(rmdp_outcomeid, weights[i]);
@@ -330,21 +330,21 @@ void MDPI_R::update_importance_weights(const numvec& weights){
 
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
     /**
-        Uses a simple iterative algorithm to solve the MDPI.
+    Uses a simple iterative algorithm to solve the MDPI.
 
-        The algorithm starts with a policy composed of actions all 0, and
-        then updates the distribution of robust outcomes (corresponding to MDP states),
-        and computes the optimal solution for thus weighted RMDP.
+    The algorithm starts with a policy composed of actions all 0, and
+    then updates the distribution of robust outcomes (corresponding to MDP states),
+    and computes the optimal solution for thus weighted RMDP.
 
-        This method modifies the stored robust MDP.
+    This method modifies the stored robust MDP.
 
-        \param iterations Maximal number of iterations;
-                    also stops if the policy no longer changes
+    \param iterations Maximal number of iterations;
+                also stops if the policy no longer changes
 
-        \returns Policy for observations (an index of each action for each observation)
-     */
+    \returns Policy for observations (an index of each action for each observation)
+    */
 
-   // TODO: add a method in RMDP to compute the distribution of a non-robust policy
+    // TODO: add a method in RMDP to compute the distribution of a non-robust policy
     const indvec nature(state_count(), 0);
 
     indvec obspol_ret(0);         // current policy in terms of observations
@@ -373,7 +373,6 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
         if(iter == iterations-1){
             obspol_ret = obspol;
         }
-
     }
     return obspol_ret;
 }
