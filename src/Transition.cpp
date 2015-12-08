@@ -46,7 +46,7 @@ Transition::Transition(const indvec& indices, const vector<prec_t>& probabilitie
 
      */
 
-    if(indices.size() != probabilities.size() || indices.size() != rewards.size())
+    if(indices.size() != probabilities.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
 
     auto sorted = sort_indexes(indices);
@@ -121,7 +121,10 @@ prec_t Transition::sum_probabilities() const{
 }
 
 bool Transition::is_normalized() const{
-    return abs(1.0 - sum_probabilities()) < tolerance;
+    if(indices.empty())
+        return true;
+    else
+        return abs(1.0 - sum_probabilities()) < tolerance;
 }
 
 void Transition::normalize(){

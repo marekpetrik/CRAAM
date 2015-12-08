@@ -23,11 +23,11 @@ class Transition {
 public:
     Transition(){};
 
-    Transition(const indvec& indices, 
-                const numvec& probabilities, 
+    Transition(const indvec& indices,
+                const numvec& probabilities,
                 const numvec& rewards);
 
-    Transition(const indvec& indices, 
+    Transition(const indvec& indices,
                 const numvec& probabilities);
 
 
@@ -47,8 +47,11 @@ public:
     }
 
     long max_index() const{
-        /** Returns the maximal indexes involved in the transition.  */
-        return indices.back();
+        /**
+        Returns the maximal indexes involved in the transition.  It
+        returns -1 for and empty transition.
+        */
+        return indices.empty() ? -1 : indices.back();
     }
 
     // probability manipulation
