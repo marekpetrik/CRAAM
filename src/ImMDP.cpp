@@ -121,9 +121,8 @@ void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs,
     const numvec& probabilities = initial.get_probabilities();
 
     for(auto i : indices(inindices)){
-        output_initial << inindices[i] << "," << probabilities[i];
+        output_initial << inindices[i] << "," << probabilities[i] << endl;
     }
-
 }
 
 void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs,
