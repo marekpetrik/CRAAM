@@ -85,7 +85,7 @@ public:
     }
 
     void add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward);
-    void add_empty_outcome(long outcomeid);
+    Transition& create_outcome(long outcomeid);
 
     const Transition& get_outcome(long outcomeid) const {return outcomes[outcomeid];};
     Transition& get_outcome(long outcomeid) {return outcomes[outcomeid];};
@@ -94,6 +94,7 @@ public:
     Transition& get_transition(long outcomeid);
     const Transition& get_transition(long outcomeid) const;
 
+    void init_distribution();
     void set_distribution(const numvec& distribution);
     void set_distribution(long outcomeid, prec_t weight);
     const numvec& get_distribution() const {return distribution;};

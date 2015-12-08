@@ -281,7 +281,9 @@ void MDPI_R::initialize_robustmdp(){
                                        to_string(state_index) + " and action " + to_string(action_index) );
 
             const Transition& old_tran = mdp->get_transition(state_index,action_index,0);
-            Transition& new_tran = robust_mdp.get_transition(obs,action_index,outcome_count[obs]);
+            Transition& new_tran = robust_mdp.create_transition(obs,action_index,outcome_count[obs]);
+            // make sure that the action is using a distribution (it will be needed almost surely)
+            robust_mdp.get_state(obs).get_action(action_index).init_distribution();
 
             // copy the original transitions (they are automatically consolidated while being added)
             for(size_t k=0; k< old_tran.size(); k++){

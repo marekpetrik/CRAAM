@@ -130,7 +130,7 @@ prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long act
     return actions[actionid].fixed(valuefunction, discount, outcomeid);
 }
 
-Transition& State::get_transition(long actionid, long outcomeid){
+Transition& State::create_transition(long actionid, long outcomeid){
     /**
         Returns the transition; new actions and outcomes are created as necessary.
      */
@@ -139,6 +139,17 @@ Transition& State::get_transition(long actionid, long outcomeid){
     }
     if(actionid >= (long) actions.size()){
         actions.resize(actionid+1);
+    }
+    return actions[actionid].create_outcome(outcomeid);
+}
+
+
+Transition& State::get_transition(long actionid, long outcomeid){
+    /**
+       Returns the transition. The transition must exist.
+     */
+    if(actionid < 0l || actionid >= (long) actions.size()){
+        throw invalid_argument("invalid action number");
     }
     return actions[actionid].get_transition(outcomeid);
 }

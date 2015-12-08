@@ -48,6 +48,7 @@ public:
     size_t action_count() const { return actions.size();};
 
     Transition& get_transition(long actionid, long outcomeid);
+    Transition& create_transition(long actionid, long outcomeid);
     const Transition& get_transition(long actionid, long outcomeid) const;
 
     void set_thresholds(prec_t threshold);

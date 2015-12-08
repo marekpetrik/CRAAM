@@ -1282,7 +1282,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
     return result;
 }
 
-Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
+Transition& RMDP::create_transition(long fromid, long actionid, long outcomeid){
     /**
        Return a transition for state, action, and outcome. It is created if
        necessary.
@@ -1294,8 +1294,19 @@ Transition& RMDP::get_transition(long fromid, long actionid, long outcomeid){
         (this->states).resize(fromid+1);
     }
 
-    return this->states[fromid].get_transition(actionid, outcomeid);
+    return this->states[fromid].create_transition(actionid, outcomeid);
 }
+
+Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid){
+    /**
+       Returns the transition. The transition must exist.
+     */
+    if(stateid < 0l || stateid >= (long) this->states.size()){
+        throw invalid_argument("Invalid state number");
+    }
+    return states[stateid].get_transition(actionid,outcomeid);
+}
+
 
 const Transition& RMDP::get_transition(long stateid, long actionid, long outcomeid) const{
     /**

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <cmath>
 
 #include "Transition.hpp"
 #include "Action.hpp"
@@ -832,7 +833,7 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
     rmdp->get_state(0).get_action(1).get_outcome(0).set_reward(1,19.1);
     BOOST_CHECK_EQUAL(rmdp->get_state(0).get_action(1).get_outcome(0).get_reward(1), 19.1);
 
-    BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_threshold(), 0);
+    BOOST_CHECK_EQUAL(std::isnan(rmdp->get_state(3).get_action(0).get_threshold()), true);
     rmdp->get_state(3).get_action(0).set_threshold(1.0);
     BOOST_CHECK_EQUAL(rmdp->get_state(3).get_action(0).get_threshold(), 1.0);
 

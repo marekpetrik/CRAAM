@@ -32,7 +32,8 @@ Action::Action(bool use_distribution):
 Action::Action(const vector<Transition>& outcomes, bool use_distribution) :
         outcomes(outcomes),
         threshold(use_distribution ? 0 : NAN),
-        distribution(outcomes.size(), 1.0 / (prec_t) outcomes.size()) {
+        distribution(outcomes.size(), !outcomes.empty() ?
+                                        1.0 / (prec_t) outcomes.size() : 0.0) {
     /**
     Initializes outcomes to the provided vector
 
@@ -247,7 +248,7 @@ const Transition& Action::get_transition(long outcomeid) const{
     return outcomes[outcomeid];
 }
 
-void Action::add_empty_outcome(long outcomeid){
+Transition& Action::create_outcome(long outcomeid){
     /**
     Adds a sufficient number of empty outcomes for the outcomeid
     to be a valid identifier.
@@ -266,6 +267,8 @@ void Action::add_empty_outcome(long outcomeid){
         // got to resize the distribution too
         distribution.resize(outcomeid + 1, 0.0);
     }
+
+    return outcomes[outcomeid];
 }
 
 void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
@@ -277,8 +280,7 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
         If a distribution is initialized, then it is resized appropriately
         and the weights for new elements are set to 0.
      */
-    add_empty_outcome(outcomeid);
-    outcomes[outcomeid].add_sample(toid, probability, reward);
+    create_outcome(outcomeid).add_sample(toid, probability, reward);
 }
 
 template<NatureConstr nature> pair<numvec,prec_t>
@@ -325,6 +327,21 @@ void Action::set_distribution(long outcomeid, prec_t weight){
      distribution[outcomeid] = weight;
 
 }
+
+void Action::init_distribution(){
+    /**
+    Sets an initial uniform value for the threshold (0) and the distribution.
+    If the distribution already exists, then it is overwritten.
+    */
+
+    distribution.clear();
+    if(outcomes.size() > 0){
+        distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
+    }
+    threshold = 0.0;
+}
+
+
 void Action::normalize_distribution(){
     /**
        Normalizes outcome weights to sum to one. Assumes that the distribution

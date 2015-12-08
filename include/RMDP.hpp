@@ -99,6 +99,7 @@ public:
     // get parameters
     Transition& get_transition(long stateid, long actionid, long outcomeid);
     const Transition& get_transition(long stateid, long actionid, long outcomeid) const;
+    Transition& create_transition(long stateid, long actionid, long outcomeid);
     State& get_state(long stateid) {return states[stateid];};
     const State& get_state(long stateid) const {return states[stateid];};
 
