@@ -149,6 +149,7 @@ BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
 
     indvec polvec{0,0};
     BOOST_CHECK_EQUAL_COLLECTIONS(pol.begin(), pol.end(),polvec.begin(),polvec.end());
+
     //ostream_iterator<prec_t> output(cout, ", ");
     //copy(pol.begin(), pol.end(), output);
 }
@@ -193,4 +194,43 @@ BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
     BOOST_CHECK_EQUAL(string13, string23);
 }
 
+BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
+    RMDP rmdp1(0);
+
+    rmdp1.add_transition_d(0,1,1,1,0);
+    rmdp1.add_transition_d(1,1,2,1,0);
+    rmdp1.add_transition_d(2,1,2,1,1.1);
+
+    rmdp1.add_transition_d(0,0,0,1,0);
+    rmdp1.add_transition_d(1,0,0,1,1);
+    rmdp1.add_transition_d(2,0,1,1,1);
+
+    Transition initial(indvec{0,1,2},numvec{1.0/3.0,1.0/3.0,1/3.0});
+    indvec state2obs{0,0,1};
+
+    MDPI_R mdpi1(rmdp1, state2obs, initial);
+
+    stringstream store1, store2, store3;
+
+    mdpi1.to_csv(store1,store2,store3);
+    store1.seekg(0); store2.seekg(0); store3.seekg(0);
+
+    auto&& string11 = store1.str();
+    auto&& string12 = store2.str();
+    auto&& string13 = store3.str();
+
+    auto mdpi2 = MDPI_R::from_csv(store1,store2,store3);
+
+    stringstream store21, store22, store23;
+
+    mdpi2->to_csv(store21, store22, store23);
+
+    auto&& string21 = store21.str();
+    auto&& string22 = store22.str();
+    auto&& string23 = store23.str();
+
+    BOOST_CHECK_EQUAL(string11, string21);
+    BOOST_CHECK_EQUAL(string12, string22);
+    BOOST_CHECK_EQUAL(string13, string23);
+}
 

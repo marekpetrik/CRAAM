@@ -36,13 +36,14 @@ public:
     void to_csv_file(const string& output_mdp, const string& output_state2obs,
                      const string& output_initial, bool headers = true) const;
 
-    static unique_ptr<MDPI> from_csv(istream& input_mdp, istream& input_state2obs,
+    template<typename T = MDPI>
+    static unique_ptr<T> from_csv(istream& input_mdp, istream& input_state2obs,
                                      istream& input_initial, bool headers = true);
-    static unique_ptr<MDPI> from_csv_file(const string& input_mdp,
+    template<typename T = MDPI>
+    static unique_ptr<T> from_csv_file(const string& input_mdp,
                                           const string& input_state2obs,
                                           const string& input_initial,
                                           bool headers = true);
-
 protected:
 
     /** the underlying MDP */
@@ -77,8 +78,20 @@ public:
     };
 
     void update_importance_weights(const numvec& weights);
-
     indvec solve_reweighted(long iterations, prec_t discount);
+
+    static unique_ptr<MDPI_R> from_csv(istream& input_mdp, istream& input_state2obs,
+                                     istream& input_initial, bool headers = true){
+
+        return MDPI::from_csv<MDPI_R>(input_mdp,input_state2obs,input_initial, headers);
+    }
+
+    static unique_ptr<MDPI_R> from_csv_file(const string& input_mdp,
+                                          const string& input_state2obs,
+                                          const string& input_initial,
+                                          bool headers = true){
+        return MDPI::from_csv_file<MDPI_R>(input_mdp,input_state2obs,input_initial, headers);
+    }
 
 protected:
     /** the robust representation of the MDPI */

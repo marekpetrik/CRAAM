@@ -20,8 +20,8 @@ namespace impl{
 void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
                             const Transition& initial){
     /**
-         Checks whether the parameters are correct. Throws an exception if the parmaters
-         are wrong.
+     Checks whether the parameters are correct. Throws an exception if the parmaters
+     are wrong.
      */
 
     // *** check consistency of provided parameters ***
@@ -148,7 +148,8 @@ void MDPI::to_csv_file(const string& output_mdp, const string& output_state2obs,
     ofs_mdp.close(); ofs_state2obs.close(); ofs_initial.close();
 }
 
-unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
+template<typename T>
+unique_ptr<T> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
                                 istream& input_initial, bool headers){
     /**
     Loads an MDPI from a set of 3 csv files, for transitions, observations,
@@ -203,10 +204,20 @@ unique_ptr<MDPI> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
 
     shared_ptr<const RMDP> csmdp = const_pointer_cast<const RMDP>(
                             shared_ptr<RMDP>(std::move(mdp)));
-    return make_unique<MDPI>(csmdp, state2obs, initial);
+    return make_unique<T>(csmdp, state2obs, initial);
 }
 
-unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& input_state2obs,
+template
+unique_ptr<MDPI> MDPI::from_csv<MDPI>(istream& input_mdp, istream& input_state2obs,
+                                istream& input_initial, bool headers);
+
+template
+unique_ptr<MDPI_R> MDPI::from_csv<MDPI_R>(istream& input_mdp, istream& input_state2obs,
+                                istream& input_initial, bool headers);
+
+
+template<typename T>
+unique_ptr<T> MDPI::from_csv_file(const string& input_mdp, const string& input_state2obs,
                                      const string& input_initial, bool headers){
 
     // open files
@@ -215,8 +226,16 @@ unique_ptr<MDPI> MDPI::from_csv_file(const string& input_mdp, const string& inpu
                 ifs_initial(input_initial);
 
     // transfer method call
-    return from_csv(ifs_mdp, ifs_state2obs, ifs_initial, headers);
+    return from_csv<T>(ifs_mdp, ifs_state2obs, ifs_initial, headers);
 }
+
+template
+unique_ptr<MDPI> MDPI::from_csv_file<MDPI>(const string& input_mdp, const string& input_state2obs,
+                                     const string& input_initial, bool headers);
+template
+unique_ptr<MDPI_R> MDPI::from_csv_file<MDPI_R>(const string& input_mdp, const string& input_state2obs,
+                                     const string& input_initial, bool headers);
+
 
 MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial),
