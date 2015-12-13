@@ -557,7 +557,7 @@ Solution RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned
     indvec policy(states.size());
     vector<numvec> outcome_dists(states.size());
 
-    numvec residuals(valuefunction.size());
+    numvec residuals(states.size());
 
     prec_t residual = numeric_limits<prec_t>::infinity();
     size_t i;
@@ -776,7 +776,7 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
 
     vector<numvec> outcomes(states.size());
 
-    numvec residuals(valuefunction.size());
+    numvec residuals(states.size());
 
     prec_t residual_pi = numeric_limits<prec_t>::infinity();
 
@@ -872,7 +872,7 @@ Solution RMDP::vi_jac_fix(const numvec& valuefunction, prec_t discount, const in
         evenvalue.assign(states.size(),0);
     }
 
-    numvec residuals(valuefunction.size());
+    numvec residuals(states.size());
     prec_t residual = numeric_limits<prec_t>::infinity();
 
     size_t j; // defined here to be able to report the number of iterations
@@ -1346,8 +1346,8 @@ Transition& RMDP::create_transition(long fromid, long actionid, long outcomeid){
 
     if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
 
-    if(fromid >= (long) this->states.size()){
-        (this->states).resize(fromid+1);
+    if(fromid >= (long) states.size()){
+        (states).resize(fromid+1);
     }
 
     return this->states[fromid].create_transition(actionid, outcomeid);

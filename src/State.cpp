@@ -94,7 +94,7 @@ prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long a
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && is_terminal())
+    if(is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
@@ -107,7 +107,7 @@ prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long a
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && is_terminal())
+    if(is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
@@ -121,7 +121,7 @@ prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long act
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && is_terminal())
+    if(is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
