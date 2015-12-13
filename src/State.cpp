@@ -14,7 +14,7 @@ tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t disco
        \return (Action index, outcome index, value)
      */
 
-    if(this->actions.size() == 0){
+    if(is_terminal()){
         return make_tuple(-1,-1,0);
     }
 
@@ -42,7 +42,7 @@ tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t disco
 
        \return (Action index, outcome index, value)
      */
-    if(this->actions.size() == 0){
+    if(is_terminal()){
         return make_tuple(-1,-1,0);
     }
 
@@ -70,7 +70,7 @@ pair<long,prec_t> State::max_average(numvec const& valuefunction, prec_t discoun
      *
        \return (Action index, outcome index, value)
      */
-    if(actions.size() == 0){
+    if(is_terminal()){
         return make_pair(-1,0.0);
     }
 
@@ -94,7 +94,7 @@ prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long a
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && 0 == (long) actions.size())
+    if(actionid == -1 && is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
@@ -107,7 +107,7 @@ prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long a
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && 0 == (long) actions.size())
+    if(actionid == -1 && is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
@@ -121,7 +121,7 @@ prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long act
     /** Computes the value of a fixed action    */
 
     // this is the terminal state, return 0
-    if(actionid == -1 && 0 == (long) actions.size())
+    if(actionid == -1 && is_terminal())
         return 0;
 
     if(actionid < 0 || actionid >= (long) actions.size())
@@ -142,7 +142,6 @@ Transition& State::create_transition(long actionid, long outcomeid){
     }
     return actions[actionid].create_outcome(outcomeid);
 }
-
 
 Transition& State::get_transition(long actionid, long outcomeid){
     /**
@@ -199,7 +198,7 @@ tuple<long,numvec,prec_t> State::max_max_cst(numvec const& valuefunction, prec_t
 
        \return Action index, outcome distribution and the mean value for the maximal bounded solution
      */
-    if(this->actions.size() == 0){
+    if(is_terminal()){
         return make_tuple(-1,numvec(0),0.0);
     }
 
@@ -243,14 +242,13 @@ tuple<long,numvec,prec_t> State::max_min_cst(numvec const& valuefunction, prec_t
 
        \return (Action index, outcome index, value)
      */
-    if(this->actions.size() == 0){
+    if(is_terminal()){
         return make_tuple(-1,numvec(0),0.0);
     }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long actionresult = -1l;
 
-    // TODO: change this to an rvalue?
     numvec outcomeresult;
 
     for(size_t i = 0; i < this->actions.size(); i++){

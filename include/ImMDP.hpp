@@ -30,6 +30,7 @@ public:
     indvec obspol2statepol(indvec obspol) const;
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
+    Transition get_initial() const {return initial;};
 
     void to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial,
                     bool headers = true) const;
@@ -84,14 +85,14 @@ public:
                                      istream& input_initial, bool headers = true){
 
         return MDPI::from_csv<MDPI_R>(input_mdp,input_state2obs,input_initial, headers);
-    }
+    };
 
     static unique_ptr<MDPI_R> from_csv_file(const string& input_mdp,
                                           const string& input_state2obs,
                                           const string& input_initial,
                                           bool headers = true){
         return MDPI::from_csv_file<MDPI_R>(input_mdp,input_state2obs,input_initial, headers);
-    }
+    };
 
 protected:
     /** the robust representation of the MDPI */

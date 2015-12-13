@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
     Transition t3({1,2}, {0.1,0.3}, {3,4});
 
     // check value computation
-    vector<prec_t> valuefunction = {0,1,2};
+    numvec valuefunction = {0,1,2};
     auto ret = t1.compute_value(valuefunction,0.1);
     BOOST_CHECK (-0.01 <= ret - 1.15);
     BOOST_CHECK (ret - 1.15 <= 0.01);
@@ -72,26 +72,28 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
 
     Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
 
-    vector<prec_t> initial{0,0,0};
+    numvec initial{0,0,0};
 
     // small number of iterations (not the true value function)
     auto&& re = rmdp.vi_gs_rob(initial,0.9,20,0);
 
-    vector<prec_t> val_rob{7.68072,8.67072,9.77072};
-    vector<long> pol_rob{1,1,1};
+    numvec val_rob{7.68072,8.67072,9.77072};
+    indvec pol_rob{1,1,1};
+    indvec natpol_rob{0,0,0};
+
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
     // test jac value iteration
     auto&& re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
 
-    vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
+    numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re2.policy.begin(),re2.policy.end());
 
     // many iterations
-    const vector<prec_t> val_rob3{8.91,9.9,11.0};
-    const vector<prec_t> occ_freq3{0.333333333,0.6333333333,9.03333333333333};
+    const numvec val_rob3{8.91,9.9,11.0};
+    const numvec occ_freq3{0.333333333,0.6333333333,9.03333333333333};
     const prec_t ret_true = 9.93666666;
 
     // robust
@@ -121,6 +123,10 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
+    // fixed evaluation
+    auto&& re9 = rmdp.vi_jac_fix(initial,0.9,pol_rob,natpol_rob,10000,0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
+
     // check the computed returns
     BOOST_CHECK_CLOSE (re3.total_return(init_d), ret_true, 1e-3);
 
@@ -132,6 +138,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     auto&& rewards = rmdp.rewards_state(re3.policy,re3.outcomes);
     auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
     BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
+
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
@@ -149,24 +156,24 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     rmdp.add_transition_d(2,0,1,1,1);
 
 
-    vector<prec_t> initial{0,0,0};
+    numvec initial{0,0,0};
 
     // small number of iterations
     auto&& re = rmdp.vi_gs_rob(initial,0.9,20,0);
 
-    vector<prec_t> val_rob{7.68072,8.67072,9.77072};
-    vector<long> pol_rob{1,1,1};
+    numvec val_rob{7.68072,8.67072,9.77072};
+    indvec pol_rob{1,1,1};
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
     auto&& re2 = rmdp.mpi_jac_rob(initial,0.9, 20,0, 0,0);
 
-    vector<prec_t> val_rob2{7.5726,8.56265679,9.66265679};
+    numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re2.policy.begin(),re2.policy.end());
 
     // many iterations
-    vector<prec_t> val_rob3{8.91,9.9,11.0};
+    numvec val_rob3{8.91,9.9,11.0};
 
     // robust
     auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);
@@ -210,11 +217,11 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_nonrobust) {
     rmdp.add_transition_d(2,0,1,1,1);
 
 
-    vector<prec_t> initial{0,0,0};
+    numvec initial{0,0,0};
 
     // many iterations
-    vector<prec_t> val_rob3{8.91,9.9,11.0};
-    vector<long> pol_rob{1,1,1};
+    numvec val_rob3{8.91,9.9,11.0};
+    indvec pol_rob{1,1,1};
 
     // robust
     auto re = rmdp.mpi_jac_rob(initial,0.9, 100,0, 100, 0);
@@ -297,14 +304,14 @@ BOOST_AUTO_TEST_CASE(simple_mdp_resize) {
     rmdp.add_transition_d(1,0,0,1,1);
     rmdp.add_transition_d(2,0,1,1,1);
 
-    vector<prec_t> initial(3);
+    numvec initial(3);
     for(auto & i : initial)
         i = 0;
 
     auto&& re = rmdp.vi_gs_rob(initial,0.9, 20l,0);
 
-    vector<prec_t> val_rob{7.68072,8.67072,9.77072};
-    vector<long> pol_rob{1,1,1};
+    numvec val_rob{7.68072,8.67072,9.77072};
+    indvec pol_rob{1,1,1};
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 }
@@ -320,7 +327,6 @@ BOOST_AUTO_TEST_CASE(simple_mdp_save_load) {
     rmdp1.add_transition_d(1,0,0,1,1);
     rmdp1.add_transition_d(2,0,1,1,1);
 
-
     stringstream store;
 
     rmdp1.to_csv(store);
@@ -328,14 +334,15 @@ BOOST_AUTO_TEST_CASE(simple_mdp_save_load) {
 
     auto rmdp = RMDP::from_csv(store);
 
-    vector<prec_t> initial(3);
+    numvec initial(3);
     for(auto & i : initial)
         i = 0;
 
     auto&& re = rmdp->vi_gs_rob(initial,0.9, 20l,0);
 
-    vector<prec_t> val_rob{7.68072,8.67072,9.77072};
-    vector<long> pol_rob{1,1,1};
+    numvec val_rob{7.68072,8.67072,9.77072};
+    indvec pol_rob{1,1,1};
+
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
@@ -375,7 +382,7 @@ BOOST_AUTO_TEST_CASE(test_value_function) {
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
 
-    vector<prec_t> initial(1);
+    numvec initial(1);
     for(auto & i : initial)
         i = 0;
 
@@ -392,7 +399,7 @@ BOOST_AUTO_TEST_CASE(test_value_function_robust_optimistic){
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
 
-    vector<prec_t> initial(1);
+    numvec initial(1);
     for(auto & i : initial)
         i = 0;
 
@@ -407,8 +414,8 @@ BOOST_AUTO_TEST_CASE(test_value_function_robust_optimistic){
 }
 
 BOOST_AUTO_TEST_CASE(test_l1_worst_case){
-    vector<prec_t> q = {0.4, 0.3, 0.1, 0.2};
-    vector<prec_t> z = {1.0, 2.0, 5.0, 4.0};
+    numvec q = {0.4, 0.3, 0.1, 0.2};
+    numvec z = {1.0, 2.0, 5.0, 4.0};
     prec_t t, w;
 
     t = 0;
@@ -423,8 +430,8 @@ BOOST_AUTO_TEST_CASE(test_l1_worst_case){
     w = worstcase_l1(z,q,t).second;
     BOOST_CHECK_CLOSE(w,1,1e-3);
 
-    vector<prec_t> q1 = {1.0};
-    vector<prec_t> z1 = {2.0};
+    numvec q1 = {1.0};
+    numvec z1 = {2.0};
 
     t = 0;
     w = worstcase_l1(z1,q1,t).second;
@@ -446,14 +453,14 @@ BOOST_AUTO_TEST_CASE(test_l1_worst_case){
 BOOST_AUTO_TEST_CASE(test_value_function_l1){
     RMDP rmdp(1);
 
-    vector<prec_t> dist = {0.5,0.5};
+    numvec dist = {0.5,0.5};
 
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
     rmdp.get_state(0).get_action(0).set_distribution(dist);
     rmdp.get_state(0).get_action(0).set_threshold(2);
 
-    vector<prec_t> initial = {0};
+    numvec initial = {0};
 
     auto&& result1 = rmdp.vi_gs_l1_rob(initial,0.9, 1000, 0);
     BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
@@ -486,7 +493,7 @@ BOOST_AUTO_TEST_CASE(test_value_function_l1){
 BOOST_AUTO_TEST_CASE(test_string){
     RMDP rmdp(2);
 
-    vector<prec_t> dist = {0.5,0.5};
+    numvec dist = {0.5,0.5};
 
     rmdp.add_transition(0,0,0,0,1,1);
     rmdp.add_transition(0,0,1,0,1,2);
@@ -518,10 +525,10 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
     BOOST_CHECK(rmdp.is_normalized());
 
     // solve and check value function
-    vector<prec_t> initial{0,0};
+    numvec initial{0,0};
     auto&& re = rmdp.vi_jac_rob(initial,0.9,2000,0);
 
-    vector<prec_t> val{0.545454545455, 0.0};
+    numvec val{0.545454545455, 0.0};
 
     CHECK_CLOSE_COLLECTION(val,re.valuefunction,1e-3);
 }
@@ -542,14 +549,14 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
          0,1,1,4,1.0,0.0\n"};
 
     // initialize desired outcomes
-    vector<prec_t> robust_2_0 {0.9*20,20,30,10,40};
-    vector<prec_t> robust_1_0 {0.9*20,20,30,10,40};
-    vector<prec_t> robust_0_5 {0.9*90.0/4.0,20,30,10,40};
-    vector<prec_t> robust_0_0 {0.9*25.0,20,30,10,40};
-    vector<prec_t> optimistic_2_0 {0.9*40,20,30,10,40};
-    vector<prec_t> optimistic_1_0 {0.9*40,20,30,10,40};
-    vector<prec_t> optimistic_0_5 {0.9*130.0/4.0,20,30,10,40};
-    vector<prec_t> optimistic_0_0 {0.9*25.0,20,30,10,40};
+    numvec robust_2_0 {0.9*20,20,30,10,40};
+    numvec robust_1_0 {0.9*20,20,30,10,40};
+    numvec robust_0_5 {0.9*90.0/4.0,20,30,10,40};
+    numvec robust_0_0 {0.9*25.0,20,30,10,40};
+    numvec optimistic_2_0 {0.9*40,20,30,10,40};
+    numvec optimistic_1_0 {0.9*40,20,30,10,40};
+    numvec optimistic_0_5 {0.9*130.0/4.0,20,30,10,40};
+    numvec optimistic_0_0 {0.9*25.0,20,30,10,40};
 
     stringstream store(string_representation);
 
@@ -563,7 +570,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
-    vector<prec_t> value(5,0.0);
+    numvec value(5,0.0);
     const prec_t gamma = 0.9;
 
     // *** ROBUST ******************
@@ -681,14 +688,14 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     // the last state is terminal
 
     // initialize desired outcomes
-    vector<prec_t> robust_2_0 {0.9*20,20,30,10,40,0};
-    vector<prec_t> robust_1_0 {0.9*20,20,30,10,40,0};
-    vector<prec_t> robust_0_5 {0.9*90.0/4.0,20,30,10,40,0};
-    vector<prec_t> robust_0_0 {0.9*25.0,20,30,10,40,0};
-    vector<prec_t> optimistic_2_0 {0.9*40,20,30,10,40,0};
-    vector<prec_t> optimistic_1_0 {0.9*40,20,30,10,40,0};
-    vector<prec_t> optimistic_0_5 {0.9*130.0/4.0,20,30,10,40,0};
-    vector<prec_t> optimistic_0_0 {0.9*25.0,20,30,10,40,0};
+    numvec robust_2_0 {0.9*20,20,30,10,40,0};
+    numvec robust_1_0 {0.9*20,20,30,10,40,0};
+    numvec robust_0_5 {0.9*90.0/4.0,20,30,10,40,0};
+    numvec robust_0_0 {0.9*25.0,20,30,10,40,0};
+    numvec optimistic_2_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_1_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_0_5 {0.9*130.0/4.0,20,30,10,40,0};
+    numvec optimistic_0_0 {0.9*25.0,20,30,10,40,0};
 
     stringstream store(string_representation);
 
@@ -702,7 +709,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
-    vector<prec_t> value(6,0.0);
+    numvec value(6,0.0);
     const prec_t gamma = 0.9;
 
     // *** ROBUST ******************
@@ -842,7 +849,7 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
 BOOST_AUTO_TEST_CASE(test_rmdp_copy){
     RMDP rmdp_original(1);
 
-    vector<prec_t> dist = {0.5,0.5};
+    numvec dist = {0.5,0.5};
 
     rmdp_original.add_transition(0,0,0,0,1,1);
     rmdp_original.add_transition(0,0,1,0,1,2);
@@ -851,7 +858,7 @@ BOOST_AUTO_TEST_CASE(test_rmdp_copy){
 
     unique_ptr<RMDP> rmdp(new RMDP(rmdp_original));
 
-    vector<prec_t> initial = {0};
+    numvec initial = {0};
 
     auto&& result1 = rmdp->vi_gs_l1_rob(initial,0.9, 1000, 0);
     BOOST_CHECK_CLOSE(result1.valuefunction[0],10.0,1e-3);
@@ -900,14 +907,14 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     // the last state is terminal
 
     // initialize desired outcomes
-    vector<prec_t> robust_2_0 {0.9*20,20,30,10,40,0};
-    vector<prec_t> robust_1_0 {0.9*20,20,30,10,40,0};
-    vector<prec_t> robust_0_5 {0.9*90.0/4.0,20,30,10,40,0};
-    vector<prec_t> robust_0_0 {0.9*25.0,20,30,10,40,0};
-    vector<prec_t> optimistic_2_0 {0.9*40,20,30,10,40,0};
-    vector<prec_t> optimistic_1_0 {0.9*40,20,30,10,40,0};
-    vector<prec_t> optimistic_0_5 {0.9*130.0/4.0,20,30,10,40,0};
-    vector<prec_t> optimistic_0_0 {0.9*25.0,20,30,10,40,0};
+    numvec robust_2_0 {0.9*20,20,30,10,40,0};
+    numvec robust_1_0 {0.9*20,20,30,10,40,0};
+    numvec robust_0_5 {0.9*90.0/4.0,20,30,10,40,0};
+    numvec robust_0_0 {0.9*25.0,20,30,10,40,0};
+    numvec optimistic_2_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_1_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_0_5 {0.9*130.0/4.0,20,30,10,40,0};
+    numvec optimistic_0_0 {0.9*25.0,20,30,10,40,0};
 
     stringstream store(string_representation);
 
@@ -927,7 +934,7 @@ BOOST_AUTO_TEST_CASE(test_mdp_copy2){
     //rmdp->to_csv(store2);
     //cout << store2.str() << endl;
 
-    vector<prec_t> value(6,0.0);
+    numvec value(6,0.0);
     const prec_t gamma = 0.9;
 
     // *** ROBUST ******************

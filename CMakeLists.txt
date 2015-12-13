@@ -51,6 +51,7 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp)
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
+set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
 # whether to build the simulation component of the library
@@ -87,6 +88,9 @@ endif()
 #add_library (craam SHARED ${SRCS} )
 add_library (craam STATIC ${SRCS} )
 #target_link_libraries(craam ${ARMADILLO_LIBRARIES} )
+
+add_executable (develop ${DEV})
+target_link_libraries(develop craam)
 
 # **** TEST ****
 if (BUILD_TESTS)

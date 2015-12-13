@@ -12,15 +12,12 @@
 using namespace std;
 using namespace util::lang;
 
-
-namespace craam{
-namespace impl{
-
+namespace craam{namespace impl{
 
 void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
                             const Transition& initial){
     /**
-     Checks whether the parameters are correct. Throws an exception if the parmaters
+     Checks whether the parameters are correct. Throws an exception if the parameters
      are wrong.
      */
 
@@ -370,7 +367,7 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
     indvec obspol_ret(0);         // current policy in terms of observations
     indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
 
-    for(long iter=0; iter < iterations; iter++){
+    for(auto iter : range(0l, iterations)){
 
         // compute state distribution
         auto&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);

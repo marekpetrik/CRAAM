@@ -53,6 +53,12 @@ public:
 
     void set_thresholds(prec_t threshold);
 
+    bool is_terminal() const{
+        /** True if the state is considered terminal. That is, it has
+        no actions. */
+        return actions.empty();
+    };
+
 public: // TODO: change to protected
     vector<Action> actions;
 };

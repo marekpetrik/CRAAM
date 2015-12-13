@@ -842,8 +842,61 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
     numvec & valuenew = *targetvalue;
 
     return Solution(valuenew,policy,outcomes,residual_pi,i);
-
 }
+
+Solution RMDP::vi_jac_fix(const numvec& valuefunction, prec_t discount, const indvec& policy,
+                      const indvec& natpolicy, unsigned long iterations,
+                      prec_t maxresidual) const{
+    /**
+       Value function evaluation using Jacobi iteration.
+
+       \param valuefunction Initial value function
+       \param discount Discount factor
+       \param policy Decision-maker's policy
+       \param natpolicy Nature's policy
+       \param iterations Maximal number of inner loop value iterations
+       \param maxresidual Stop the inner policy iteration when
+                the residual drops below this threshold.
+
+       \return Computed (approximate) solution (value function)
+     */
+
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
+
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0);
+        evenvalue.assign(states.size(),0);
+    }
+
+    numvec residuals(valuefunction.size());
+    prec_t residual = numeric_limits<prec_t>::infinity();
+
+    size_t j; // defined here to be able to report the number of iterations
+
+    numvec * sourcevalue = & oddvalue;
+    numvec * targetvalue = & evenvalue;
+
+    for(j = 0; j < iterations && residual > maxresidual; j++){
+
+        swap(targetvalue, sourcevalue);
+
+        #pragma omp parallel for
+        for(auto s = 0l; s < (long) states.size(); s++){
+            auto newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],natpolicy[s]);
+
+            residuals[s] = abs((*sourcevalue)[s] - newvalue);
+            (*targetvalue)[s] = newvalue;
+        }
+        residual = *max_element(residuals.begin(),residuals.end());
+    }
+
+    return Solution(*targetvalue,policy,natpolicy,residual,j);
+}
+
 
 template Solution RMDP::mpi_jac_cst<SolutionType::Robust,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
@@ -1269,6 +1322,9 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
     *result = ublas::zero_matrix<prec_t>(n,n);
 
     for(size_t s=0; s < n; s++){
+        // if this is a terminal state, then just go with zero probabilities
+        if(states[s].is_terminal())  continue;
+
         const Transition& t = get_transition(s,policy[s],nature[s]);
         const auto& indexes = t.get_indices();
         const auto& probabilities = t.get_probabilities();
