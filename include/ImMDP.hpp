@@ -12,7 +12,7 @@ namespace craam{
 namespace impl{
 
 /**
-    Represents an MDP with implementability constraints
+    Represents an MDP with implementability constraints.
 
     Consists of an MDP and a set of observations.
 */
@@ -26,12 +26,15 @@ public:
 
     size_t obs_count() const { return obscount; };
     size_t state_count() const {return mdp->state_count(); };
+    long state2obs(long state){return state2observ[state];};
+    size_t action_count(long obsid) {return action_counts[obsid];};
 
     indvec obspol2statepol(indvec obspol) const;
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
     Transition get_initial() const {return initial;};
 
+    // save and load description.
     void to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial,
                     bool headers = true) const;
     void to_csv_file(const string& output_mdp, const string& output_state2obs,
@@ -45,6 +48,9 @@ public:
                                           const string& input_state2obs,
                                           const string& input_initial,
                                           bool headers = true);
+
+    indvec random_policy(random_device::result_type seed = random_device{}());
+
 protected:
 
     /** the underlying MDP */
@@ -55,6 +61,8 @@ protected:
     Transition initial;
     /** number of observations */
     long obscount;
+    /** number of actions for each observation */
+    indvec action_counts;
 
     static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 };

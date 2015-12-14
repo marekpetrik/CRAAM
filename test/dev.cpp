@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iterator>
+#include <random>
+#include <cmath>
 
 #include "ImMDP.hpp"
 #include "cpp11-range-master/range.hpp"
@@ -9,7 +11,8 @@ using namespace craam;
 using namespace craam::impl;
 using namespace util::lang;
 
-void print_vector(auto vec){
+template<class T>
+void print_vector(vector<T> vec){
     for(auto&& p : vec){
         cout << p << " ";
     }
@@ -17,7 +20,6 @@ void print_vector(auto vec){
 
 int main(){
     const double discount = 0.9;
-
 
     cout << "Running ... " << endl;
 
@@ -41,7 +43,7 @@ int main(){
 
     cout << "Solving constrained MDP ... " << endl;
 
-    for(auto i : range(0,10)){
+    for(auto i : range(0,5)){
         auto pol = mdpi->solve_reweighted(i,0.9);
         cout << "Iteration: " << i << "  :  ";
         print_vector(pol);
@@ -54,6 +56,30 @@ int main(){
                     indvec(mdp->state_count(), 0));
 
     cout << "Return implementable: " << sol_impl.total_return(initial) << endl;
+
+    cout << "Implementable policy generation (randomly) ..." << endl;
+
+    auto max_return = 0.0;
+    indvec max_pol(mdpi->obs_count(),-1);
+
+    for(auto i : range(0,20000)){
+        auto rand_pol = mdpi->random_policy();
+
+        auto ret = mdp->vi_jac_fix(numvec(0),discount, mdpi->obspol2statepol(rand_pol),
+                    indvec(mdp->state_count(), 0)).total_return(initial);
+
+        if(ret > max_return){
+            max_pol = rand_pol;
+            max_return = ret;
+        }
+
+        //cout << "index " << i << " return " << ret << endl;
+    }
+
+    cout << "Maximal return " << max_return << endl;
+    cout << "Best policy: ";
+    print_vector(max_pol);
+    cout << endl;
 
     return 0;
 

@@ -33,12 +33,14 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
         throw invalid_argument("An initial transition to a non-existent state.");
     if(!initial.is_normalized())
         throw invalid_argument("The initial transition must be normalized.");
+
 }
 
 MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
            const Transition& initial)
             : mdp(mdp), state2observ(state2observ), initial(initial),
-              obscount(1+*max_element(state2observ.begin(), state2observ.end())){
+              obscount(1+*max_element(state2observ.begin(), state2observ.end())),
+              action_counts(obscount, -1){
     /**
         Constructs the MDP with implementability constraints. This constructor makes it
         possible to share the MDP with other data structures.
@@ -53,6 +55,22 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
     */
 
     check_parameters(*mdp, state2observ, initial);
+
+    for(auto state : range(0ul, mdp->state_count())){
+        auto obs = state2observ[state];
+
+        // check the number of actions
+        auto ac = mdp->get_state(state).action_count();
+        if(action_counts[obs] >= 0){
+            if(action_counts[obs] != (long) ac){
+                throw invalid_argument("Inconsistent number of actions: " + to_string(state) +
+                                       " instead of " + to_string(action_counts[obs]) +
+                                       " in state " + to_string(state));
+            }
+        }else{
+            action_counts[obs] = ac;
+        }
+    }
 }
 
 MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial)
@@ -86,6 +104,27 @@ indvec MDPI::obspol2statepol(indvec obspol) const{
      }
 
      return statepol;
+}
+
+indvec MDPI::random_policy(random_device::result_type seed){
+    /**
+    Constructs a random policy
+    */
+
+    indvec policy(obscount, -1);
+
+    default_random_engine gen(seed);
+
+    for(auto obs : range(0l, obscount)){
+        auto ac = action_counts[obs];
+        if(ac == 0)
+            continue;
+
+        uniform_int_distribution<int> dist(0,ac-1);
+        policy[obs] = dist(gen);
+    }
+
+    return policy;
 }
 
 void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs,
@@ -270,30 +309,18 @@ void MDPI_R::initialize_robustmdp(){
 
     // keep track of the number of outcomes for each
     indvec outcome_count(obs_count, 0);
-    // keep track of actions - needs to make sure that they are all the same
-    indvec action_counts(obs_count, -1);  // -1 means not initialized
 
-    for(size_t state_index=0; state_index < mdp->state_count(); state_index++){
+    for(auto state_index : range(0ul, mdp->state_count())){
         auto obs = state2observ[state_index];
 
-        // check the number of actions
-        auto ac = mdp->get_state(state_index).action_count();
-        if(action_counts[obs] >= 0){
-            if(action_counts[obs] != (long) ac){
-                throw invalid_argument("Inconsistent number of actions: " + to_string(state_index) +
-                                       " instead of " + to_string(action_counts[obs]) +
-                                       " in state " + to_string(state_index));
-            }
-        }else{
-            action_counts[obs] = ac;
-        }
-
         // maps the transitions
-        for(long action_index=0; action_index < (long) ac; action_index++){
+        for(auto action_index : range(0l, action_counts[obs])){
             // check to make sure that there is no robustness
-            if(mdp->get_state(state_index).get_action(action_index).outcome_count() > 1)
-                throw invalid_argument("Robust base MDP is not supported; multiple outcomes in state " +
-                                       to_string(state_index) + " and action " + to_string(action_index) );
+            auto oc = mdp->get_state(state_index).get_action(action_index).outcome_count();
+            if(oc > 1)
+                throw invalid_argument("Robust base MDP is not supported; " + to_string(oc)
+                                       + " outcomes in state " + to_string(state_index) +
+                                       " and action " + to_string(action_index) );
 
             const Transition& old_tran = mdp->get_transition(state_index,action_index,0);
             Transition& new_tran = robust_mdp.create_transition(obs,action_index,outcome_count[obs]);
@@ -301,7 +328,7 @@ void MDPI_R::initialize_robustmdp(){
             robust_mdp.get_state(obs).get_action(action_index).init_distribution();
 
             // copy the original transitions (they are automatically consolidated while being added)
-            for(size_t k=0; k< old_tran.size(); k++){
+            for(auto k : range(0ul, old_tran.size())){
 
                 new_tran.add_sample(state2observ[old_tran.get_indices()[k]],
                                     old_tran.get_probabilities()[k],

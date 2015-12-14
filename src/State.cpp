@@ -209,7 +209,6 @@ tuple<long,numvec,prec_t> State::max_max_cst(numvec const& valuefunction, prec_t
     // TODO: change this to an rvalue?
     numvec outcomeresult;
 
-
     for(size_t i = 0; i < this->actions.size(); i++){
         const auto& action = actions[i];
 
