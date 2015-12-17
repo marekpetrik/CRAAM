@@ -112,6 +112,7 @@ public:
 
 /** Class used to define discrete samples */
 class DiscreteSimulator {
+public:
     typedef long DState;
     typedef long Action;
     typedef long EState;
