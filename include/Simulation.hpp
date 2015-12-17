@@ -32,10 +32,8 @@ public:
     RandomPolicySD(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
+    /** Returns a random action */
     typename Sim::Action operator() (typename Sim::DState dstate){
-        /**
-           Returns the random action
-         */
         const vector<typename Sim::Action>&& actions = sim.actions(dstate);
 
         auto actioncount = actions.size();
@@ -67,10 +65,8 @@ public:
         : sim(sim), gen(seed), actions(sim.actions())
     {};
 
+    /** Returns a random action */
     typename Sim::Action operator() (typename Sim::DState dstate){
-        /**
-           Returns the random action
-         */
         auto actioncount = actions.size();
         uniform_int_distribution<> dst(0,actioncount-1);
 
@@ -85,62 +81,63 @@ private:
 };
 
 //-----------------------------------------------------------------------------------
+
+/**
+Runs the simulator and generates samples.
+
+This method assumes that the simulator can state simulation in any state. There may be
+an internal state, however, which is independent of the transitions; for example this may be
+the internal state of the random number generator.
+
+States and actions are passed by value everywhere and therefore it is important that
+they are lightweight objects.
+
+An example definition of a simulator should have the following methods:
+\code
+/// This class represents a stateless simular, but the non-constant
+/// functions may change the state of the random number generator
+class Simulator{
+public:
+    /// Type of decision states
+    typedef dec_state_type DState;
+    /// Type of actions
+    typedef action_type Action;
+    /// Type of expectation states
+    typedef exp_state_type EState;
+
+    /// Returns a sample from the initial states.
+    DState init_state();
+    /// Returns an expectation state that follows a decision state and an action
+    EState transition_dec(DState, Action);
+    /// Returns a sample of the reward and a decision state following an expectation state
+    pair<double,DState> transition_exp(EState);
+    /// Checks whether the decision state is terminal
+    bool end_condition(DState) const;
+
+    /// ** The following functions are not necessary for the simulation
+    /// State dependent action list (use RandomPolicySD)
+    vector<Action> actions(DState)  const;
+    /// State-indpendent action list (use RandomPolicySI)
+    vector<Action> actions const;
+}
+\endcode
+
+\tparam Sim Simulator class used in the simulation. See the main description for the methods
+            the simulator must provide.
+\tparam SampleType Class used to hold the samples.
+
+\param sim Simulator that holds the properties needed by the simulator
+\param policy Policy function
+\param horizon Number of steps
+\param prob_term The probability of termination in each step
+
+\return Samples
+ */
 template<class Sim,class SampleType=Samples<Sim>> unique_ptr<SampleType>
 simulate_stateless( Sim& sim,
                     const function<typename Sim::Action(typename Sim::DState&)>& policy,
                     long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
                     random_device::result_type seed = random_device{}()){
-    /**
-        Runs the simulator and generates samples.
-
-        This method assumes that the simulator can state simulation in any state. There may be
-        an internal state, however, which is independent of the transitions; for example this may be
-        the internal state of the random number generator.
-
-        States and actions are passed by value everywhere and therefore it is important that
-        they are lightweight objects.
-
-        An example definition of a simulator should have the following methods:
-        \code
-        /// This class represents a stateless simular, but the non-constant
-        /// functions may change the state of the random number generator
-        class Simulator{
-        public:
-            /// Type of decision states
-            typedef dec_state_type DState;
-            /// Type of actions
-            typedef action_type Action;
-            /// Type of expectation states
-            typedef exp_state_type EState;
-
-            /// Returns a sample from the initial states.
-            DState init_state();
-            /// Returns an expectation state that follows a decision state and an action
-            EState transition_dec(DState, Action);
-            /// Returns a sample of the reward and a decision state following an expectation state
-            pair<double,DState> transition_exp(EState);
-            /// Checks whether the decision state is terminal
-            bool end_condition(DState) const;
-
-            /// ** The following functions are not necessary for the simulation
-            /// State dependent action list (use RandomPolicySD)
-            vector<Action> actions(DState)  const;
-            /// State-indpendent action list (use RandomPolicySI)
-            vector<Action> actions const;
-        }
-        \endcode
-
-        \tparam Sim Simulator class used in the simulation. See the main description for the methods
-                    the simulator must provide.
-        \tparam SampleType Class used to hold the samples.
-
-        \param sim Simulator that holds the properties needed by the simulator
-        \param policy Policy function
-        \param horizon Number of steps
-        \param prob_term The probability of termination in each step
-
-        \return Samples
-     */
 
     unique_ptr<SampleType> samples(new SampleType());
 

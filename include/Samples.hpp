@@ -69,37 +69,32 @@ public:
     vector<ESample<Sim>> expsamples;
 
 public:
+    /**
+    Adds a sample starting in a decision state
+    */
     void add_dec(const DSample<Sim>& decsample){
-        /**
-        Adds a sample starting in a decision state
-        */
         this->decsamples.push_back(decsample);
     };
 
+    /**
+    Adds an initial state
+    */
     void add_initial(const typename Sim::DState& decstate){
-        /**
-        Adds an initial state
-        */
         this->initial.push_back(decstate);
     };
 
+    /** Adds a sample starting in an expectation state */
     void add_exp(const ESample<Sim>& expsample){
-        /**
-           Adds a sample starting in an expectation state
-         */
         this->expsamples.push_back(expsample);
     };
 
+    /**
+    Computes the discounted mean return over all the
+    samples
+    \param discount Discount factor
+    */
     prec_t mean_return(prec_t discount){
-        /**
-        Computes the discounted mean return over all the
-        samples
-
-        \param discount Discount factor
-        */
-
         prec_t result = 0;
-
         set<int> runs;
 
         for(const auto& es : expsamples){
@@ -108,11 +103,20 @@ public:
         }
 
         result /= runs.size();
-
         return result;
     };
 };
 
+
+/** Class used to define discrete samples */
+class DiscreteSimulator {
+    typedef long DState;
+    typedef long Action;
+    typedef long EState;
+};
+
+/** Samples in which the states and actions are identified by integers. */
+typedef Samples<DiscreteSimulator> DiscreteSamples;
 
 /**
 Constructs MDP from integer samples. In integer samples, each
@@ -120,14 +124,26 @@ decision state, expectation state, and action are identified
 by an integer,
 */
 class SampledMDP{
+public:
 
 
 };
 
+/**
+Constructs MDP from integer samples. This is similar to SampledMDP, but
+there are separate states for sampled decision and expectation states.
+This approach also requires adjusting the discount factor and additional
+functions mapping value function from one representation to the other.
+
+The main advantage of this approach is a possible dramatic simplification
+when there are transitions from multiple decision states to a single expectation
+state.
+*/
 class SampledMDP_Exp{
 
+    // TODO: copy the Python code
 
 };
 
-}
-}
+} // end namespace msen
+} // end namespace craam
