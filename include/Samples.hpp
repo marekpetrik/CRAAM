@@ -108,6 +108,8 @@ public:
 };
 
 
+// define discrete
+
 /** Class used to define discrete samples */
 class DiscreteSimulator {
     typedef long DState;
@@ -117,6 +119,8 @@ class DiscreteSimulator {
 
 /** Samples in which the states and actions are identified by integers. */
 typedef Samples<DiscreteSimulator> DiscreteSamples;
+typedef ESample<DiscreteSimulator> DiscreteESample;
+typedef DSample<DiscreteSimulator> DiscreteDSample;
 
 /**
 Constructs MDP from integer samples. In integer samples, each
