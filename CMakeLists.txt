@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(OpenMP)
-find_package(Boost COMPONENTS unit_test_framework ) # TODO: need to include uBLAS reference
+# TODO: need to include uBLAS reference
+find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
-#find_package(Armadillo REQUIRED)
 
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
@@ -49,7 +49,8 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/src/State.cpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/include/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp)
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp
+          )
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
@@ -58,7 +59,10 @@ set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 if (BUILD_SIMULATION)
     set (SRCS ${SRCS} 
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/Samples.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Samples.hpp
+                    )
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
 endif (BUILD_SIMULATION)
 
@@ -100,10 +104,6 @@ if (BUILD_TESTS)
     add_custom_target (testit   COMMAND unit_tests --show_progress --detect_memory_leaks --detect_fp_exceptions
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
-    
-    #enable_testing()
-    #add_test(UnitTests bin/unit_tests_debug)
-    #add_test(UnitTests bin/unit_tests)
 endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
