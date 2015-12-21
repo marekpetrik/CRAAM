@@ -78,7 +78,6 @@ MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initia
     /**
         Constructs the MDP with implementability constraints. The MDP model is
         copied (using the copy constructor) and stored internally.
-
         \param mdp A non-robust base MDP model. It cannot be shared to prevent
                     direct modification.
         \param state2observ Maps each state to the index of the corresponding observation.

@@ -13,17 +13,6 @@ namespace craam {
 
 Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities,
                         const vector<prec_t>& rewards){
-    /**
-        Creates a single transition from raw data.
-
-        Because the transition indexes are stored increasingly sorted, this method
-        must sort (and aggregate duplicate) the indices.
-
-        \param indices The indexes of states to transition to
-        \param probabilities The probabilities of transitions
-        \param rewards The associated rewards with each transition
-
-     */
 
     if(indices.size() != probabilities.size() || indices.size() != rewards.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
@@ -35,16 +24,6 @@ Transition::Transition(const indvec& indices, const vector<prec_t>& probabilitie
 }
 
 Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities){
-    /**
-        Creates a single transition from raw data with uniformly zero rewards.
-
-        Because the transition indexes are stored increasingly sorted, this method
-        must sort (and aggregate duplicate) the indices.
-
-        \param indices The indexes of states to transition to
-        \param probabilities The probabilities of transitions
-
-     */
 
     if(indices.size() != probabilities.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
@@ -57,18 +36,6 @@ Transition::Transition(const indvec& indices, const vector<prec_t>& probabilitie
 
 
 void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
-    /**
-      Adds a single transitions probability to the existing probabilities.
-
-      If the transition to the desired state already exists, then the transition
-      probability is added and the reward is updated as a weighted combination.
-
-      Transition probabilities are not checked to sum to one.
-
-      \param stateid ID of the target state
-      \param probability Probability of transitioning to this state
-      \param reward The reward associated with the transition
-     */
 
     if(probability < -0.001) throw invalid_argument("probabilities must be non-negative.");
     if(stateid < 0) throw invalid_argument("State id must be non-negative.");
@@ -137,15 +104,6 @@ void Transition::normalize(){
 }
 
 prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t discount) const{
-    /**
-      Computes value for the transition and a value function.
-
-      When there are no target states, the function terminates with an error.
-
-      \param valuefunction Value function, or an arbitrary vector of values
-      \param discount Discount factor, optional (default value 1)
-     */
-
     auto scount = indices.size();
 
     //TODO: check how much complexity these statements are adding
@@ -161,10 +119,6 @@ prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t dis
 }
 
 prec_t Transition::mean_reward() const{
-    /**
-      Computes the mean return from this transition
-     */
-
     auto scount = indices.size();
 
     if(scount == 0)
@@ -179,11 +133,6 @@ prec_t Transition::mean_reward() const{
 }
 
 vector<prec_t> Transition::probabilities_vector(size_t size) const{
-    /**
-        Constructs and returns a dense vector of probabilities.
-
-        \param size Size of the constructed vector
-     */
     vector<prec_t> result(size, 0.0);
 
     for(size_t i = 0; i < this->size(); i++){
@@ -193,14 +142,6 @@ vector<prec_t> Transition::probabilities_vector(size_t size) const{
     return result;
 }
 void Transition::probabilities_addto(prec_t scale, vector<prec_t>& transition) const{
-    /**
-        Scales transition probabilities and adds them to the provided vector.
-
-        \param scale Multiplicative modification of transition probabilities
-        \param transition Transition probabilities being added to. This value
-                            is modified within the function.
-     */
-
     for(size_t i = 0; i < size(); i++){
         transition[indices[i]] += scale*probabilities[i];
     }

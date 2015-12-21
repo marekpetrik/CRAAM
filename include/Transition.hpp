@@ -23,39 +23,87 @@ class Transition {
 public:
     Transition(){};
 
+    /**
+    Creates a single transition from raw data.
+
+    Because the transition indexes are stored increasingly sorted, this method
+    must sort (and aggregate duplicate) the indices.
+
+    \param indices The indexes of states to transition to
+    \param probabilities The probabilities of transitions
+    \param rewards The associated rewards with each transition
+    */
     Transition(const indvec& indices,
                 const numvec& probabilities,
                 const numvec& rewards);
 
+    /**
+    Creates a single transition from raw data with uniformly zero rewards.
+
+    Because the transition indexes are stored increasingly sorted, this method
+    must sort (and aggregate duplicate) the indices.
+
+    \param indices The indexes of states to transition to
+    \param probabilities The probabilities of transitions
+    */
     Transition(const indvec& indices,
                 const numvec& probabilities);
 
+    /**
+    Adds a single transitions probability to the existing probabilities.
 
+    If the transition to the desired state already exists, then the transition
+    probability is added and the reward is updated as a weighted combination.
+
+    Transition probabilities are not checked to sum to one.
+
+    \param stateid ID of the target state
+    \param probability Probability of transitioning to this state
+    \param reward The reward associated with the transition
+     */
     void add_sample(long stateid, prec_t probability, prec_t reward);
 
     prec_t sum_probabilities() const;
     void normalize();
     bool is_normalized() const;
 
+    /**
+    Computes value for the transition and a value function.
+
+    When there are no target states, the function terminates with an error.
+
+    \param valuefunction Value function, or an arbitrary vector of values
+    \param discount Discount factor, optional (default value 1)
+     */
     prec_t compute_value(numvec const& valuefunction, prec_t discount = 1.0) const;
+
+    /** Computes the mean return from this transition */
     prec_t mean_reward() const;
 
-    size_t size() const{
-        /** Returns the number of target states with non-zero transition
-         probabilities.  */
-        return indices.size();
-    }
+    /** Returns the number of target states with non-zero transition probabilities.  */
+    size_t size() const{return indices.size(); }
 
+    /**
+    Returns the maximal indexes involved in the transition.  It
+    returns -1 for and empty transition.
+    */
     long max_index() const{
-        /**
-        Returns the maximal indexes involved in the transition.  It
-        returns -1 for and empty transition.
-        */
         return indices.empty() ? -1 : indices.back();
     }
 
     // probability manipulation
+    /**
+    Constructs and returns a dense vector of probabilities.
+    \param size Size of the constructed vector
+    */
     numvec probabilities_vector(size_t size) const;
+
+    /**
+    Scales transition probabilities and adds them to the provided vector.
+    \param scale Multiplicative modification of transition probabilities
+    \param transition Transition probabilities being added to. This value
+                        is modified within the function.
+     */
     void probabilities_addto(prec_t scale, numvec& transition) const;
 
     const indvec& get_indices() const {return indices;};

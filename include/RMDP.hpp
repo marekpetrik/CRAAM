@@ -83,7 +83,6 @@ public:
     /**
     Constructs the RMDP with a pre-allocated number of states.
     The state ids must be sequential and are constructed as needed.
-
     \param state_count The number of states.
     */
     RMDP(long state_count){
@@ -96,7 +95,6 @@ public:
     // adding transitions
     /**
     Adds a transition probability
-
     \param fromid Starting state ID
     \param actionid Action ID
     \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
@@ -105,11 +103,12 @@ public:
     \param reward The reward associated with the transition.
      */
     void add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+
     /** Adds a non-robust transition.  */
     void add_transition_d(long fromid, long actionid, long toid, prec_t probability, prec_t reward);
+
     /**
     Add multiple samples (transitions) to the MDP definition
-
     \param fromids Starting state ids
     \param outcomeis IDs used of the outcomes
     \param toids Destination state ids
@@ -119,6 +118,9 @@ public:
      */
     void add_transitions(indvec const& fromids, indvec const& actionids, indvec const& outcomeids,
                          indvec const& toids, numvec const& probs, numvec const& rews);
+
+    /** Assures that the MDP state exists and if it does not, then it is created */
+    void assure_state_exists(long stateid);
 
     // manipulate weights
     /**
@@ -146,23 +148,20 @@ public:
     // normalization of transition probabilities
     /**
     Check if all transitions in the process sum to one.
-
     Note that if there are no actions, or no outcomes for a state,
     the RMDP still may be normalized.
-
     \return True if and only if all transitions are normalized.
      */
     bool is_normalized() const;
+
     /** Normalize all transitions to sum to one for all states, actions, outcomes. */
     void normalize();
 
     // writing a reading files
     /**
-    Loads an RMDP definition from a simple csv file.
-
-    States, actions, and outcomes are identified by 0-based ids.
-
-    The columns are separated by commas, and rows by new lines.
+    Loads an RMDP definition from a simple csv file.States, actions, and
+    outcomes are identified by 0-based ids. The columns are separated by
+    commas, and rows by new lines.
 
     The file is formatted with the following columns:
     idstatefrom, idaction, idoutcome, idstateto, probability, reward
@@ -174,17 +173,17 @@ public:
                     The column names are not checked for correctness or number!
      */
     static unique_ptr<RMDP> from_csv(istream& input, bool header = true);
+
     /**
     Loads the transition probabilities and rewards from a CSV file
-
     \param filename Name of the file
     \param header Whether to create a header of the file too
      */
     static unique_ptr<RMDP> from_csv_file(const string& filename, bool header = true);
-    /**
-    Saves the model to a stream as a simple csv file
 
-    States, actions, and outcomes are identified by 0-based ids.
+    /**
+    Saves the model to a stream as a simple csv file. States, actions, and outcomes
+    are identified by 0-based ids.
 
     The columns are separated by commas, and rows by new lines.
 
@@ -451,7 +450,6 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     Solution mpi_jac_rob(numvec const& valuefunction, prec_t discount,
@@ -474,7 +472,6 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     Solution mpi_jac_opt(numvec const& valuefunction, prec_t discount,
@@ -496,7 +493,6 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     Solution mpi_jac_ave(numvec const& valuefunction, prec_t discount,
@@ -518,7 +514,6 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     Solution mpi_jac_l1_rob(numvec const& valuefunction, prec_t discount,
@@ -540,7 +535,6 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     Solution mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount,
@@ -570,6 +564,7 @@ protected:
     \param discount Discount factor.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
+    \return Computed (approximate) solution
      */
     template<SolutionType type>
     Solution vi_gs_gen(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
@@ -590,6 +585,7 @@ protected:
     \param discount Discount factor.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
+    \return Computed (approximate) solution
      */
     template<SolutionType type, NatureConstr nature>
     Solution vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
@@ -611,7 +607,6 @@ protected:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     template<SolutionType type, NatureConstr nature>
@@ -632,6 +627,7 @@ protected:
     \param discount Discount factor.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
+    \return Computed (approximate) solution
      */
     template<SolutionType type,NatureConstr nature>
     Solution vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
@@ -644,6 +640,7 @@ protected:
     \param discount Discount factor.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
+    \return Computed (approximate) solution
      */
     template<SolutionType type>
     Solution vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
@@ -664,7 +661,6 @@ protected:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
-
     \return Computed (approximate) solution
      */
     template<SolutionType type>

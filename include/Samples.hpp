@@ -1,8 +1,10 @@
 #pragma once
 
 #include <set>
+#include <memory>
 
 #include "definitions.hpp"
+#include "RMDP.hpp"
 
 using namespace std;
 
@@ -28,9 +30,8 @@ struct ESample {
 
     ESample(const typename Sim::EState& expstate_from, const typename Sim::DState& decstate_to,
               prec_t reward, prec_t weight, long step, long run):
-        expstate_from(expstate_from), decstate_to(decstate_to),
-        reward(reward), weight(weight), step(step), run(run)
-                  {};
+                    expstate_from(expstate_from), decstate_to(decstate_to),
+                    reward(reward), weight(weight), step(step), run(run){};
 };
 
 /**
@@ -49,10 +50,9 @@ struct DSample {
     const long run;
 
     DSample(const typename Sim::DState& decstate_from, const typename Sim::Action& action,
-              const typename Sim::EState& expstate_to, long step, long run):
-        decstate_from(decstate_from), action(action),
-        expstate_to(expstate_to), step(step), run(run)
-        {};
+             const typename Sim::EState& expstate_to, long step, long run):
+                decstate_from(decstate_from), action(action),
+                expstate_to(expstate_to), step(step), run(run){};
 };
 
 /**
@@ -129,9 +129,34 @@ decision state, expectation state, and action are identified
 by an integer,
 */
 class SampledMDP{
+
 public:
 
+    /** Constructs an empty MDP from discrete samples */
+    SampledMDP();
 
+    /**
+    Constructs or adds states and actions based on the
+    provided samples.
+
+    At this point, the method can be called only once, but
+    the plan is to make it possible to call it multiple times
+    to add more samples.
+
+    \param samples Source of the samples
+    */
+    void copy_samples(const DiscreteSamples& samples);
+
+    /** \returns A constant pointer to the internal MDP */
+    shared_ptr<const RMDP> get_mdp() const {return const_pointer_cast<const RMDP>(mdp);}
+
+protected:
+
+    /** Internal MDP representation */
+    shared_ptr<RMDP> mdp;
+
+    /** Whether it has been initialized */
+    bool initialized = false;
 };
 
 /**
@@ -140,12 +165,12 @@ there are separate states for sampled decision and expectation states.
 This approach also requires adjusting the discount factor and additional
 functions mapping value function from one representation to the other.
 
-The main advantage of this approach is a possible dramatic simplification
+The main advantage of this approach is that it can reduce the computational complexity
 when there are transitions from multiple decision states to a single expectation
 state.
 */
 class SampledMDP_Exp{
-
+public:
     // TODO: copy the Python code
 
 };

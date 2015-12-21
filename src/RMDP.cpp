@@ -27,16 +27,19 @@ size_t RMDP::state_count() const{
     return this->states.size();
 }
 
+void RMDP::assure_state_exists(long stateid){
+    // re-sizing to accommodate the new state
+    if(stateid >= (long) states.size())
+        states.resize(stateid + 1);
+}
+
 
 void RMDP::add_transition(long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
 
     if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
 
-    auto newid = max(fromid,toid);
-    if(newid >= (long) this->states.size()){
-        // re-sizing to accommodate the new state
-        (this->states).resize(newid+1);
-    }
+    assure_state_exists(fromid);
+    assure_state_exists(toid);
 
     this->states[fromid].add_action(actionid, outcomeid, toid, probability, reward);
 }
@@ -873,9 +876,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
 Transition& RMDP::create_transition(long fromid, long actionid, long outcomeid){
     if(fromid < 0l) throw invalid_argument("Fromid must be non-negative.");
 
-    if(fromid >= (long) states.size()){
-        (states).resize(fromid+1);
-    }
+    assure_state_exists(fromid);
 
     return this->states[fromid].create_transition(actionid, outcomeid);
 }
