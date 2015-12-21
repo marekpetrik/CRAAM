@@ -48,6 +48,12 @@ void SampledMDP::copy_samples(const DiscreteSamples& samples){
     // ** Then normalize the transitions
     mdp->normalize();
 
+    // set initial distribution
+    for(long state : samples.initial){
+        initial.add_sample(state, 1.0, 0.0);
+    }
+    initial.normalize();
+
     initialized = true;
 }
 }

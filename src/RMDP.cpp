@@ -66,9 +66,8 @@ void RMDP::normalize(){
 
      for(auto& s : states){
         for(auto& a : s.actions){
-            for(auto& t : a.outcomes){
+            for(auto& t : a.outcomes)
                 t.normalize();
-            }
         }
     }
 }
@@ -85,9 +84,8 @@ void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indve
 }
 
 void RMDP::set_uniform_thresholds(prec_t threshold){
-    for(auto& s : this->states){
+    for(auto& s : this->states)
         s.set_thresholds(threshold);
-    }
 }
 
 
@@ -203,15 +201,14 @@ void RMDP::set_uniform_distribution(prec_t threshold){
     }
 }
 
-void RMDP::to_csv_file(const string& filename, bool header ) const{
-
+void RMDP::to_csv_file(const string& filename, bool header) const{
     ofstream ofs(filename, ofstream::out);
 
     to_csv(ofs,header);
     ofs.close();
 }
 
-unique_ptr<RMDP> RMDP::from_csv_file(const string& filename, bool header ) {
+unique_ptr<RMDP> RMDP::from_csv_file(const string& filename, bool header){
     ifstream ifs(filename);
 
     auto result = from_csv(ifs, header);

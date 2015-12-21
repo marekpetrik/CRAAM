@@ -107,7 +107,6 @@ public:
     };
 };
 
-
 // define discrete
 
 /** Class used to define discrete samples */
@@ -129,7 +128,6 @@ decision state, expectation state, and action are identified
 by an integer,
 */
 class SampledMDP{
-
 public:
 
     /** Constructs an empty MDP from discrete samples */
@@ -142,7 +140,6 @@ public:
     At this point, the method can be called only once, but
     the plan is to make it possible to call it multiple times
     to add more samples.
-
     \param samples Source of the samples
     */
     void copy_samples(const DiscreteSamples& samples);
@@ -150,10 +147,16 @@ public:
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const RMDP> get_mdp() const {return const_pointer_cast<const RMDP>(mdp);}
 
+    /** Initial distribution */
+    Transition get_initial() const {return initial;}
+
 protected:
 
     /** Internal MDP representation */
     shared_ptr<RMDP> mdp;
+
+    /** Initial distribution */
+    Transition initial;
 
     /** Whether it has been initialized */
     bool initialized = false;
