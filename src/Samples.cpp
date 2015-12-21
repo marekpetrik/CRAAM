@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <vector>
+#include <string>
 
 using namespace std;
 
@@ -12,9 +13,8 @@ SampledMDP::SampledMDP() : mdp(make_shared<RMDP>()) {}
 
 void SampledMDP::copy_samples(const DiscreteSamples& samples){
 
-    if(initialized){
+    if(initialized)
         throw invalid_argument("Multiple calls not supported yet.");
-    }
 
     // ** For each expectation state index, save the state and action number
     // a single decision state and an action should not lead to different
@@ -30,6 +30,9 @@ void SampledMDP::copy_samples(const DiscreteSamples& samples){
         if(esid >= (long) expstate2da.size()){
             expstate2da.resize(esid+1, make_pair(-1,-1));
         }
+
+        if(expstate2da[esid].first >= 0)
+            throw invalid_argument("Non-unique expectation state numbers for the same state and action pair: " + to_string(ds.decstate_from) + "," + to_string(ds.action));
 
         expstate2da[esid] = make_pair(ds.decstate_from, ds.action);
     }

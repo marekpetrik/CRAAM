@@ -1,11 +1,13 @@
 #pragma once
+#include "definitions.hpp"
+
 #include <vector>
 #include <istream>
 #include <fstream>
 #include <memory>
 #include <tuple>
+#include <cassert>
 
-#include "definitions.hpp"
 #include "State.hpp"
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -139,8 +141,9 @@ public:
 
     /** Return a transition for state, action, and outcome. It is created if necessary. */
     Transition& create_transition(long stateid, long actionid, long outcomeid);
-    State& get_state(long stateid) {return states[stateid];};
-    const State& get_state(long stateid) const {return states[stateid];};
+    State& get_state(long stateid) {assert(stateid >= 0 && stateid < (long) states.size()); return states[stateid];
+        }
+    const State& get_state(long stateid) const {assert(stateid >= 0 && stateid < (long) states.size()); return states[stateid];};
 
     // object counts
     size_t state_count() const;
