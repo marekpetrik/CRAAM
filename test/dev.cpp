@@ -2,6 +2,7 @@
 #include <iterator>
 #include <random>
 #include <cmath>
+#include <cassert>
 
 #include "ImMDP.hpp"
 #include "cpp11-range-master/range.hpp"
@@ -36,6 +37,10 @@ int main(){
     cout << "Policy: ";
     print_vector(sol.policy);
     cout << endl;
+
+    // check that the policy is correct
+    auto res = mdp->assert_policy_correct(indvec(mdp->state_count(), 0), indvec(mdp->state_count(), 0));
+    assert(res == -1);
 
     auto sol_base = mdp->vi_jac_fix(numvec(0),discount,indvec(mdp->state_count(), 0),
                                     indvec(mdp->state_count(), 0));

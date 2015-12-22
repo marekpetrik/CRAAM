@@ -10,8 +10,12 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 
+#include "cpp11-range-master/range.hpp"
+
 // this is just for a matrix printout / remove if cout is not used
 // #include <boost/numeric/ublas/io.hpp>
+
+using namespace util::lang;
 
 namespace craam {
 
@@ -86,6 +90,25 @@ void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indve
 void RMDP::set_uniform_thresholds(prec_t threshold){
     for(auto& s : this->states)
         s.set_thresholds(threshold);
+}
+
+long RMDP::assert_policy_correct(indvec policy, indvec natpolicy) const {
+
+    for(auto si : range((size_t) 0, state_count())){
+        // ignore terminal states
+        if(states[si].is_terminal())
+            continue;
+
+        const auto p = policy[si];
+        if(p < 0 || policy[si] >= (long) states[si].action_count())
+            return si;
+        const Action& a = states[si].get_action(p);
+
+        const auto np = natpolicy[si];
+        if(np < 0 || np >= (long) a.outcome_count())
+            return si;
+    }
+    return -1;
 }
 
 

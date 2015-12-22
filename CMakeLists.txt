@@ -6,6 +6,8 @@ project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+#TODO: disable assert statements in the release version 
+
 find_package(OpenMP)
 # CMake does not detect header-only packages. Also needs uBlas and format
 find_package(Boost COMPONENTS unit_test_framework ) 

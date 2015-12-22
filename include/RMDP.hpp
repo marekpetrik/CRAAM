@@ -242,6 +242,15 @@ public:
     numvec rewards_state(const indvec& policy, const indvec& nature) const;
 
     /**
+    Checks if the policy and nature's policy are both correct. If
+    not, the function returns the first state with an incorrect
+    action and outcome. Otherwise the function return -1.
+
+    Action and outcome can be arbitrary for terminal states.
+    */
+    long assert_policy_correct(indvec policy, indvec natpolicy) const;
+
+    /**
     Constructs the transition matrix for the policy.
 
     \param policy Policy of the decision maker
@@ -258,7 +267,7 @@ public:
     unique_ptr<ublas::matrix<prec_t>> transition_mat_t(const indvec& policy, const indvec& nature) const;
 
     /**
-    Value function evaluation using Jacobi iteration.
+    Value function evaluation using Jacobi iteration for a fixed policy.
 
     \param valuefunction Initial value function
     \param discount Discount factor
@@ -267,7 +276,6 @@ public:
     \param iterations Maximal number of inner loop value iterations
     \param maxresidual Stop the inner policy iteration when
             the residual drops below this threshold.
-
     \return Computed (approximate) solution (value function)
      */
     Solution vi_jac_fix(const numvec& valuefunction, prec_t discount, const indvec& policy,
