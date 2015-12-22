@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 find_package(OpenMP)
-# TODO: need to include uBLAS reference and functional/hash
+# CMake does not detect header-only packages. Also needs uBlas and format
 find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
 
