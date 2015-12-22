@@ -52,7 +52,7 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
 
     check_parameters(*mdp, state2observ, initial);
 
-    for(auto state : range(0ul, mdp->state_count())){
+    for(auto state : range((size_t) 0, mdp->state_count())){
         auto obs = state2observ[state];
 
         // check the number of actions
@@ -247,7 +247,7 @@ void MDPI_R::initialize_robustmdp(){
     indvec outcome_count(obs_count, 0);
 
 
-    for(auto state_index : range(0ul, mdp->state_count())){
+    for(auto state_index : range((size_t) 0, mdp->state_count())){
         auto obs = state2observ[state_index];
 
         // make sure to at least create a terminal state when there are no actions for it
@@ -268,7 +268,7 @@ void MDPI_R::initialize_robustmdp(){
             robust_mdp.get_state(obs).get_action(action_index).init_distribution();
 
             // copy the original transitions (they are automatically consolidated while being added)
-            for(auto k : range(0ul, old_tran.size())){
+            for(auto k : range((size_t) 0, old_tran.size())){
 
                 new_tran.add_sample(state2observ[old_tran.get_indices()[k]],
                                     old_tran.get_probabilities()[k],
