@@ -4,29 +4,29 @@
 # Release:
 # cmake -DCMAKE_BUILD_TYPE=Release .
 
-# Required to C++11 support
-cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
 set(VERSION "0.4.0")
 project (CRAAM)
-
-# Set a default build type if none was specified
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "Setting build type to 'Release' as none was specified.")
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-      "MinSizeRel" "RelWithDebInfo")
- endif()
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
-find_package(OpenMP)
-# CMake does not detect header-only packages. Also needs uBlas and format
-find_package(Boost COMPONENTS unit_test_framework ) 
-find_package(Doxygen)
+# **** Build type ****
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(IS_DEBUG TRUE)
+endif()
+
+# **** Find packages ****
+find_package(OpenMP)
+find_package(Boost COMPONENTS unit_test_framework ) # CMake does not detect header-only packages. Also needs uBlas and format
+find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
 endif()
