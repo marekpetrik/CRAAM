@@ -1,12 +1,26 @@
+# Build a debug or release version
+# Debug:
+# cmake -DCMAKE_BUILD_TYPE=Debug .
+# Release:
+# cmake -DCMAKE_BUILD_TYPE=Release .
+
+# Required to C++11 support
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR)
 
-set(VERSION "0.3.0")
+set(VERSION "0.4.0")
 project (CRAAM)
+
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+      "MinSizeRel" "RelWithDebInfo")
+ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
-
-#TODO: disable assert statements in the release version 
 
 find_package(OpenMP)
 # CMake does not detect header-only packages. Also needs uBlas and format
@@ -17,30 +31,59 @@ if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests require Boost." )
 endif()
 
+# DEBUG
 # Prints all variables (for debugging)
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
 #    message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
-
-
+# DEBUG
 #set(CMAKE_VERBOSE_MAKEFILE on) - just run make 
+
+# **** TURN FEATURES ON AND OFF ****
+
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
 option (BUILD_SIMULATION "Build simulation functionality" ON)
 option (BUILD_BENCHMARK "Build benchmaking functionality" ON)
-option (BUILD_IMPLEMENTABLE "Build tools for solving with implementability constraints" ON)
+option (BUILD_IMPLEMENTABLE "Build implementability functionality" ON)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# **** CONFIGURATION ****
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 # use position-independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
-include_directories ("include" "ext_include" )
+# use OpenMP if possible
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+# set gcc-specific parameters
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.9.0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic")
+    endif()
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -rdynamic") # -D_GLIBCXX_DEBUG -- incompatible with boost :(
+    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+endif()
+
+# **** PROCESS CONFIGURATION FILE ****
+
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp
+)
+ 
 
 # **** SOURCE FILES ****
+include_directories (include ext_include)
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/include/Action.hpp  
@@ -76,25 +119,10 @@ if (BUILD_IMPLEMENTABLE)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_implementable.cpp)
 endif (BUILD_IMPLEMENTABLE)
 
-# use OpenMP if possible
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-# set gcc-specific parameters
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.9.0")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic")
-    endif()
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -rdynamic") # -D_GLIBCXX_DEBUG -- incompatible with boost :(
-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-endif()
-
-#add_library (craam SHARED ${SRCS} )
+# **** LIBRARY ****
 add_library (craam STATIC ${SRCS} )
-#target_link_libraries(craam ${ARMADILLO_LIBRARIES} )
 
+# **** DEVELOPMENT EXECUTABLE ****
 add_executable (develop ${DEV})
 target_link_libraries(develop craam)
 

@@ -1,0 +1,9 @@
+#pragma once 
+
+// the configured options and settings for Tutorial
+#define VERSION @VERSION@
+#define CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@
+
+#if CMAKE_BUILD_TYPE=="Release"
+    #define NDEBUG
+#endif
