@@ -31,17 +31,15 @@ The library has minimal dependencies and should compile on all major operating s
 Minimal Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
-- `CMake <http://cmake.org/>` 3.1.0
-- C++11 compatible compiler 
-    - Tested with Linux GCC 4.9.2,5.2.0; does not work with GCC 4.7, 4.8. See the note below.
+- `CMake <http://cmake.org/>`__ 3.1.0
+- C++14 compatible compiler 
+    - Tested with Linux GCC 4.9.2,5.2.0; does not work with GCC 4.7, 4.8. 
     - Tested with Linux Clang 3.6.2 (and maybe 3.2+).
-
-**Note**: The library may also compile with GCC 4.6, but the constructor :cpp:`RMDP::RMDP()` needs to be implemented explicitly (without calling :cpp:`RMDP::RMDP(long)`) and the simulation component must be disabled in CMakeLists.txt.
+- `Boost <http://boost.org>`__ to enable unit tests and for some simple numerical algebra
 
 Optional Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
 
-- `Boost <http://boost.org>`__ to enable unit tests
 - `OpenMP <http://openmp.org>`__ to enable parallel computation 
 - `Doxygen <http://doxygen.org>`__  1.8.0+ to generate documentation
 
