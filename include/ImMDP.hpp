@@ -58,8 +58,10 @@ public:
     Converts a policy defined in terms of observations to a policy defined in
     terms of states.
     \param obspol Policy that maps observations to actions to take
+    \param statepol Optional state policy target
     */
-    indvec obspol2statepol(indvec obspol) const;
+    indvec obspol2statepol(const indvec& obspol) const;
+    void obspol2statepol(const indvec& obspol, indvec& statepol) const;
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
     Transition get_initial() const {return initial;};

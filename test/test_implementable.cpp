@@ -361,8 +361,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
 
-    print_vector(sol.policy);
-    cout << endl;
+    //print_vector(sol.policy); cout << endl;
 
     BOOST_CHECK_CLOSE(sol.total_return(initial), 51.313973553, 1e-3);
 
@@ -386,13 +385,22 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     //cout << endl;
 
     MDPI_R mdpi(mdp, observations, initial);
-    auto isol = mdpi.solve_reweighted(30, 0.9, mdpi.random_policy());
+    auto&& randompolicy = mdpi.random_policy(25);
 
-    print_vector(isol);
-    cout << endl;
+    auto isol = mdpi.solve_reweighted(0, 0.9, randompolicy);
+    BOOST_CHECK_EQUAL_COLLECTIONS(randompolicy.begin(), randompolicy.end(), isol.begin(), isol.end());
+
+    isol = mdpi.solve_reweighted(10, 0.9, randompolicy);
+
+    // print_vector(isol);cout << endl;
 
     auto sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
-    cout << sol_impl.total_return(initial) << endl;
+    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 13.1445, 1e-3);
+
+    //cout << sol_impl.total_return(initial) << endl;
 }
+
+// TODO: make sure there is a test that checks that the return of the implementable policy with
+// the true weights has the same return as the true MDP.

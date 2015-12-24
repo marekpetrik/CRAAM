@@ -69,16 +69,19 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
 MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial)
             : MDPI(shared_ptr<const RMDP>(new RMDP(mdp)),state2observ, initial){}
 
-indvec MDPI::obspol2statepol(indvec obspol) const{
 
-     indvec statepol(state_count());
-
-     for(size_t s=0; s < state_count(); s++){
-         statepol[s] = obspol[state2observ[s]];
-     }
-
-     return statepol;
+void MDPI::obspol2statepol(const indvec& obspol, indvec& statepol) const{
+    for(auto s : range((size_t)0, state_count())){
+        statepol[s] = obspol[state2observ[s]];
+    }
 }
+
+indvec MDPI::obspol2statepol(const indvec& obspol) const{
+    indvec statepol(state_count());
+    obspol2statepol(obspol, statepol);
+    return statepol;
+}
+
 
 indvec MDPI::random_policy(random_device::result_type seed){
 
@@ -303,13 +306,23 @@ void MDPI_R::update_importance_weights(const numvec& weights){
 
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
 
-    // TODO: add a method in RMDP to compute the distribution of a non-robust policy
     const indvec nature(state_count(), 0);
 
-    indvec obspol_ret(0);           // current policy in terms of observations
-    indvec statepol(initpol);       // state policy that corresponds to the observation policy
-    if(statepol.size() == 0){
-        statepol.resize(state_count(), 0);
+    if(initpol.size() > 0 && initpol.size() != obs_count()){
+        throw invalid_argument("Initial policy must be defined for all observations.");
+    }
+
+    indvec obspol(initpol);                   // return observation policy
+    if(obspol.size() == 0){
+        obspol.resize(obs_count(),0);
+    }
+    indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
+    obspol2statepol(obspol,statepol);
+
+
+    // if there are no iterations, then just output the initial policy
+    if(iterations == 0){
+
     }
 
     for(auto iter : range(0l, iterations)){
@@ -324,19 +337,13 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
         Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);
 
         // update the policy for the underlying states
-        auto&& obspol = s.policy;
+        obspol = s.policy;
 
         // map the observation policy to the individual states
-        for(size_t statei=0; statei < state_count(); statei++){
-            statepol[statei] = obspol[state2observ[statei]];
-        }
+        obspol2statepol(obspol, statepol);
 
-        // update the return value in the last iteration
-        if(iter == iterations-1){
-            obspol_ret = obspol;
-        }
     }
-    return obspol_ret;
+    return obspol;
 }
 
 }}
