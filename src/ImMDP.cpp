@@ -326,6 +326,7 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
     }
 
     for(auto iter : range(0l, iterations)){
+        (void) iter;
 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
