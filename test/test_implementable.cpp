@@ -1,13 +1,18 @@
 #include "RMDP.hpp"
 #include "ImMDP.hpp"
 #include "Transition.hpp"
+#include "Simulation.hpp"
+#include "Samples.hpp"
 
+#include "cpp11-range-master/range.hpp"
+#include <boost/functional/hash.hpp>
 #include <iostream>
 #include <iterator>
 
 using namespace std;
 using namespace craam;
 using namespace craam::impl;
+using namespace util::lang;
 
 
 #define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
@@ -234,3 +239,160 @@ BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
     BOOST_CHECK_EQUAL(string13, string23);
 }
 
+
+
+
+/**
+A simple simulator class. The state represents a position in a chain
+and actions move it up and down. The reward is equal to the position.
+
+Representation
+~~~~~~~~~~~~~~
+- Decision state: position (int)
+- Action: change (int)
+- Expectation state: position, action (int,int)
+*/
+class Counter{
+private:
+    default_random_engine gen;
+    bernoulli_distribution d;
+    const vector<int> actions_list;
+    const int initstate;
+
+public:
+    typedef int DState;
+    typedef pair<int,int> EState;
+    typedef int Action;
+
+    /**
+    Define the success of each action
+    \param success The probability that the action is actually applied
+    */
+    Counter(double success, int initstate, random_device::result_type seed = random_device{}())
+        : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {};
+
+    int init_state() const {
+        return initstate;
+    }
+
+    pair<int,int> transition_dec(int state, int action) const{
+        return make_pair(state,action);
+    }
+
+    pair<double,int> transition_exp(const pair<int,int> expstate) {
+        int pos = expstate.first;
+        int act = expstate.second;
+
+        int nextpos = d(gen) ? pos + act : pos;
+        return make_pair((double) pos, nextpos);
+    }
+
+    bool end_condition(const int state){
+        return false;
+    }
+
+    vector<int> actions(int) const{
+        return actions_list;
+    }
+
+    vector<int> actions() const{
+        return actions_list;
+    }
+};
+
+/** A counter that terminates at either end as defined by the end state */
+class CounterTerminal : public Counter {
+public:
+    int endstate;
+
+    CounterTerminal(double success, int initstate, int endstate, random_device::result_type seed = random_device{}())
+        : Counter(success, initstate, seed), endstate(endstate) {};
+
+    bool end_condition(const int state){
+        return (abs(state) >= endstate);
+    }
+};
+// Hash function for the Counter / CounterTerminal EState above
+namespace std{
+    template<> struct hash<pair<int,int>>{
+        size_t operator()(pair<int,int> const& s) const{
+            boost::hash<pair<int,int>> h;
+            return h(s);
+        };
+    };
+}
+
+using namespace craam::msen;
+
+template<class T>
+void print_vector(vector<T> vec){
+    for(auto&& p : vec){
+        cout << p << " ";
+    }
+}
+
+BOOST_AUTO_TEST_CASE(implementable_from_samples){
+    const int terminal_state = 10;
+
+    CounterTerminal sim(0.9,0,terminal_state,1);
+    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+
+    Samples<CounterTerminal> samples;
+    simulate_stateless(sim,samples,random_pol,50,50);
+    simulate_stateless(sim,samples,[](int){return 1;},10,20);
+    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+
+    SampleDiscretizerSI<CounterTerminal> sd;
+    // initialize action values
+    sd.add_action(-1); sd.add_action(+1);
+    //initialize state values
+    for(auto i : range(-terminal_state,terminal_state)) sd.add_dstate(i);
+
+    sd.add_samples(samples);
+
+    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
+    BOOST_CHECK_EQUAL(samples.decsamples.size(), sd.get_discrete()->decsamples.size());
+    BOOST_CHECK_EQUAL(samples.expsamples.size(), sd.get_discrete()->expsamples.size());
+
+    SampledMDP smdp;
+    smdp.add_samples(*sd.get_discrete());
+    auto mdp = smdp.get_mdp();
+    auto&& initial = smdp.get_initial();
+
+    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+
+    print_vector(sol.policy);
+    cout << endl;
+
+    BOOST_CHECK_CLOSE(sol.total_return(initial), 51.313973553, 1e-3);
+
+    // define observations
+    indvec observations(mdp->state_count(), -1);
+    size_t last_obs(0), inobs(0);
+    for(auto i : range(size_t(0), mdp->state_count())){
+        // check if this is a terminal state
+        if(mdp->get_state(i).action_count() == 0 || inobs >= 2){
+            if(inobs > 0){
+                inobs = 0;
+                last_obs++;
+            }
+            observations[i] = last_obs++;
+        }else {
+            observations[i] = last_obs;
+            inobs++;
+        }
+        //cout << " " << observations[i] ;
+    }
+    //cout << endl;
+
+    MDPI_R mdpi(mdp, observations, initial);
+    auto isol = mdpi.solve_reweighted(30, 0.9, mdpi.random_policy());
+
+    print_vector(isol);
+    cout << endl;
+
+    auto sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
+                    indvec(mdp->state_count(), 0));
+
+    cout << sol_impl.total_return(initial) << endl;
+}

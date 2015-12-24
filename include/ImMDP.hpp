@@ -23,6 +23,9 @@ public:
         Constructs the MDP with implementability constraints. This constructor makes it
         possible to share the MDP with other data structures.
 
+        Important: when the underlying MDP changes externally, the object becomes invalid
+        and may result in unpredictable behavior.
+
         \param mdp A non-robust base MDP model.
         \param state2observ Maps each state to the index of the corresponding observation.
                         A valid policy will take the same action in all states
@@ -171,10 +174,13 @@ public:
 
     \param iterations Maximal number of iterations;
                 also stops if the policy no longer changes
+    \param discount Discount factor
+    \param initpol Initial policy (optional). When omitted a policy that takes
+                    the first action is used.
 
     \returns Policy for observations (an index of each action for each observation)
     */
-    indvec solve_reweighted(long iterations, prec_t discount);
+    indvec solve_reweighted(long iterations, prec_t discount, const indvec& initpol = indvec(0));
 
     static unique_ptr<MDPI_R> from_csv(istream& input_mdp, istream& input_state2obs,
                                      istream& input_initial, bool headers = true){
@@ -182,6 +188,7 @@ public:
         return MDPI::from_csv<MDPI_R>(input_mdp,input_state2obs,input_initial, headers);
     };
 
+    /** Loads the class from an set of CSV files. See also from_csv. */
     static unique_ptr<MDPI_R> from_csv_file(const string& input_mdp,
                                           const string& input_state2obs,
                                           const string& input_initial,

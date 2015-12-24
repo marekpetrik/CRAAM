@@ -127,19 +127,18 @@ public:
 \tparam SampleType Class used to hold the samples.
 
 \param sim Simulator that holds the properties needed by the simulator
+\param samples Add the result of the simulation to this object
 \param policy Policy function
 \param horizon Number of steps
 \param prob_term The probability of termination in each step
 
-\return Samples
  */
-template<class Sim,class SampleType=Samples<Sim>> unique_ptr<SampleType>
-simulate_stateless( Sim& sim,
-                    const function<typename Sim::Action(typename Sim::DState&)>& policy,
-                    long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
-                    random_device::result_type seed = random_device{}()){
-
-    unique_ptr<SampleType> samples(new SampleType());
+template<class Sim,class SampleType=Samples<Sim>>
+void simulate_stateless(
+            Sim& sim, SampleType& samples,
+            const function<typename Sim::Action(typename Sim::DState&)>& policy,
+            long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
+            random_device::result_type seed = random_device{}()){
 
     long transitions = 0;
 
@@ -150,7 +149,7 @@ simulate_stateless( Sim& sim,
     for(auto run=0l; run < runs; run++){
 
         typename Sim::DState&& decstate = sim.init_state();
-        samples->add_initial(decstate);
+        samples.add_initial(decstate);
 
         for(auto step=0l; step < horizon; step++){
             if(sim.end_condition(decstate))
@@ -161,14 +160,14 @@ simulate_stateless( Sim& sim,
             typename Sim::Action&& action = policy(decstate);
             typename Sim::EState&& expstate = sim.transition_dec(decstate,action);
 
-            samples->add_dec(DSample<Sim> (decstate, action, expstate, step, run));
+            samples.add_dec(DSample<Sim> (decstate, action, expstate, step, run));
 
             auto&& rewardstate = sim.transition_exp(expstate);
 
             auto reward = rewardstate.first;
             decstate = rewardstate.second;
 
-            samples->add_exp(ESample<Sim>(expstate, decstate, reward, 1.0, step, run));
+            samples.add_exp(ESample<Sim>(expstate, decstate, reward, 1.0, step, run));
 
             // test the termination probability only after at least one transition
             if(prob_term > 0.0){
@@ -181,6 +180,22 @@ simulate_stateless( Sim& sim,
         if(tran_limit > 0 && transitions > tran_limit)
             break;
     }
+}
+
+/**
+Overloaded function that creates the samples object
+\return Samples
+*/
+template<class Sim,class SampleType=Samples<Sim>>
+unique_ptr<SampleType> simulate_stateless(
+            Sim& sim,
+            const function<typename Sim::Action(typename Sim::DState&)>& policy,
+            long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
+            random_device::result_type seed = random_device{}()){
+
+    auto samples = make_unique<SampleType>();
+    simulate_stateless<Sim,SampleType>(sim, *samples, policy, horizon, runs,
+                                        tran_limit, prob_term, seed);
     return samples;
 }
 

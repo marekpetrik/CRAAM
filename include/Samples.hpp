@@ -1,10 +1,12 @@
 #pragma once
 
-#include <set>
-#include <memory>
-
 #include "definitions.hpp"
 #include "RMDP.hpp"
+
+#include <set>
+#include <memory>
+#include <unordered_map>
+#include <functional>
 
 using namespace std;
 
@@ -69,18 +71,15 @@ public:
     vector<ESample<Sim>> expsamples;
 
 public:
-    /**
-    Adds a sample starting in a decision state
-    */
-    void add_dec(const DSample<Sim>& decsample){
-        this->decsamples.push_back(decsample);
-    };
 
-    /**
-    Adds an initial state
-    */
+    /** Adds an initial state */
     void add_initial(const typename Sim::DState& decstate){
         this->initial.push_back(decstate);
+    };
+
+    /** Adds a sample starting in a decision state */
+    void add_dec(const DSample<Sim>& decsample){
+        this->decsamples.push_back(decsample);
     };
 
     /** Adds a sample starting in an expectation state */
@@ -89,8 +88,7 @@ public:
     };
 
     /**
-    Computes the discounted mean return over all the
-    samples
+    Computes the discounted mean return over all the samples
     \param discount Discount factor
     */
     prec_t mean_return(prec_t discount){
@@ -119,13 +117,265 @@ public:
 
 /** Samples in which the states and actions are identified by integers. */
 typedef Samples<DiscreteSimulator> DiscreteSamples;
+/** Integral expectation sample */
 typedef ESample<DiscreteSimulator> DiscreteESample;
+/** Integral decision sample */
 typedef DSample<DiscreteSimulator> DiscreteDSample;
+
+/**
+Turns arbitrary samples to discrete ones assuming that actions are
+*state independent*. That is the actions must have consistent names
+across states. This assumption can cause problems
+when samples are missing.
+
+The internally-held discrete samples can be accessed and modified
+from the outside. Also, adding more samples will modify the discrete
+samples.
+
+A new hash function can be defined as follows:
+namespace std{
+    template<> struct hash<pair<int,int>>{
+        size_t operator()(pair<int,int> const& s) const{
+            boost::hash<pair<int,int>> h;
+            return h(s);
+        };
+    }
+};
+
+
+\tparam Simulator definition for which samples to use
+\tparam Dhash Hash function for decision states
+\tparam Ahash Hash function for actions
+\tparam Ehash Hash function for expectation states
+
+A hash function hash<type> for each sample type must exists.
+*/
+template<
+    typename Sim,
+    typename DHash = std::hash<typename Sim::DState>,
+    typename AHash = std::hash<typename Sim::Action>,
+    typename EHash = std::hash<typename Sim::EState>
+    >
+class SampleDiscretizerSI{
+public:
+    /** Constructs new internal discrete samples*/
+    SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()){};
+
+    /** Returns a decision state index, and creates a new one if it does not exists */
+    long add_dstate(const typename Sim::DState& dstate){
+        auto iter = dstate_map.find(dstate);
+        long index;
+        if(iter == dstate_map.end()){
+            index = dstate_map.size();
+            dstate_map[dstate] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Returns a expectation state index, and creates a new one if it does not exists */
+    long add_estate(const typename Sim::EState& estate){
+        auto iter = estate_map.find(estate);
+        long index;
+        if(iter == estate_map.end()){
+            index = estate_map.size();
+            estate_map[estate] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Returns a expectation state index, and creates a new one if it does not exists */
+    long add_action(const typename Sim::Action& action){
+        auto iter = action_map.find(action);
+        long index;
+        if(iter == action_map.end()){
+            index = action_map.size();
+            action_map[action] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Adds samples to the discrete samples */
+    void add_samples(const Samples<Sim>& samples){
+
+        // initial states
+        for(const auto& ins : samples.initial){
+            discretesamples->add_initial(add_dstate(ins));
+        }
+
+        // decision samples
+        for(const auto& ds : samples.decsamples){
+            discretesamples->add_dec(DiscreteDSample(
+                                     add_dstate(ds.decstate_from),
+                                     add_action(ds.action),
+                                     add_estate(ds.expstate_to),
+                                     ds.step, ds.run));
+        }
+
+        // expectation samples
+        for(const auto& es : samples.expsamples){
+            discretesamples->add_exp(DiscreteESample(
+                                     add_estate(es.expstate_from),
+                                     add_dstate(es.decstate_to),
+                                     es.reward, es.weight,
+                                     es.step, es.run));
+        }
+    }
+
+    /** Returns a shared pointer to the discrete samples */
+    shared_ptr<DiscreteSamples> get_discrete(){return discretesamples;};
+
+protected:
+    shared_ptr<DiscreteSamples> discretesamples;
+
+    unordered_map<typename Sim::Action,long,AHash> action_map;
+    unordered_map<typename Sim::DState,long,DHash> dstate_map;
+    unordered_map<typename Sim::EState,long,EHash> estate_map;
+};
+
+
+/**
+Turns arbitrary samples to discrete ones assuming that actions are
+*state dependent*.
+
+The internally-held discrete samples can be accessed and modified
+from the outside. Also, adding more samples will modify the discrete
+samples.
+
+A new hash function can be defined as follows:
+namespace std{
+    template<> struct hash<pair<int,int>>{
+        size_t operator()(pair<int,int> const& s) const{
+            boost::hash<pair<int,int>> h;
+            return h(s);
+        };
+    }
+};
+
+
+\tparam Simulator definition for which samples to use
+\tparam DAhash Hash function for pair<DState, Action>
+\tparam Dhash Hash function for decision states
+\tparam Ehash Hash function for expectation states
+
+A hash function hash<type> for each sample type must exists.
+*/
+template<
+    typename Sim,
+    typename DAHash = std::hash<pair<typename Sim::DState,
+                                     typename Sim::Action>>,
+    typename DHash = std::hash<typename Sim::DState>,
+    typename EHash = std::hash<typename Sim::EState>
+    >
+class SampleDiscretizerSD{
+public:
+    /** Constructs new internal discrete samples*/
+    SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()){};
+
+    /** Returns a decision state index, and creates a new one if it does not exists */
+    long add_dstate(const typename Sim::DState& dstate){
+        auto iter = dstate_map.find(dstate);
+        long index;
+        if(iter == dstate_map.end()){
+            index = dstate_map.size();
+            dstate_map[dstate] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Returns a expectation state index, and creates a new one if it does not exists */
+    long add_estate(const typename Sim::EState& estate){
+        auto iter = estate_map.find(estate);
+        long index;
+        if(iter == estate_map.end()){
+            index = estate_map.size();
+            estate_map[estate] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Returns a expectation state index, and creates a new one if it does not exists */
+    long add_action(const typename Sim::DState& dstate, const typename Sim::Action& action){
+        auto da = make_pair(dstate, action);
+        auto iter = action_map.find(da);
+        long index;
+        if(iter == action_map.end()){
+            index = (action_count[dstate]++);
+            action_map[da] = index;
+        }
+        else{
+            index = iter->second;
+        }
+        return index;
+    }
+
+    /** Adds samples to the discrete samples */
+    void add_samples(const Samples<Sim>& samples){
+
+        // initial states
+        for(const auto& ins : samples.initial){
+            discretesamples->add_initial(add_dstate(ins));
+        }
+
+        // decision samples
+        for(const auto& ds : samples.decsamples){
+            discretesamples->add_dec(DiscreteDSample(
+                                     add_dstate(ds.decstate_from),
+                                     add_action(ds.decstate_from, ds.action),
+                                     add_estate(ds.expstate_to),
+                                     ds.step, ds.run));
+        }
+
+        // expectation samples
+        for(const auto& es : samples.expsamples){
+            discretesamples->add_exp(DiscreteESample(
+                                     add_estate(es.expstate_from),
+                                     add_dstate(es.decstate_to),
+                                     es.reward, es.weight,
+                                     es.step, es.run));
+        }
+    }
+
+    /** Returns a shared pointer to the discrete samples */
+    shared_ptr<DiscreteSamples> get_discrete(){return discretesamples;};
+
+protected:
+    shared_ptr<DiscreteSamples> discretesamples;
+
+    unordered_map<pair<typename Sim::DState,
+                       typename Sim::Action>,
+                  long,DAHash> action_map;
+
+    /** keeps the number of actions for each state */
+    unordered_map<typename Sim::DState,long,DHash> action_count;
+
+    unordered_map<typename Sim::DState,long,DHash> dstate_map;
+    unordered_map<typename Sim::EState,long,EHash> estate_map;
+};
+
 
 /**
 Constructs MDP from integer samples. In integer samples, each
 decision state, expectation state, and action are identified
-by an integer,
+by an integer.
+
+Important: There must be an outcome for each state and action.
+Otherwise, the MDP solution will not be defined and the
+solver will throw and invalid_argument exception.
 */
 class SampledMDP{
 public:
@@ -142,7 +392,7 @@ public:
     to add more samples.
     \param samples Source of the samples
     */
-    void copy_samples(const DiscreteSamples& samples);
+    void add_samples(const DiscreteSamples& samples);
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const RMDP> get_mdp() const {return const_pointer_cast<const RMDP>(mdp);}

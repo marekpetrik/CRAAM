@@ -11,7 +11,7 @@ namespace msen {
 
 SampledMDP::SampledMDP() : mdp(make_shared<RMDP>()) {}
 
-void SampledMDP::copy_samples(const DiscreteSamples& samples){
+void SampledMDP::add_samples(const DiscreteSamples& samples){
 
     if(initialized)
         throw invalid_argument("Multiple calls not supported yet.");
@@ -19,15 +19,12 @@ void SampledMDP::copy_samples(const DiscreteSamples& samples){
     // ** For each expectation state index, save the state and action number
     // maps expectation state numbers to decision state number and action it comes from
     vector<vector<pair<long,long>>> expstate2da(0);
-
     for(const DiscreteDSample& ds : samples.decsamples){
         auto esid = ds.expstate_to;
-
         // resize if necessary
         if(esid >= (long) expstate2da.size()){
             expstate2da.resize(esid+1, vector<pair<long,long>>(0));
         }
-
         expstate2da[esid].push_back(make_pair(ds.decstate_from, ds.action));
     }
 

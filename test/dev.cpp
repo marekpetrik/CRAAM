@@ -1,3 +1,5 @@
+// Simple development tests
+
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -62,7 +64,7 @@ int main(){
 
     cout << "Return implementable: " << sol_impl.total_return(initial) << endl;
 
-    cout << "Implementable policy generation (randomly) ..." << endl;
+    cout << "Generating implementable policies (randomly) ..." << endl;
 
     auto max_return = 0.0;
     indvec max_pol(mdpi->obs_count(),-1);

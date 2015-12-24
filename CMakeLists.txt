@@ -44,9 +44,7 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_SIMULATION "Build simulation functionality" ON)
-option (BUILD_BENCHMARK "Build benchmaking functionality" ON)
-option (BUILD_IMPLEMENTABLE "Build implementability functionality" ON)
+option (BUILD_ADVANCED "Build advandced functionality beyond pure RMDPs" ON)
 
 # **** CONFIGURATION ****
 
@@ -100,8 +98,8 @@ set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
-# whether to build the simulation component of the library
-if (BUILD_SIMULATION)
+if (BUILD_ADVANCED)
+    # whether to build the simulation component of the library
     set (SRCS ${SRCS} 
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp
@@ -109,15 +107,13 @@ if (BUILD_SIMULATION)
                     ${CMAKE_CURRENT_SOURCE_DIR}/include/Samples.hpp
                     )
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
-endif (BUILD_SIMULATION)
 
-# whether to build the implementable component of the library
-if (BUILD_IMPLEMENTABLE)
+    # whether to build the implementable component of the library
     set (SRCS ${SRCS} 
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/ImMDP.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/include/ImMDP.hpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_implementable.cpp)
-endif (BUILD_IMPLEMENTABLE)
+endif (BUILD_ADVANCED)
 
 # **** LIBRARY ****
 add_library (craam STATIC ${SRCS} )
@@ -137,11 +133,8 @@ if (BUILD_TESTS)
 endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
-# builds, downloads and runs a benchmark
-if (BUILD_BENCHMARK)
-    add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
-    target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
-endif()
+add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
+target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)

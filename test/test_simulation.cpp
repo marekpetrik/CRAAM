@@ -3,11 +3,17 @@
 #include <random>
 #include <utility>
 #include <functional>
+
+#include <boost/functional/hash.hpp>
+#include "cpp11-range-master/range.hpp"
+
 #include "Simulation.hpp"
 
 using namespace std;
 using namespace craam;
 using namespace craam::msen;
+using namespace util::lang;
+
 
 #define BOOST_TEST_DYN_LINK
 //#define BOOST_TEST_MAIN
@@ -88,18 +94,18 @@ BOOST_AUTO_TEST_CASE( basic_simulation ) {
     BOOST_CHECK_EQUAL(samples->expsamples.size(),50);
 }
 
-class Counter{
-    /**
-        A simple simulator class. The state represents a position in a chain 
-        and actions move it up and down.
-        
-        Representation
-        ~~~~~~~~~~~~~~
-        - Decision state: position (int)
-        - Action: change (int)
-        - Expectation state: position, action (int,int)
-     */
 
+/**
+A simple simulator class. The state represents a position in a chain
+and actions move it up and down. The reward is equal to the position.
+
+Representation
+~~~~~~~~~~~~~~
+- Decision state: position (int)
+- Action: change (int)
+- Expectation state: position, action (int,int)
+*/
+class Counter{
 private:
     default_random_engine gen;
     bernoulli_distribution d;
@@ -107,36 +113,32 @@ private:
     const int initstate;
 
 public:
-
     typedef int DState;
     typedef pair<int,int> EState;
     typedef int Action;
 
+    /**
+    Define the success of each action
+    \param success The probability that the action is actually applied
+    */
     Counter(double success, int initstate, random_device::result_type seed = random_device{}())
-        : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {
-        /** \brief Define the success of each action
-         * \param success The probability that the action is actually applied
-         */
-    };
+        : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {};
 
     int init_state() const {
         return initstate;
-    };
+    }
 
     pair<int,int> transition_dec(int state, int action) const{
         return make_pair(state,action);
-    };
+    }
 
     pair<double,int> transition_exp(const pair<int,int> expstate) {
         int pos = expstate.first;
         int act = expstate.second;
 
-        //cout << "(" << pos << "," << act << ") ";
-
         int nextpos = d(gen) ? pos + act : pos;
-
         return make_pair((double) pos, nextpos);
-    };
+    }
 
     bool end_condition(const int state){
         return false;
@@ -144,15 +146,38 @@ public:
 
     vector<int> actions(int) const{
         return actions_list;
-    };
+    }
 
     vector<int> actions() const{
         return actions_list;
-    };
+    }
 };
 
+/** A counter that terminates at either end as defined by the end state */
+class CounterTerminal : public Counter {
+public:
+    int endstate;
 
-BOOST_AUTO_TEST_CASE( simulation_multiple_counter_sd ) {
+    CounterTerminal(double success, int initstate, int endstate, random_device::result_type seed = random_device{}())
+        : Counter(success, initstate, seed), endstate(endstate) {};
+
+    bool end_condition(const int state){
+        return (abs(state) >= endstate);
+    }
+};
+// Hash function for the Counter / CounterTerminal EState above
+namespace std{
+    template<> struct hash<pair<int,int>>{
+        size_t operator()(pair<int,int> const& s) const{
+            boost::hash<pair<int,int>> h;
+            return h(s);
+        };
+    };
+}
+
+
+
+BOOST_AUTO_TEST_CASE(simulation_multiple_counter_sd ) {
     Counter sim(0.9,0,1);
 
     RandomPolicySD<Counter> random_pol(sim,1);
@@ -167,7 +192,7 @@ BOOST_AUTO_TEST_CASE( simulation_multiple_counter_sd ) {
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
 }
 
-BOOST_AUTO_TEST_CASE( simulation_multiple_counter_si ) {
+BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
 
     RandomPolicySI<Counter> random_pol(sim,1);
@@ -182,3 +207,66 @@ BOOST_AUTO_TEST_CASE( simulation_multiple_counter_si ) {
     BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
 }
 
+BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
+
+    CounterTerminal sim(0.9,0,10,1);
+
+    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+    auto samples = simulate_stateless(sim,random_pol,20,20);
+
+    SampleDiscretizerSD<CounterTerminal> sd;
+    sd.add_samples(*samples);
+
+    BOOST_CHECK_EQUAL(samples->initial.size(), sd.get_discrete()->initial.size());
+    BOOST_CHECK_EQUAL(samples->decsamples.size(), sd.get_discrete()->decsamples.size());
+    BOOST_CHECK_EQUAL(samples->expsamples.size(), sd.get_discrete()->expsamples.size());
+
+    SampledMDP smdp;
+    smdp.add_samples(*sd.get_discrete());
+
+    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+
+    // check that the number of actions is correct (2)
+    for(auto i : range((size_t)0, mdp->state_count())){
+        if(mdp->get_state(i).action_count() > 0)
+            BOOST_CHECK_LE(mdp->get_state(i).action_count(), 2);
+    }
+
+    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+
+    BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 47.6799, 1e-3);
+}
+
+
+BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
+
+    CounterTerminal sim(0.9,0,10,1);
+    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+
+    Samples<CounterTerminal> samples;
+    simulate_stateless(sim,samples,random_pol,50,50);
+    simulate_stateless(sim,samples,[](int){return 1;},10,20);
+    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+
+    SampleDiscretizerSI<CounterTerminal> sd;
+    sd.add_samples(samples);
+
+    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
+    BOOST_CHECK_EQUAL(samples.decsamples.size(), sd.get_discrete()->decsamples.size());
+    BOOST_CHECK_EQUAL(samples.expsamples.size(), sd.get_discrete()->expsamples.size());
+
+    SampledMDP smdp;
+    smdp.add_samples(*sd.get_discrete());
+
+    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+
+    // check that the number of actions is correct (2)
+    for(auto i : range((size_t)0, mdp->state_count())){
+        if(mdp->get_state(i).action_count() > 0)
+            BOOST_CHECK_EQUAL(mdp->get_state(i).action_count(), 2);
+    }
+
+    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+
+    BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
+}

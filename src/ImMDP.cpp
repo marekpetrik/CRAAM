@@ -17,10 +17,7 @@ namespace craam{namespace impl{
 
 template<typename T>
 T max_value(vector<T> x){
-    if(x.size() > 0)
-        return *max_element(x.begin(), x.end());
-    else
-        return -1;
+    return (x.size() > 0) ? *max_element(x.begin(), x.end()) : -1;
 }
 
 
@@ -59,7 +56,7 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
         auto ac = mdp->get_state(state).action_count();
         if(action_counts[obs] >= 0){
             if(action_counts[obs] != (long) ac){
-                throw invalid_argument("Inconsistent number of actions: " + to_string(state) +
+                throw invalid_argument("Inconsistent number of actions: " + to_string(ac) +
                                        " instead of " + to_string(action_counts[obs]) +
                                        " in state " + to_string(state));
             }
@@ -246,7 +243,6 @@ void MDPI_R::initialize_robustmdp(){
     // keep track of the number of outcomes for each
     indvec outcome_count(obs_count, 0);
 
-
     for(auto state_index : range((size_t) 0, mdp->state_count())){
         auto obs = state2observ[state_index];
 
@@ -305,13 +301,16 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 }
 
-indvec MDPI_R::solve_reweighted(long iterations, prec_t discount){
+indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
 
     // TODO: add a method in RMDP to compute the distribution of a non-robust policy
     const indvec nature(state_count(), 0);
 
-    indvec obspol_ret(0);         // current policy in terms of observations
-    indvec statepol(state_count(), 0); // state policy that corresponds to the observation policy
+    indvec obspol_ret(0);           // current policy in terms of observations
+    indvec statepol(initpol);       // state policy that corresponds to the observation policy
+    if(statepol.size() == 0){
+        statepol.resize(state_count(), 0);
+    }
 
     for(auto iter : range(0l, iterations)){
 

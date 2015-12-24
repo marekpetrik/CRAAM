@@ -114,7 +114,7 @@ pair<long,prec_t> Action::maximal(numvec const& valuefunction, prec_t discount) 
      */
 
     if(outcomes.size() == 0){
-        throw range_error("action with no outcomes");
+        throw invalid_argument("action with no outcomes");
     }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
@@ -144,11 +144,7 @@ pair<long,prec_t> Action::minimal(numvec const& valuefunction, prec_t discount) 
      */
 
     if(outcomes.size() == 0){
-        throw range_error("action with no outcomes");
-    }
-
-    if(outcomes.size() == 0){
-        return make_pair(-1,-numeric_limits<prec_t>::infinity());
+        throw invalid_argument("action with no outcomes");
     }
 
     prec_t minvalue = numeric_limits<prec_t>::infinity();
@@ -180,13 +176,12 @@ prec_t Action::average(numvec const& valuefunction, prec_t discount, numvec cons
         \return Mean value of the action
      */
 
+    if(outcomes.size() == 0){
+        throw invalid_argument("action with no outcomes");
+    }
 
     if(distribution.size() > 0 && distribution.size() != outcomes.size()){
         throw range_error("invalid size of distribution");
-    }
-
-    if(outcomes.size() == 0){
-        throw range_error("action with no outcomes");
     }
 
     prec_t averagevalue = 0.0;
