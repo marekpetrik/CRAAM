@@ -21,7 +21,7 @@ void print_vector(vector<T> vec){
     }
 }
 
-int main(){
+int main_im(){
     const double discount = 0.9;
 
     cout << "Running ... " << endl;
@@ -90,4 +90,32 @@ int main(){
 
     return 0;
 
+}
+
+int main(void){
+
+    RMDP rmdp(3);
+
+    // nonrobust
+    // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
+    rmdp.add_transition_d(0,1,1,1,0);
+    rmdp.add_transition_d(1,1,2,1,0);
+    rmdp.add_transition_d(2,1,2,1,1.1);
+
+    rmdp.add_transition_d(0,0,0,1,0);
+    rmdp.add_transition_d(1,0,0,1,1);
+    rmdp.add_transition_d(2,0,1,1,1);
+
+    Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
+
+    numvec initial{0,0,0};
+
+    // average
+    auto re = rmdp.vi_gs_ave(initial,0.9, 10000,0);
+
+    int x;
+
+    cout << re.valuefunction[0] << "; " << x << endl;
+
+    return 0;
 }

@@ -7,15 +7,14 @@ namespace craam {
 
 tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t discount) const{
 
-    if(is_terminal()){
+    if(is_terminal())
         return make_tuple(-1,-1,0);
-    }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
     long result_outcome = -1l;
 
-    for(size_t i = 0; i < this->actions.size(); i++){
+    for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
         auto value = action.maximal(valuefunction, discount);
         if(value.second > maxvalue){
@@ -29,15 +28,14 @@ tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t disco
 
 tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t discount) const{
 
-    if(is_terminal()){
+    if(is_terminal())
         return make_tuple(-1,-1,0);
-    }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
     long result_outcome = -1l;
 
-    for(size_t i = 0; i < this->actions.size(); i++){
+    for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
         auto value = action.minimal(valuefunction, discount);
         if(value.second > maxvalue){
@@ -50,9 +48,8 @@ tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t disco
 }
 
 pair<long,prec_t> State::max_average(numvec const& valuefunction, prec_t discount) const{
-    if(is_terminal()){
+    if(is_terminal())
         return make_pair(-1,0.0);
-    }
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
