@@ -94,6 +94,9 @@ int main_im(){
 
 int main(void){
 
+    vector<Action> a(3);
+    cout << "Size is: " << a[2].get_threshold() << endl;
+
     RMDP rmdp(3);
 
     // nonrobust

@@ -214,12 +214,16 @@ public:
     */
     void normalize_distribution();
 
+    /** Whether distribution over outcomes is being used */
+    bool get_use_distribution() const {return use_distribution;}
+
     prec_t get_threshold() const {return threshold;};
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 
 protected:
     prec_t threshold;
     numvec distribution;
+    bool use_distribution;
 };
 
 }

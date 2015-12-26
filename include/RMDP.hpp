@@ -33,9 +33,7 @@ enum SolutionType {
     Average = 2
 };
 
-/**
-A solution to a robust MDP.
- */
+/** A solution to a robust MDP.  */
 class Solution {
 public:
     numvec valuefunction;

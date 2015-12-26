@@ -1,30 +1,30 @@
-#include <assert.h>
+#include "Action.hpp"
+
+#include <cassert>
 #include <numeric>
 #include <limits>
 #include <algorithm>
 #include <stdexcept>
-#include <cmath>
 
-#include <iostream>
-
-#include "Action.hpp"
 
 using namespace std;
 
 namespace craam {
 
 
-Action::Action(): threshold(NAN), distribution(0) {}
+Action::Action(): threshold(0), distribution(0), use_distribution(false) {}
 
 Action::Action(bool use_distribution):
-        threshold(use_distribution ? 0 : NAN),
-        distribution(0) {}
+        threshold(0),
+        distribution(0),
+        use_distribution(use_distribution) {}
 
 Action::Action(const vector<Transition>& outcomes, bool use_distribution) :
         outcomes(outcomes),
-        threshold(use_distribution ? 0 : NAN),
+        threshold(0),
         distribution(outcomes.size(), !outcomes.empty() ?
-                                        1.0 / (prec_t) outcomes.size() : 0.0) {}
+                                        1.0 / (prec_t) outcomes.size() : 0.0),
+        use_distribution(use_distribution) {}
 
 template<NatureConstr nature>
 pair<numvec,prec_t>
@@ -32,7 +32,7 @@ Action::maximal_cst(numvec const& valuefunction, prec_t discount) const{
 
     if(distribution.size() != outcomes.size())
         throw range_error("Outcome distribution has incorrect size.");
-    if(outcomes.size() == 0)
+    if(outcomes.empty())
         throw range_error("Action with no outcomes not allowed when maximizing.");
 
     numvec outcomevalues(outcomes.size());
@@ -71,7 +71,7 @@ void Action::set_distribution(numvec const& distribution){
 
 pair<long,prec_t> Action::maximal(numvec const& valuefunction, prec_t discount) const {
 
-    if(outcomes.size() == 0){
+    if(outcomes.empty()){
         throw invalid_argument("action with no outcomes");
     }
 
@@ -90,10 +90,9 @@ pair<long,prec_t> Action::maximal(numvec const& valuefunction, prec_t discount) 
     return make_pair(result,maxvalue);
 }
 
-
 pair<long,prec_t> Action::minimal(numvec const& valuefunction, prec_t discount) const {
 
-    if(outcomes.size() == 0){
+    if(outcomes.empty()){
         throw invalid_argument("action with no outcomes");
     }
 
@@ -114,7 +113,7 @@ pair<long,prec_t> Action::minimal(numvec const& valuefunction, prec_t discount) 
 
 prec_t Action::average(numvec const& valuefunction, prec_t discount, numvec const& distribution) const {
 
-    if(outcomes.size() == 0){
+    if(outcomes.empty()){
         throw invalid_argument("Action with no outcomes");
     }
 
@@ -123,12 +122,11 @@ prec_t Action::average(numvec const& valuefunction, prec_t discount, numvec cons
     }
 
     prec_t averagevalue = 0.0;
-    if(distribution.size() == 0){
+    if(distribution.empty()){
         const prec_t weight = 1.0 / prec_t(outcomes.size());
 
         for(size_t i = 0; i < outcomes.size(); ++i)
             averagevalue += weight * outcomes[i].compute_value(valuefunction, discount);
-        cout << averagevalue << endl;
     }
     else{
         for(size_t i = 0; i < outcomes.size(); i++)
@@ -161,18 +159,16 @@ const Transition& Action::get_transition(long outcomeid) const{
 }
 
 Transition& Action::create_outcome(long outcomeid){
-
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
 
     if(outcomeid >= (long) outcomes.size())
         outcomes.resize(outcomeid + 1);
 
-    if(!std::isnan(threshold)){
+    if(use_distribution){
         // got to resize the distribution too
         distribution.resize(outcomeid + 1, 0.0);
     }
-
     return outcomes[outcomeid];
 }
 
@@ -182,12 +178,10 @@ void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t r
 
 template<NatureConstr nature> pair<numvec,prec_t>
 Action::minimal_cst(numvec const& valuefunction, prec_t discount) const{
+    assert(distribution.size() == outcomes.size());
 
-
-    if(distribution.size() != outcomes.size())
-        throw range_error("Outcome distribution has incorrect size.");
-    if(outcomes.size() == 0)
-        return make_pair(numvec(0), -numeric_limits<prec_t>::infinity());
+    if(outcomes.empty())
+        throw invalid_argument("Action with no outcomes");
 
     numvec outcomevalues(outcomes.size());
 
@@ -195,7 +189,6 @@ Action::minimal_cst(numvec const& valuefunction, prec_t discount) const{
         const auto& outcome = outcomes[i];
         outcomevalues[i] = outcome.compute_value(valuefunction, discount);
     }
-
     return nature(outcomevalues, distribution, threshold);
 }
 
@@ -203,11 +196,10 @@ Action::minimal_cst(numvec const& valuefunction, prec_t discount) const{
 template pair<numvec,prec_t> Action::minimal_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
 void Action::set_distribution(long outcomeid, prec_t weight){
-     if(std::isnan(threshold)){
-        throw invalid_argument("distribution is not initialized");
+     if(!use_distribution){
+        throw invalid_argument("Distribution is not initialized.");
      }
      distribution[outcomeid] = weight;
-
 }
 
 void Action::init_distribution(){
@@ -216,13 +208,14 @@ void Action::init_distribution(){
         distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
     }
     threshold = 0.0;
+    use_distribution = true;
 }
 
 
 void Action::normalize_distribution(){
 
-    if(std::isnan(threshold)){
-        throw invalid_argument("distribution is not initialized.");
+    if(!use_distribution){
+        throw invalid_argument("Distribution is not initialized.");
     }
 
     auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
