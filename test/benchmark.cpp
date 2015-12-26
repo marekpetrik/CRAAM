@@ -26,7 +26,7 @@ int main(int argc, char * argv []){
         cout << "file could not be open";
         return -1;
     }
-    auto rmdp = RMDP::transitions_from_csv(ifs,true);
+    auto rmdp = RMDP::from_csv(ifs,true);
     ifs.close();
 
     cout << "running test" << endl;
