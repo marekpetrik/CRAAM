@@ -98,8 +98,10 @@ void Transition::normalize(){
     prec_t sp = sum_probabilities();
 
     if(sp != 0.0){
-        for (auto& p : probabilities)
+        for(auto& p : probabilities)
             p /= sp;
+    }else{
+        throw invalid_argument("Probabilities sum to 0 and cannot be normalized.");
     }
 }
 

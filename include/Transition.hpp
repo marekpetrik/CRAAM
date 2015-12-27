@@ -64,6 +64,10 @@ public:
     void add_sample(long stateid, prec_t probability, prec_t reward);
 
     prec_t sum_probabilities() const;
+    /**
+    Normalizes the probabilities to sum to 1. Exception is thrown if the
+    distribution sums to 0.
+    */
     void normalize();
     bool is_normalized() const;
 

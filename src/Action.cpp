@@ -223,6 +223,8 @@ void Action::normalize_distribution(){
     if(weightsum > 0.0){
         for(auto& p : distribution)
             p /= weightsum;
+    }else{
+        throw invalid_argument("Distribution sums to 0 and cannot be normalized.");
     }
 }
 

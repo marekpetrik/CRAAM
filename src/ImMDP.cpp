@@ -299,13 +299,29 @@ void MDPI_R::update_importance_weights(const numvec& weights){
 
     // now normalize the weights to they sum to one
     for(auto& s : robust_mdp.states){
-        for(auto& a : s.actions)
-            a.normalize_distribution();
+        for(auto& a : s.actions){
+            // check if the distribution sums to 0 (not visited)
+            const numvec& dist = a.get_distribution();
+            if(accumulate(dist.begin(), dist.end(), 0.0) > 0.0)
+                a.normalize_distribution();
+            else
+                // just set it to be uniform
+                a.init_distribution();
+        }
     }
 }
 
+template<class T>
+void print_vector(vector<T> vec){
+    for(auto&& p : vec){
+        cout << p << " ";
+    }
+}
+//
+
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
 
+    // the nature policy is simply all zeros
     const indvec nature(state_count(), 0);
 
     if(initpol.size() > 0 && initpol.size() != obs_count()){
@@ -319,17 +335,16 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
     indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
     obspol2statepol(obspol,statepol);
 
-
-    // if there are no iterations, then just output the initial policy
-    if(iterations == 0){
-
-    }
-
     for(auto iter : range(0l, iterations)){
         (void) iter;
 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+        mdp->
+
+        cout << "Return: " << s.total_return(initial) << endl;
+
+        print_vector(importanceweights); cout << endl;
 
         // update importance weights
         update_importance_weights(importanceweights);

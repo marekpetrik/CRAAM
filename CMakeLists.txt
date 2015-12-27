@@ -119,8 +119,11 @@ endif (BUILD_ADVANCED)
 add_library (craam STATIC ${SRCS} )
 
 # **** DEVELOPMENT EXECUTABLE ****
-add_executable (develop ${DEV})
-target_link_libraries(develop craam)
+add_executable (develop_exe ${DEV})
+target_link_libraries(develop_exe craam)
+add_custom_target (develop COMMAND develop_exe
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
+                        COMMENT "Running executable")
 
 # **** TEST ****
 if (BUILD_TESTS)

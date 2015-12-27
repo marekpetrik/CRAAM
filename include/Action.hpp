@@ -210,7 +210,8 @@ public:
     const numvec& get_distribution() const {return distribution;};
     /**
     Normalizes outcome weights to sum to one. Assumes that the distribution
-    is initialized.
+    is initialized. Exception is thrown if the distribution sums
+    to zero.
     */
     void normalize_distribution();
 

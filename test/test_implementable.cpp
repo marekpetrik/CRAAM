@@ -239,9 +239,6 @@ BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
     BOOST_CHECK_EQUAL(string13, string23);
 }
 
-
-
-
 /**
 A simple simulator class. The state represents a position in a chain
 and actions move it up and down. The reward is equal to the position.
@@ -324,12 +321,12 @@ namespace std{
 
 using namespace craam::msen;
 
-template<class T>
-void print_vector(vector<T> vec){
-    for(auto&& p : vec){
-        cout << p << " ";
-    }
-}
+//template<class T>
+//void print_vector(vector<T> vec){
+//    for(auto&& p : vec){
+//        cout << p << " ";
+//    }
+//}
 
 BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
