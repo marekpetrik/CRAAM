@@ -309,7 +309,6 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
     size_t i;
 
     for(i = 0; i < iterations && residual > maxresidual; i++){
-
         residual = 0;
         for(auto s=0l; s < (long) state_count(); s++){
             const auto& state = states[s];
@@ -338,7 +337,6 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
 template Solution RMDP::vi_gs_cst<SolutionType::Robust,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_gs_cst<SolutionType::Optimistic,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_gs_cst<SolutionType::Average,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-
 
 template<SolutionType type>
 Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
@@ -407,9 +405,10 @@ template Solution RMDP::vi_jac_gen<SolutionType::Robust>(numvec const& valuefunc
 template Solution RMDP::vi_jac_gen<SolutionType::Optimistic>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_jac_gen<SolutionType::Average>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
-
 template<SolutionType type,NatureConstr nature>
-Solution RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
+Solution 
+RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, 
+                 unsigned long iterations, prec_t maxresidual) const{
 
     if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
         throw invalid_argument("Incorrect size of value function.");
@@ -462,9 +461,7 @@ Solution RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned
         }
         residual = *max_element(residuals.begin(),residuals.end());
     }
-
     numvec & valuenew = i % 2 == 0 ? oddvalue : evenvalue;
-
     return Solution(valuenew,policy,outcome_dists,residual,i);
 }
 
@@ -472,11 +469,10 @@ template Solution RMDP::vi_jac_cst<SolutionType::Robust,worstcase_l1>(numvec con
 template Solution RMDP::vi_jac_cst<SolutionType::Optimistic,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_jac_cst<SolutionType::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
-
 template<SolutionType type>
-Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
-                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
-
+Solution 
+RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
+                  unsigned long iterations_vi, prec_t maxresidual_vi) const{
 
     if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
         throw invalid_argument("Incorrect size of value function.");
@@ -554,7 +550,7 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
                 prec_t newvalue;
-
+                
                 switch(type){
                 case SolutionType::Robust:
                 case SolutionType::Optimistic:
@@ -566,18 +562,14 @@ Solution RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigne
                 default:
                     throw invalid_argument("Unknown optimization type.");
                 }
-
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
             }
             residual_vi = *max_element(residuals.begin(),residuals.end());
         }
     }
-
     numvec & valuenew = *targetvalue;
-
     return Solution(valuenew,policy,outcomes,residual_pi,i);
-
 }
 
 template Solution RMDP::mpi_jac_gen<SolutionType::Robust>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
@@ -678,9 +670,15 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
 }
 
 Solution RMDP::vi_jac_fix(const numvec& valuefunction, prec_t discount, const indvec& policy,
-                      const indvec& natpolicy, unsigned long iterations,
-                      prec_t maxresidual) const{
+                          const indvec& natpolicy, unsigned long iterations,
+                          prec_t maxresidual) const{
 
+    if(policy.size() != state_count())
+        throw invalid_argument("Dimension of the policy must match the state count.");
+    if(natpolicy.size() != state_count())
+        throw invalid_argument("Dimension of the nature's policy must match the state count.");
+
+                              
     numvec oddvalue(0);        // set in even iterations (0 is even)
     numvec evenvalue(0);       // set in odd iterations
 
@@ -717,11 +715,52 @@ Solution RMDP::vi_jac_fix(const numvec& valuefunction, prec_t discount, const in
     return Solution(*targetvalue,policy,natpolicy,residual,j);
 }
 
+Solution RMDP::vi_jac_fix_ave(const numvec& valuefunction, prec_t discount, const indvec& policy,
+                              unsigned long iterations,
+                              prec_t maxresidual) const{
+
+    if(policy.size() != state_count())
+        throw invalid_argument("Dimension of the policy must match the state count.");
+
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
+
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0);
+        evenvalue.assign(states.size(),0);
+    }
+
+    numvec residuals(states.size());
+    prec_t residual = numeric_limits<prec_t>::infinity();
+
+    size_t j; // defined here to be able to report the number of iterations
+
+    numvec * sourcevalue = & oddvalue;
+    numvec * targetvalue = & evenvalue;
+
+    for(j = 0; j < iterations && residual > maxresidual; j++){
+
+        swap(targetvalue, sourcevalue);
+
+        #pragma omp parallel for
+        for(auto s = 0l; s < (long) states.size(); s++){
+            auto newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
+
+            residuals[s] = abs((*sourcevalue)[s] - newvalue);
+            (*targetvalue)[s] = newvalue;
+        }
+        residual = *max_element(residuals.begin(),residuals.end());
+    }
+
+    return Solution(*targetvalue,policy,indvec(0),residual,j);
+}
 
 template Solution RMDP::mpi_jac_cst<SolutionType::Robust,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Optimistic,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<SolutionType::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
-
 
 Solution RMDP::vi_gs_rob(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
 
@@ -849,7 +888,11 @@ numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
 
     #pragma omp parallel for
     for(size_t s=0; s < n; s++){
-        rewards[s] = get_transition(s,policy[s],nature[s]).mean_reward();
+        const State& state = get_state(s);
+        if(state.is_terminal())
+            rewards[s] = 0;
+        else
+            rewards[s] = state.get_transition(policy[s],nature[s]).mean_reward();
     }
     return rewards;
 }
@@ -859,6 +902,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, con
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
 
+    #pragma omp parallel for 
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
         const auto& indexes = t.get_indices();
@@ -876,6 +920,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
 
+    #pragma omp parallel for 
     for(size_t s=0; s < n; s++){
         // if this is a terminal state, then just go with zero probabilities
         if(states[s].is_terminal())  continue;

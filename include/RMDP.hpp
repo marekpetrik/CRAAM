@@ -75,7 +75,8 @@ Some general assumptions:
     - Transitions with 0 probabilities may be omitted, except there must
         be at least one target state in each transition
     - State with no actions: A terminal state with value 0
-    - Action with no outcomes: Terminates with an error
+    - Action with no outcomes: Terminates with an error for uncertain models, but 
+                               assumes 0 return for regular models. 
     - Outcome with no target states: Terminates with an error
  */
 class RMDP{
@@ -214,7 +215,7 @@ public:
     /**
     Returns a brief string representation of the MDP.
     This method is mostly suitable for analyzing small MDPs.
-     */
+    */
     string to_string() const;
 
     // fixed-policy functions
@@ -266,6 +267,7 @@ public:
 
     /**
     Value function evaluation using Jacobi iteration for a fixed policy.
+    and nature.
 
     \param valuefunction Initial value function
     \param discount Discount factor
@@ -277,8 +279,25 @@ public:
     \return Computed (approximate) solution (value function)
      */
     Solution vi_jac_fix(const numvec& valuefunction, prec_t discount, const indvec& policy,
-                      const indvec& natpolicy, unsigned long iterations=MAXITER,
-                      prec_t maxresidual=SOLPREC) const;
+                        const indvec& natpolicy, unsigned long iterations=MAXITER,
+                        prec_t maxresidual=SOLPREC) const;
+
+    /**
+    Value function evaluation using Jacobi iteration for a fixed policy.
+    and average value for the nature.
+ 
+    \param valuefunction Initial value function
+    \param discount Discount factor
+    \param policy Decision-maker's policy
+    \param natpolicy Nature's policy
+    \param iterations Maximal number of inner loop value iterations
+    \param maxresidual Stop the inner policy iteration when
+            the residual drops below this threshold.
+    \return Computed (approximate) solution (value function)
+     */
+    Solution vi_jac_fix_ave(const numvec& valuefunction, prec_t discount, const indvec& policy,
+                            unsigned long iterations=MAXITER,
+                            prec_t maxresidual=SOLPREC) const;
 
     // value iteration - GS
     /**
@@ -545,7 +564,7 @@ public:
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
     \return Computed (approximate) solution
-     */
+    */
     Solution mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount,
                             unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                             unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2) const;

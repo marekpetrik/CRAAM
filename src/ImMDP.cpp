@@ -222,6 +222,21 @@ template
 unique_ptr<MDPI_R> MDPI::from_csv_file<MDPI_R>(const string& input_mdp, const string& input_state2obs,
                                      const string& input_initial, bool headers);
 
+Transition MDPI::transition2obs(const Transition& tran){
+    if((size_t) tran.max_index() >= state_count())
+        throw invalid_argument("Transition to a non-existing state.");
+    
+    Transition result;
+    
+    for(auto i : range((size_t)0, tran.size())){
+        const long state = tran.get_indices()[i];
+        const prec_t prob = tran.get_probabilities()[i];
+        const prec_t reward = tran.get_rewards()[i];        
+        
+        result.add_sample(state2obs(state), prob, reward);
+    }
+    return result;
+}
 
 MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial),
@@ -268,7 +283,6 @@ void MDPI_R::initialize_robustmdp(){
 
             // copy the original transitions (they are automatically consolidated while being added)
             for(auto k : range((size_t) 0, old_tran.size())){
-
                 new_tran.add_sample(state2observ[old_tran.get_indices()[k]],
                                     old_tran.get_probabilities()[k],
                                     old_tran.get_rewards()[k]);
@@ -302,22 +316,16 @@ void MDPI_R::update_importance_weights(const numvec& weights){
         for(auto& a : s.actions){
             // check if the distribution sums to 0 (not visited)
             const numvec& dist = a.get_distribution();
-            if(accumulate(dist.begin(), dist.end(), 0.0) > 0.0)
+            if(accumulate(dist.begin(), dist.end(), 0.0) > 0.0){
                 a.normalize_distribution();
-            else
+            }
+            else{
                 // just set it to be uniform
                 a.init_distribution();
+            }
         }
     }
 }
-
-template<class T>
-void print_vector(vector<T> vec){
-    for(auto&& p : vec){
-        cout << p << " ";
-    }
-}
-//
 
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
 
@@ -335,22 +343,36 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
     indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
     obspol2statepol(obspol,statepol);
 
+    // map the initial distribution to observations in order to evaluate the return
+    const Transition oinitial = transition2obs(initial);
+    
+    cout << "Initial state dist: " << initial.probabilities_vector(state_count()) << endl;
+    cout << "Initial observation dist: " << oinitial.probabilities_vector(obs_count()) << endl;
+    
     for(auto iter : range(0l, iterations)){
+        cout << endl << "**** Iteration " << iter << "*****" << endl;
         (void) iter;
-
+        cout << "Observation policy: " << obspol << endl;
+    
         // compute state distribution
-        numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
-        mdp->
+        numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);        
+        numvec&& rewards = mdp->rewards_state(statepol, nature);
 
-        cout << "Return: " << s.total_return(initial) << endl;
-
-        print_vector(importanceweights); cout << endl;
+        cout << "Return: " << inner_product(rewards.begin(), rewards.end(), importanceweights.begin(), 0.0) << endl;
+        cout << "Importance weights: " << importanceweights << endl;
 
         // update importance weights
         update_importance_weights(importanceweights);
-
+        
+        //cout << "State policy " << statepol << endl;
+        Solution&& sf = robust_mdp.vi_jac_fix_ave(numvec(0), discount, obspol);
+        cout << "Value function: " << sf.valuefunction << endl;
+        //cout << "Weighted MDP return: " << sf.total_return(oinitial) << " iterations " << sf.iterations << endl;
+        assert(abs(sf.total_return(oinitial) - inner_product(rewards.begin(), rewards.end(), importanceweights.begin(), 0.0)) <= 0.01);
+   
         // compute solution of the robust MDP with the new weights
         Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);
+        cout << "Optimized return: " << s.total_return(oinitial) << endl;
 
         // update the policy for the underlying states
         obspol = s.policy;
@@ -363,4 +385,5 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
 }
 
 }}
+
 

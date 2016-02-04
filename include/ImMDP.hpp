@@ -57,11 +57,24 @@ public:
     /**
     Converts a policy defined in terms of observations to a policy defined in
     terms of states.
-    \param obspol Policy that maps observations to actions to take
-    \param statepol Optional state policy target
+    \param obspol Policy that maps observations to actions to take    
+    \return Observation policy
     */
     indvec obspol2statepol(const indvec& obspol) const;
+    /**
+    Converts a policy defined in terms of observations to a policy defined in
+    terms of states.
+    \param obspol Policy that maps observations to actions to take
+    \param statepol State policy target
+    */
     void obspol2statepol(const indvec& obspol, indvec& statepol) const;
+
+    /**
+    Converts a transition from states to observations, adding probabilities
+    of individual states. Rewards are a convex combination of the original
+    values.
+    */
+    Transition transition2obs(const Transition& tran);
 
     shared_ptr<const RMDP> get_mdp() {return mdp;};
     Transition get_initial() const {return initial;};

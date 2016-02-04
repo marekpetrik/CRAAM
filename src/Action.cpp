@@ -1,16 +1,14 @@
 #include "Action.hpp"
 
-#include <cassert>
-#include <numeric>
-#include <limits>
-#include <algorithm>
-#include <stdexcept>
-
+#include<cassert>
+#include<numeric>
+#include<limits>
+#include<algorithm>
+#include<stdexcept>
 
 using namespace std;
 
 namespace craam {
-
 
 Action::Action(): threshold(0), distribution(0), use_distribution(false) {}
 
@@ -226,6 +224,33 @@ void Action::normalize_distribution(){
     }else{
         throw invalid_argument("Distribution sums to 0 and cannot be normalized.");
     }
+}
+
+
+// **************************************************************************************
+// Regular action comes here
+// **************************************************************************************
+
+
+ActionRegular::ActionRegular(){}
+ActionRegular::ActionRegular(const Transition& outcome) : outcome(outcome) {}
+
+pair<typename ActionRegular::Result,prec_t> 
+Action::maximal(numvec const& valuefunction, prec_t discount) const {
+    return outcome.compute_value(valuefunction, discount);
+}
+
+pair<typename ActionRegular::Result,prec_t> 
+Action::minimal(numvec const& valuefunction, prec_t discount) const {
+    return outcome.compute_value(valuefunction, discount);
+}
+
+prec_t ActionRegular::average(numvec const& valuefunction, prec_t discount) const {
+    return outcome.compute_value(valuefunction, discount);
+}
+
+prec_t Action::fixed(numvec const& valuefunction, prec_t discount, const typename ActionRegular::Result& index) const{
+    return outcome.compute_value(valuefunction, discount);
 }
 
 }

@@ -227,5 +227,82 @@ protected:
     bool use_distribution;
 };
 
+
+/**
+ * Regular MDP action assuming no uncertainty
+ * 
+ * The return is 0 when there are no outcomes. 
+ */
+class ActionRegular{
+protected:
+    
+    Transition outcome;
+        
+public:
+
+    /** Type of the result of the optimazation within the action. Used for policy iteration. 
+     *  This is a dummy in this case. */
+    typedef int Result;
+
+    /** Creates an empty action. */
+    Action();
+    
+    /**
+    Initializes outcomes to the provided transition vector
+    */
+    Action(const Transition& outcome);
+
+    // plain solution
+    /**
+    Computes the maximal outcome for the value function.
+
+    \param valuefunction Value function reference
+    \param discount Discount factor
+
+    \return The index and value of the maximal outcome
+     */
+    pair<long,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
+    /**
+    Computes the minimal outcome for the value function
+    \param valuefunction Value function reference
+    \param discount Discount factor
+    \return The index and value of the maximal outcome
+    */
+    pair<long,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
+
+    // average
+    /**
+    Computes the minimal outcome for the value function.
+
+    Uses state weights to compute the average. If there is no distribution set, it assumes
+    a uniform distribution.
+
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    
+    \return Mean value of the action
+     */
+    prec_t average(numvec const& valuefunction, prec_t discount) const;
+    
+    // fixed-outcome
+    /**
+    Computes the action value for a fixed index outcome.
+
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    \param index Index of the outcome that is used
+
+    \return Value of the action
+     */
+    prec_t fixed(numvec const& valuefunction, prec_t discount, int index) const;
+        
+    /** Returns the number of outcomes */
+    size_t outcome_count() const {return 1;};
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    Transition& get_transition(long outcomeid) {assert(outcomeid == 0); return outcome;};
+    /** Returns the transition. The transition must exist. */
+    const Transition& get_transition(long outcomeid) const {assert(outcomeid == 0); return outcome;};
+}
+
 }
 

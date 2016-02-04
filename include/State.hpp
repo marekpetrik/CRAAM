@@ -22,24 +22,23 @@ public:
     Finds the maximal optimistic action.
     When there are no action then the return is assumed to be 0.
     \return (Action index, outcome index, value)
-     */
+    */
     tuple<long,long,prec_t> max_max(numvec const& valuefunction, prec_t discount) const;
     /**
     Finds the maximal pessimistic action
     When there are no action then the return is assumed to be 0
     \return (Action index, outcome index, value)
-     */
+    */
     tuple<long,long,prec_t> max_min(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Finds the maximal optimistic action given the l1 constraints.
-
     When there are no action then the return is assumed to be 0.
 
     \param valuefunction Value function reference
     \param discount Discount factor
     \return Action index, outcome distribution and the mean value for the maximal bounded solution
-     */
+    */
     template<NatureConstr nature> tuple<long,numvec,prec_t>
     max_max_cst(numvec const& valuefunction, prec_t discount) const;
 
@@ -66,7 +65,7 @@ public:
     Finds the action with the maximal average return
     When there are no actions then the return is assumed to be 0.
     \return (Action index, outcome index, value)
-     */
+    */
     pair<long,prec_t> max_average(numvec const& valuefunction, prec_t discount) const;
 
     // functions used in modified policy iteration
@@ -97,7 +96,7 @@ public:
     /**
     Returns the transition; new actions and outcomes are created
     as necessary.
-     */
+    */
     Transition& create_transition(long actionid, long outcomeid);
 
     /** Returns the transition. The transition must exist. */
@@ -106,9 +105,9 @@ public:
     /** Sets thresholds for all actions.*/
     void set_thresholds(prec_t threshold);
 
-    bool is_terminal() const{
-        /** True if the state is considered terminal. That is, it has
-        no actions. */
+    /** True if the state is considered terminal. That is, it has
+    no actions. */
+    bool is_terminal() const{        
         return actions.empty();
     };
 
