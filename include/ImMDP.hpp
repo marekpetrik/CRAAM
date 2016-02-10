@@ -22,7 +22,7 @@ public:
     /**
         Constructs the MDP with implementability constraints. This constructor makes it
         possible to share the MDP with other data structures.
-
+size_t
         Important: when the underlying MDP changes externally, the object becomes invalid
         and may result in unpredictable behavior.
 
