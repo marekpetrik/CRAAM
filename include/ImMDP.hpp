@@ -63,7 +63,10 @@ public:
     indvec obspol2statepol(const indvec& obspol) const;
     void obspol2statepol(const indvec& obspol, indvec& statepol) const;
 
+    /** Internal MDP representation */
     shared_ptr<const RMDP> get_mdp() {return mdp;};
+
+    /** Initial distribution of MDP */
     Transition get_initial() const {return initial;};
 
     /** Constructs a random observation policy */
@@ -76,7 +79,7 @@ public:
     \param discount Discount factor
     \return Discounted return of the policy
     */
-    prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC);
+    prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC) const;
 
     // save and load description.
     /**

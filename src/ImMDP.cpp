@@ -104,7 +104,7 @@ indvec MDPI::random_policy(random_device::result_type seed){
     return policy;
 }
 
-prec_t MDPI::total_return(const indvec& obspol, prec_t discount, prec_t precision){
+prec_t MDPI::total_return(const indvec& obspol, prec_t discount, prec_t precision) const {
 
     indvec&& statepol = obspol2statepol(obspol);
     indvec natpolicy(mdp->state_count(), (size_t) 0);
