@@ -16,6 +16,10 @@ typedef vector<prec_t> numvec; // TODO: switch to valarray or an atlas array
 /** Default index vector */
 typedef vector<long> indvec;
 
+/** Default solution precision */
+const prec_t SOLPREC = 0.0001;
+/** Default number of iterations */
+const unsigned long MAXITER = 100000;
 
 /** Function representing the constraints on nature. The inputs
     are the q-values z, the reference distribution q, and the threshold t.

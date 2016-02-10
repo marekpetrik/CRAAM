@@ -12,40 +12,40 @@ namespace craam{
 namespace impl{
 
 /**
-    Represents an MDP with implementability constraints.
+Represents an MDP with implementability constraints.
 
-    Consists of an MDP and a set of observations.
+Consists of an MDP and a set of observations.
 */
 class MDPI{
 
 public:
     /**
-        Constructs the MDP with implementability constraints. This constructor makes it
-        possible to share the MDP with other data structures.
-size_t
-        Important: when the underlying MDP changes externally, the object becomes invalid
-        and may result in unpredictable behavior.
+    Constructs the MDP with implementability constraints. This constructor makes it
+    possible to share the MDP with other data structures.
 
-        \param mdp A non-robust base MDP model.
-        \param state2observ Maps each state to the index of the corresponding observation.
-                        A valid policy will take the same action in all states
-                        with a single observation. The index is 0-based.
-        \param initial A representation of the initial distribution. The rewards
-                        in this transition are ignored (and should be 0).
+    Important: when the underlying MDP changes externally, the object becomes invalid
+    and may result in unpredictable behavior.
+
+    \param mdp A non-robust base MDP model.
+    \param state2observ Maps each state to the index of the corresponding observation.
+                    A valid policy will take the same action in all states
+                    with a single observation. The index is 0-based.
+    \param initial A representation of the initial distribution. The rewards
+                    in this transition are ignored (and should be 0).
     */
     MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
          const Transition& initial);
 
     /**
-        Constructs the MDP with implementability constraints. The MDP model is
-        copied (using the copy constructor) and stored internally.
-        \param mdp A non-robust base MDP model. It cannot be shared to prevent
-                    direct modification.
-        \param state2observ Maps each state to the index of the corresponding observation.
-                        A valid policy will take the same action in all states
-                        with a single observation. The index is 0-based.
-        \param initial A representation of the initial distribution. The rewards
-                        in this transition are ignored (and should be 0).
+    Constructs the MDP with implementability constraints. The MDP model is
+    copied (using the copy constructor) and stored internally.
+    \param mdp A non-robust base MDP model. It cannot be shared to prevent
+                direct modification.
+    \param state2observ Maps each state to the index of the corresponding observation.
+                    A valid policy will take the same action in all states
+                    with a single observation. The index is 0-based.
+    \param initial A representation of the initial distribution. The rewards
+                    in this transition are ignored (and should be 0).
     */
     MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
 
@@ -66,8 +66,17 @@ size_t
     shared_ptr<const RMDP> get_mdp() {return mdp;};
     Transition get_initial() const {return initial;};
 
-    /** Constructs a random policy */
+    /** Constructs a random observation policy */
     indvec random_policy(random_device::result_type seed = random_device{}());
+
+    /**
+    Computes a return of an observation policy.
+
+    \param obspol Policy in terms of observations
+    \param discount Discount factor
+    \return Discounted return of the policy
+    */
+    prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC);
 
     // save and load description.
     /**

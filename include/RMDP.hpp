@@ -17,11 +17,6 @@ using namespace boost::numeric;
 
 namespace craam {
 
-/** Default solution precision */
-const prec_t SOLPREC = 0.0001;
-/** Default number of iterations */
-const unsigned long MAXITER = 1000;
-
 /**
  Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
  worst-case behavior of nature, optimistic corresponds the best case, and average
@@ -139,8 +134,7 @@ public:
 
     /** Return a transition for state, action, and outcome. It is created if necessary. */
     Transition& create_transition(long stateid, long actionid, long outcomeid);
-    State& get_state(long stateid) {assert(stateid >= 0 && stateid < (long) states.size()); return states[stateid];
-        }
+    State& get_state(long stateid) {assert(stateid >= 0 && stateid < (long) states.size()); return states[stateid];}
     const State& get_state(long stateid) const {assert(stateid >= 0 && stateid < (long) states.size()); return states[stateid];};
 
     // object counts
@@ -252,7 +246,7 @@ public:
     Constructs the transition matrix for the policy.
 
     \param policy Policy of the decision maker
-    \param nature Policy of nature
+    \param nature Policy of the nature
     */
     unique_ptr<ublas::matrix<prec_t>> transition_mat(const indvec& policy, const indvec& nature) const;
 
@@ -260,7 +254,7 @@ public:
     Constructs a transpose of the transition matrix for the policy.
 
     \param policy Policy of the decision maker
-    \param nature Policy of nature
+    \param nature Policy of the nature
     */
     unique_ptr<ublas::matrix<prec_t>> transition_mat_t(const indvec& policy, const indvec& nature) const;
 

@@ -1,3 +1,6 @@
+#include "definitions.hpp"
+#include "Transition.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 #include <vector>
@@ -5,14 +8,14 @@
 #include <cmath>
 #include <assert.h>
 
-#include "Transition.hpp"
-#include "definitions.hpp"
+#include "cpp11-range-master/range.hpp"
+
+using namespace util::lang;
 
 namespace craam {
 
-
-Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities,
-                        const vector<prec_t>& rewards){
+Transition::Transition(const indvec& indices, const numvec& probabilities,
+                        const numvec& rewards){
 
     if(indices.size() != probabilities.size() || indices.size() != rewards.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
@@ -23,17 +26,23 @@ Transition::Transition(const indvec& indices, const vector<prec_t>& probabilitie
         add_sample(indices[k],probabilities[k],rewards[k]);
 }
 
-Transition::Transition(const indvec& indices, const vector<prec_t>& probabilities){
+Transition::Transition(const indvec& indices, const numvec& probabilities){
 
     if(indices.size() != probabilities.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
 
     auto sorted = sort_indexes(indices);
 
-    for(auto&& k : sorted)
+    for(auto k : sorted)
         add_sample(indices[k],probabilities[k],0.0);
 }
 
+
+Transition::Transition(const numvec& probabilities){
+
+    for(auto k : range((size_t)0,probabilities.size()))
+        add_sample(k,probabilities[k],0.0);
+}
 
 void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
 
@@ -105,7 +114,7 @@ void Transition::normalize(){
     }
 }
 
-prec_t Transition::compute_value(vector<prec_t> const& valuefunction, prec_t discount) const{
+prec_t Transition::compute_value(numvec const& valuefunction, prec_t discount) const{
     auto scount = indices.size();
 
     //TODO: check how much complexity these statements are adding
@@ -134,8 +143,8 @@ prec_t Transition::mean_reward() const{
     return value;
 }
 
-vector<prec_t> Transition::probabilities_vector(size_t size) const{
-    vector<prec_t> result(size, 0.0);
+numvec Transition::probabilities_vector(size_t size) const{
+    numvec result(size, 0.0);
 
     for(size_t i = 0; i < this->size(); i++){
         result[indices[i]] = probabilities[i];
@@ -143,7 +152,7 @@ vector<prec_t> Transition::probabilities_vector(size_t size) const{
 
     return result;
 }
-void Transition::probabilities_addto(prec_t scale, vector<prec_t>& transition) const{
+void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
     for(size_t i = 0; i < size(); i++){
         transition[indices[i]] += scale*probabilities[i];
     }

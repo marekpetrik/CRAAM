@@ -71,6 +71,9 @@ MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initia
 
 
 void MDPI::obspol2statepol(const indvec& obspol, indvec& statepol) const{
+    assert(obspol.size() == (size_t) obscount);
+    assert(mdp->state_count() == statepol.size());
+
     for(auto s : range((size_t)0, state_count())){
         statepol[s] = obspol[state2observ[s]];
     }
@@ -99,6 +102,16 @@ indvec MDPI::random_policy(random_device::result_type seed){
     }
 
     return policy;
+}
+
+prec_t MDPI::total_return(const indvec& obspol, prec_t discount, prec_t precision){
+
+    indvec&& statepol = obspol2statepol(obspol);
+    indvec natpolicy(mdp->state_count(), (size_t) 0);
+
+    Solution&& sol = mdp->vi_jac_fix(numvec(0),discount, statepol, natpolicy, MAXITER, precision);
+
+    return sol.total_return(initial);
 }
 
 void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs,
@@ -311,12 +324,12 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 }
 
-template<class T>
+/*template<class T>
 void print_vector(vector<T> vec){
     for(auto&& p : vec){
         cout << p << " ";
     }
-}
+}*/
 //
 
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
@@ -336,15 +349,12 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
     obspol2statepol(obspol,statepol);
 
     for(auto iter : range(0l, iterations)){
-        (void) iter;
+        (void) iter; // to remove the warning
 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
-        mdp->
 
-        cout << "Return: " << s.total_return(initial) << endl;
-
-        print_vector(importanceweights); cout << endl;
+        //print_vector(importanceweights); cout << endl;
 
         // update importance weights
         update_importance_weights(importanceweights);
