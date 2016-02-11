@@ -186,12 +186,10 @@ public:
 
     This method modifies the stored robust MDP.
 
-    \param iterations Maximal number of iterations;
-                also stops if the policy no longer changes
+    \param iterations Maximal number of iterations; terminates when the policy no longer changes
     \param discount Discount factor
-    \param initpol Initial policy (optional). When omitted a policy that takes
-                    the first action is used.
-
+    \param initobspol Initial observation policy (optional). When omitted or has length 0
+        a policy that takes the first action is used.
     \returns Policy for observations (an index of each action for each observation)
     */
     indvec solve_reweighted(long iterations, prec_t discount, const indvec& initpol = indvec(0));
@@ -211,15 +209,12 @@ public:
     };
 
 protected:
-    /** the robust representation of the MDPI */
+    /** Robust representation of the MDPI */
     RMDP robust_mdp;
-    /** maps the index of the mdp state to the index of the observation
-        withing the state corresponding to the observation */
+    /** Maps the index of the mdp state to the index of the observation
+    within the state corresponding to the observation (multiple states per observation) */
     indvec state2outcome;
-
-    /**
-    Constructs a robust version of the implementable MDP.
-    */
+    /** Constructs a robust version of the implementable MDP.*/
     void initialize_robustmdp();
 };
 

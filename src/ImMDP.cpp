@@ -332,16 +332,16 @@ void print_vector(vector<T> vec){
 }*/
 //
 
-indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
+indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initobspol){
 
     // the nature policy is simply all zeros
     const indvec nature(state_count(), 0);
 
-    if(initpol.size() > 0 && initpol.size() != obs_count()){
+    if(initobspol.size() > 0 && initobspol.size() != obs_count()){
         throw invalid_argument("Initial policy must be defined for all observations.");
     }
 
-    indvec obspol(initpol);                   // return observation policy
+    indvec obspol(initobspol);                   // return observation policy
     if(obspol.size() == 0){
         obspol.resize(obs_count(),0);
     }
@@ -354,13 +354,11 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 
-        //print_vector(importanceweights); cout << endl;
-
         // update importance weights
         update_importance_weights(importanceweights);
 
         // compute solution of the robust MDP with the new weights
-        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);
+        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
 
         // update the policy for the underlying states
         obspol = s.policy;
