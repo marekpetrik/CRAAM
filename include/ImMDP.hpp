@@ -189,7 +189,7 @@ public:
     \param iterations Maximal number of iterations; terminates when the policy no longer changes
     \param discount Discount factor
     \param initobspol Initial observation policy (optional). When omitted or has length 0
-        a policy that takes the first action is used.
+        a policy that takes the first action (action 0) is used.
     \returns Policy for observations (an index of each action for each observation)
     */
     indvec solve_reweighted(long iterations, prec_t discount, const indvec& initpol = indvec(0));
