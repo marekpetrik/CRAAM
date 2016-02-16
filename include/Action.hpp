@@ -229,80 +229,71 @@ protected:
 
 
 /**
- * Regular MDP action assuming no uncertainty
- * 
- * The return is 0 when there are no outcomes. 
+ * Action in a regular MDP. There is no uncertainty and
+ * the action contains only a single outcome.
  */
-class ActionRegular{
+class RegularAction{
 protected:
-    
     Transition outcome;
-        
-public:
 
-    /** Type of the result of the optimazation within the action. Used for policy iteration. 
-     *  This is a dummy in this case. */
-    typedef int Result;
+public:
+    /** Type of an identifier for an outcome. It is ignored for the simple action. */
+    typedef int OutcomeType;
 
     /** Creates an empty action. */
-    Action();
-    
+    RegularAction(){};
+
+    /** Initializes outcomes to the provided transition vector */
+    RegularAction(const Transition& outcome) : outcome(outcome) {};
+
     /**
-    Initializes outcomes to the provided transition vector
+    Computes the value of the action.
+    \param valuefunction State value function to use
+    \param discount Discount factor
+    \return Action value
     */
-    Action(const Transition& outcome);
+    prec_t value(const numvec& valuefunction, prec_t discount) const
+        {return outcome.compute_value(valuefunction, discount);};
 
-    // plain solution
     /**
-    Computes the maximal outcome for the value function.
-
-    \param valuefunction Value function reference
-    \param discount Discount factor
-
-    \return The index and value of the maximal outcome
-     */
-    pair<long,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
-    /**
-    Computes the minimal outcome for the value function
-    \param valuefunction Value function reference
-    \param discount Discount factor
-    \return The index and value of the maximal outcome
+    Computes a value of the action: see RegularAction::value. The
+    purpose of this method is for the general robust MDP setting.
     */
-    pair<long,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
+    pair<typename RegularAction::OutcomeType, prec_t>
+    average_value(const numvec& valuefunction, prec_t discount) const
+        {return make_pair(0,value(valuefunction, discount));};
 
-    // average
     /**
-    Computes the minimal outcome for the value function.
+    Computes a value of the action: see RegularAction::value. The
+    purpose of this method is for the general robust MDP setting.
+    */
+    pair<typename RegularAction::OutcomeType, prec_t>
+    maximal_value(const numvec& valuefunction, prec_t discount) const
+        {return make_pair(0,value(valuefunction, discount));};
 
-    Uses state weights to compute the average. If there is no distribution set, it assumes
-    a uniform distribution.
-
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    
-    \return Mean value of the action
-     */
-    prec_t average(numvec const& valuefunction, prec_t discount) const;
-    
-    // fixed-outcome
     /**
-    Computes the action value for a fixed index outcome.
+    Computes a value of the action: see RegularAction::value. The
+    purpose of this method is for the general robust MDP setting.
+    */
+    pair<typename RegularAction::OutcomeType, prec_t>
+    minimal_value(const numvec& valuefunction, prec_t discount) const
+        {return make_pair(0,value(valuefunction, discount));};
 
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    \param index Index of the outcome that is used
+    /**
+    Computes a value of the action: see RegularAction::value. The
+    purpose of this method is for the general robust MDP setting.
+    */
+    pair<typename RegularAction::OutcomeType, prec_t>
+    fixed_value(const numvec& valuefunction, prec_t discount,
+                typename RegularAction::OutcomeType index) const
+        {return make_pair(0,value(valuefunction, discount));};
 
-    \return Value of the action
-     */
-    prec_t fixed(numvec const& valuefunction, prec_t discount, int index) const;
-        
-    /** Returns the number of outcomes */
-    size_t outcome_count() const {return 1;};
     /** Returns a transition for the outcome to the action. The transition must exist. */
-    Transition& get_transition(long outcomeid) {assert(outcomeid == 0); return outcome;};
+    Transition& get_transition() {return outcome;};
+
     /** Returns the transition. The transition must exist. */
-    const Transition& get_transition(long outcomeid) const {assert(outcomeid == 0); return outcome;};
-}
+    const Transition& get_transition() const {return outcome;};
+};
 
 }
 
