@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 #include <limits>
+#include <cassert>
 
 #include "definitions.hpp"
 #include "Transition.hpp"
@@ -227,6 +228,9 @@ protected:
     bool use_distribution;
 };
 
+// **************************************************************************************
+// Regular action
+// **************************************************************************************
 
 /**
  * Action in a regular MDP. There is no uncertainty and
@@ -238,7 +242,7 @@ protected:
 
 public:
     /** Type of an identifier for an outcome. It is ignored for the simple action. */
-    typedef int OutcomeType;
+    typedef int OutcomeId;
 
     /** Creates an empty action. */
     RegularAction(){};
@@ -259,15 +263,14 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<typename RegularAction::OutcomeType, prec_t>
-    average_value(const numvec& valuefunction, prec_t discount) const
-        {return make_pair(0,value(valuefunction, discount));};
+    prec_t average_value(const numvec& valuefunction, prec_t discount) const
+        {return value(valuefunction, discount);};
 
     /**
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<typename RegularAction::OutcomeType, prec_t>
+    pair<RegularAction::OutcomeId, prec_t>
     maximal_value(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
@@ -275,7 +278,7 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<typename RegularAction::OutcomeType, prec_t>
+    pair<RegularAction::OutcomeId, prec_t>
     minimal_value(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
@@ -283,10 +286,9 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<typename RegularAction::OutcomeType, prec_t>
-    fixed_value(const numvec& valuefunction, prec_t discount,
-                typename RegularAction::OutcomeType index) const
-        {return make_pair(0,value(valuefunction, discount));};
+    prec_t fixed_value(const numvec& valuefunction, prec_t discount,
+                RegularAction::OutcomeId index) const
+        {return value(valuefunction, discount);};
 
     /** Returns a transition for the outcome to the action. The transition must exist. */
     Transition& get_transition() {return outcome;};
@@ -294,6 +296,226 @@ public:
     /** Returns the transition. The transition must exist. */
     const Transition& get_transition() const {return outcome;};
 };
+
+// **************************************************************************************
+//  Discrete Outcome Action
+// **************************************************************************************
+
+/**
+An action in the robust MDP with discrete outcomes.
+*/
+class DiscreteOutcomeAction {
+
+protected:
+    /** List of possible outcomes */
+    vector<Transition> outcomes;
+
+public:
+    /** Type of an identifier for an outcome. It is ignored for the simple action. */
+    typedef long OutcomeId;
+
+    /** Creates an empty action. */
+    DiscreteOutcomeAction();
+
+    /**
+    Initializes outcomes to the provided vector
+    */
+    DiscreteOutcomeAction(const vector<Transition>& outcomes)
+        : outcomes(outcomes){};
+
+    /**
+    Computes the maximal outcome for the value function.
+    \param valuefunction Value function reference
+    \param discount Discount factor
+    \return The index and value of the maximal outcome
+     */
+    pair<DiscreteOutcomeAction::OutcomeId,prec_t>
+    maximal_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the minimal outcome for the value function
+    \param valuefunction Value function reference
+    \param discount Discount factor
+    \return The index and value of the maximal outcome
+    */
+    pair<DiscreteOutcomeAction::OutcomeId,prec_t>
+    minimal_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the average outcome using a uniform distribution.
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    \return Mean value of the action
+     */
+    prec_t average_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the action value for a fixed index outcome.
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    \param index Index of the outcome used
+    \return Value of the action
+     */
+    prec_t fixed_value(numvec const& valuefunction, prec_t discount,
+                       DiscreteOutcomeAction::OutcomeId index) const{
+        assert(index >= 0l && index < (long) outcomes.size());
+        return outcomes[index].compute_value(valuefunction, discount); };
+
+    /**
+    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    */
+    Transition& create_outcome(long outcomeid);
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    const Transition& get_outcome(long outcomeid) const {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    Transition& get_outcome(long outcomeid) {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+    size_t outcome_count() const {return outcomes.size();};
+};
+
+// **************************************************************************************
+//  Weighted Outcome Action
+// **************************************************************************************
+
+
+/**
+An action in a robust MDP in which the outcomes are defined by a weighted function
+and a threshold. The uncertain behavior is parameterized by a base distribution
+and a threshold value. An example may be a worst case computation:
+    min { u^T v | || u - d ||_1 <=  t}
+where v are the values for individual outcomes, d is the base distribution, and
+t is the threshold. See L1Action for an example of an instance of this template class.
+
+The function that determines the uncertainty set is defined by NatureConstr template parameter.
+
+The distribution is initialized to be uniform over the provided elements;
+when a new outcome is added, then its weight in the distribution is 0.
+*/
+template<NatureConstr nature>
+class WeightedOutcomeAction {
+
+protected:
+
+    /** Do not freely modify this value */
+    vector<Transition> outcomes;
+    /** Threshold */
+    prec_t threshold;
+    /** Weights used in computing the worst/best case */
+    numvec distribution;
+
+public:
+    /** Type of the outcome identification */
+    typedef numvec OutcomeId;
+
+    /** Creates an empty action. */
+    WeightedOutcomeAction();
+
+    /** Initializes outcomes to the provided vector */
+    Action(const vector<Transition>& outcomes);
+
+    /**
+    Computes the maximal outcome distribution constraints on the nature's distribution.
+    Template argument nature represents the function used to select the constrained distribution
+    over the outcomes.
+    Does not work when the number of outcomes is zero.
+    \param valuefunction Value function reference
+    \param discount Discount factor
+    \return Outcome distribution and the mean value for the maximal bounded solution
+     */
+    pair<WeightedOutcomeAction::OutcomeId,prec_t>
+    maximal_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the minimal outcome distribution constraints on the nature's distribution
+    Template argument nature represents the function used to select the constrained distribution
+    over the outcomes.
+    Does not work when the number of outcomes is zero.
+    \param valuefunction Value function reference
+    \param discount Discount factor
+    \return Outcome distribution and the mean value for the minimal bounded solution
+     */
+    pair<WeightedOutcomeAction::OutcomeId,prec_t>
+    minimal_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the average outcome using a uniform distribution.
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    \return Mean value of the action
+     */
+    prec_t average_value(numvec const& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the action value for a fixed index outcome.
+    \param valuefunction Updated value function
+    \param discount Discount factor
+    \param index Index of the outcome used
+    \return Value of the action
+     */
+    prec_t fixed_value(numvec const& valuefunction, prec_t discount,
+                       WeightedOutcomeAction::OutcomeId dist) const;
+
+    /**
+    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    */
+    Transition& create_outcome(long outcomeid);
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    const Transition& get_outcome(long outcomeid) const {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    Transition& get_outcome(long outcomeid) {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+    size_t outcome_count() const {return outcomes.size();};
+
+    /**
+    Sets the base distribution over the outcomes.
+    \param distribution New distribution of outcomes. Must have the same size
+                        as the number of outcomes, or length 0.
+     */
+    void set_distribution(const numvec& distribution);
+
+    /**
+    Sets weight for a particular outcome.
+    \param distribution New distribution of outcomes. Must be either the same
+                        dimension as the number of outcomes, or length 0. If the length
+                        is 0, it is assumed to be a uniform distribution over states.
+    \param weight New weight
+     */
+    void set_distribution(long outcomeid, prec_t weight);
+
+    /** Returns the baseline distribution. */
+    const numvec& get_distribution() const {return distribution;};
+
+    /**
+    Normalizes outcome weights to sum to one. Assumes that the distribution
+    is initialized. Exception is thrown if the distribution sums
+    to zero.
+    */
+    void normalize_distribution();
+
+    /**
+    Sets an initial uniform value for the threshold (0) and the distribution.
+    If the distribution already exists, then it is overwritten.
+    */
+    void uniform_distribution();
+
+    /** Returns threshold value */
+    prec_t get_threshold() const {return threshold;};
+
+    /** Sets threshold value */
+    void set_threshold(prec_t threshold){ this->threshold = threshold; }
+};
+
+
 
 }
 
