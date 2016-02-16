@@ -71,6 +71,9 @@ MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initia
 
 
 void MDPI::obspol2statepol(const indvec& obspol, indvec& statepol) const{
+    assert(obspol.size() == (size_t) obscount);
+    assert(mdp->state_count() == statepol.size());
+
     for(auto s : range((size_t)0, state_count())){
         statepol[s] = obspol[state2observ[s]];
     }
@@ -99,6 +102,16 @@ indvec MDPI::random_policy(random_device::result_type seed){
     }
 
     return policy;
+}
+
+prec_t MDPI::total_return(const indvec& obspol, prec_t discount, prec_t precision) const {
+
+    indvec&& statepol = obspol2statepol(obspol);
+    indvec natpolicy(mdp->state_count(), (size_t) 0);
+
+    Solution&& sol = mdp->vi_jac_fix(numvec(0),discount, statepol, natpolicy, MAXITER, precision);
+
+    return sol.total_return(initial);
 }
 
 void MDPI::to_csv(ostream& output_mdp, ostream& output_state2obs,
@@ -327,16 +340,22 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 }
 
-indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initpol){
+/*template<class T>
+void print_vector(vector<T> vec){
+    for(auto&& p : vec){
+        cout << p << " ";
+    }
+}*/
+indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initobspol){
 
     // the nature policy is simply all zeros
     const indvec nature(state_count(), 0);
 
-    if(initpol.size() > 0 && initpol.size() != obs_count()){
+    if(initobspol.size() > 0 && initobspol.size() != obs_count()){
         throw invalid_argument("Initial policy must be defined for all observations.");
     }
 
-    indvec obspol(initpol);                   // return observation policy
+    indvec obspol(initobspol);                   // return observation policy
     if(obspol.size() == 0){
         obspol.resize(obs_count(),0);
     }
@@ -346,33 +365,19 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
     // map the initial distribution to observations in order to evaluate the return
     const Transition oinitial = transition2obs(initial);
     
-    cout << "Initial state dist: " << initial.probabilities_vector(state_count()) << endl;
-    cout << "Initial observation dist: " << oinitial.probabilities_vector(obs_count()) << endl;
-    
     for(auto iter : range(0l, iterations)){
-        cout << endl << "**** Iteration " << iter << "*****" << endl;
-        (void) iter;
-        cout << "Observation policy: " << obspol << endl;
-    
-        // compute state distribution
-        numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);        
-        numvec&& rewards = mdp->rewards_state(statepol, nature);
+        (void) iter; // to remove the warning
 
-        cout << "Return: " << inner_product(rewards.begin(), rewards.end(), importanceweights.begin(), 0.0) << endl;
-        cout << "Importance weights: " << importanceweights << endl;
+        // compute state distribution
+        numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
 
         // update importance weights
         update_importance_weights(importanceweights);
         
-        //cout << "State policy " << statepol << endl;
         Solution&& sf = robust_mdp.vi_jac_fix_ave(numvec(0), discount, obspol);
-        cout << "Value function: " << sf.valuefunction << endl;
-        //cout << "Weighted MDP return: " << sf.total_return(oinitial) << " iterations " << sf.iterations << endl;
-        assert(abs(sf.total_return(oinitial) - inner_product(rewards.begin(), rewards.end(), importanceweights.begin(), 0.0)) <= 0.01);
    
         // compute solution of the robust MDP with the new weights
-        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount,10000,0.1,10000,0.1);
-        cout << "Optimized return: " << s.total_return(oinitial) << endl;
+        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
 
         // update the policy for the underlying states
         obspol = s.policy;

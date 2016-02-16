@@ -8,6 +8,7 @@
 #include <boost/functional/hash.hpp>
 #include <iostream>
 #include <iterator>
+#include <cmath>
 
 using namespace std;
 using namespace craam;
@@ -32,6 +33,29 @@ using namespace util::lang;
 
 //#define BOOST_TEST_MODULE MainModule
 #include <boost/test/unit_test.hpp>
+
+
+/**
+Creates a simple chain problem.
+Actions:   0 - left
+           1 - right
+Optimal solution: Action 1, with value function:
+    [1.1 gamma^2/(1-gamma), 1.1 gamma/(1-gamma), 1.1/(1-gamma)]
+
+*/
+RMDP make_chain1(){
+    RMDP rmdp(3);
+
+    rmdp.add_transition_d(0,1,1,1,0);
+    rmdp.add_transition_d(1,1,2,1,0);
+    rmdp.add_transition_d(2,1,2,1,1.1);
+
+    rmdp.add_transition_d(0,0,0,1,0);
+    rmdp.add_transition_d(1,0,0,1,1);
+    rmdp.add_transition_d(2,0,1,1,1);
+
+    return rmdp;
+}
 
 BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
 
@@ -155,20 +179,15 @@ BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
     indvec polvec{0,0};
     BOOST_CHECK_EQUAL_COLLECTIONS(pol.begin(), pol.end(),polvec.begin(),polvec.end());
 
+    //auto retval = imr.total_return(pol, 0.99);
+    //cout << "Return: " << retval << endl;
+
     //ostream_iterator<prec_t> output(cout, ", ");
     //copy(pol.begin(), pol.end(), output);
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
-    RMDP rmdp1(0);
-
-    rmdp1.add_transition_d(0,1,1,1,0);
-    rmdp1.add_transition_d(1,1,2,1,0);
-    rmdp1.add_transition_d(2,1,2,1,1.1);
-
-    rmdp1.add_transition_d(0,0,0,1,0);
-    rmdp1.add_transition_d(1,0,0,1,1);
-    rmdp1.add_transition_d(2,0,1,1,1);
+    RMDP&& rmdp1 = make_chain1();
 
     Transition initial(indvec{0,1,2},numvec{1.0/3.0,1.0/3.0,1/3.0});
     indvec state2obs{0,0,1};
@@ -200,15 +219,7 @@ BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
-    RMDP rmdp1(0);
-
-    rmdp1.add_transition_d(0,1,1,1,0);
-    rmdp1.add_transition_d(1,1,2,1,0);
-    rmdp1.add_transition_d(2,1,2,1,1.1);
-
-    rmdp1.add_transition_d(0,0,0,1,0);
-    rmdp1.add_transition_d(1,0,0,1,1);
-    rmdp1.add_transition_d(2,0,1,1,1);
+    RMDP&& rmdp1 = make_chain1();
 
     Transition initial(indvec{0,1,2},numvec{1.0/3.0,1.0/3.0,1/3.0});
     indvec state2obs{0,0,1};
@@ -253,7 +264,7 @@ class Counter{
 private:
     default_random_engine gen;
     bernoulli_distribution d;
-    const vector<int> actions_list;
+    const vector<int> actions_list = {1,-1};
     const int initstate;
 
 public:
@@ -266,7 +277,7 @@ public:
     \param success The probability that the action is actually applied
     */
     Counter(double success, int initstate, random_device::result_type seed = random_device{}())
-        : gen(seed), d(success), actions_list({1,-1}), initstate(initstate) {};
+        : gen(seed), d(success), initstate(initstate) {};
 
     int init_state() const {
         return initstate;
@@ -321,12 +332,13 @@ namespace std{
 
 using namespace craam::msen;
 
-//template<class T>
-//void print_vector(vector<T> vec){
-//    for(auto&& p : vec){
-//        cout << p << " ";
-//    }
-//}
+/*
+template<class T>
+void print_vector(vector<T> vec){
+    for(auto&& p : vec){
+        cout << p << " ";
+    }
+}*/
 
 BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
@@ -358,7 +370,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
 
-    //print_vector(sol.policy); cout << endl;
+    //cout << "Optimal policy: " << endl; print_vector(sol.policy); cout << endl;
 
     BOOST_CHECK_CLOSE(sol.total_return(initial), 51.313973553, 1e-3);
 
@@ -387,17 +399,39 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     auto isol = mdpi.solve_reweighted(0, 0.9, randompolicy);
     BOOST_CHECK_EQUAL_COLLECTIONS(randompolicy.begin(), randompolicy.end(), isol.begin(), isol.end());
 
-    isol = mdpi.solve_reweighted(10, 0.9, randompolicy);
+    isol = mdpi.solve_reweighted(1, 0.9, randompolicy);
 
-    // print_vector(isol);cout << endl;
+    //cout << "Implementable solution: " << endl; print_vector(mdpi.obspol2statepol(isol));cout << endl;
 
     auto sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
-    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 13.1445, 1e-3);
+    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
 
     //cout << sol_impl.total_return(initial) << endl;
 }
+
+BOOST_AUTO_TEST_CASE(test_return_of_implementable){
+    // test return with different initial states
+
+
+    const prec_t gamma = 0.99;
+
+    RMDP&& mdp = make_chain1();
+    indvec observations = {0,0,0};
+    Transition  initial1(numvec({1.0, 0.0, 0.0})),
+                initial2(numvec({0.0, 1.0, 0.0})),
+                initial3(numvec({0.0, 0.0, 1.0}));
+
+    MDPI mdpi1(mdp, observations, initial1);
+    BOOST_CHECK_CLOSE(mdpi1.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,2)/(1-gamma), 1e-3);
+    MDPI mdpi2(mdp, observations, initial2);
+    BOOST_CHECK_CLOSE(mdpi2.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,1)/(1-gamma), 1e-3);
+    MDPI mdpi3(mdp, observations, initial3);
+    BOOST_CHECK_CLOSE(mdpi3.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,0)/(1-gamma), 1e-3);
+}
+
 
 // TODO: make sure there is a test that checks that the return of the implementable policy with
 // the true weights has the same return as the true MDP.

@@ -50,6 +50,14 @@ public:
                 const numvec& probabilities);
 
     /**
+    Creates a single transition from raw data with uniformly zero rewards,
+    where destination states are indexed automatically starting with 0.
+
+    \param probabilities The probabilities of transitions; indexes are implicit.
+    */
+    Transition(const numvec& probabilities);
+
+    /**
     Adds a single transitions probability to the existing probabilities.
 
     If the transition to the desired state already exists, then the transition
