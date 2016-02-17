@@ -58,7 +58,7 @@ bool RMDP::is_normalized() const{
 
     for(auto const& s : states){
         for(auto const& a : s.actions){
-            for(auto const& t : a.outcomes){
+            for(auto const& t : a.get_outcomes()){
                 if(!t.is_normalized())
                     return false;
             }
@@ -67,13 +67,8 @@ bool RMDP::is_normalized() const{
     return true;
 }
 void RMDP::normalize(){
-
-     for(auto& s : states){
-        for(auto& a : s.actions){
-            for(auto& t : a.outcomes)
-                t.normalize();
-        }
-    }
+     for(State& s : states)
+        s.normalize();
 }
 
 
@@ -168,7 +163,7 @@ void RMDP::to_csv(ostream& output, bool header) const{
 
         //idaction
         for(size_t j = 0; j < actions.size(); j++){
-            const auto& outcomes = actions[j].outcomes;
+            const auto& outcomes = actions[j].get_outcomes();
 
             //idoutcome
             for(size_t k = 0; k < outcomes.size(); k++){
@@ -202,7 +197,7 @@ string RMDP::to_string() const {
             result.append("    ");
             result.append(std::to_string(j));
             result.append(" : ");
-            result.append(std::to_string(s.get_action(j).outcomes.size()));
+            result.append(std::to_string(s.get_action(j).get_outcomes().size()));
             result.append(" / ");
             result.append(std::to_string(s.get_action(j).get_distribution().size()));
             result.append("\n");
@@ -215,7 +210,7 @@ void RMDP::set_uniform_distribution(prec_t threshold){
 
     for(auto& s : states){
         for(auto& a : s.actions){
-            auto outcomecount = a.outcomes.size();
+            auto outcomecount = a.get_outcomes().size();
             prec_t p = 1.0 / (prec_t) outcomecount;
             numvec distribution(outcomecount, p);
             a.set_distribution(distribution);
@@ -406,8 +401,8 @@ template Solution RMDP::vi_jac_gen<SolutionType::Optimistic>(numvec const& value
 template Solution RMDP::vi_jac_gen<SolutionType::Average>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 template<SolutionType type,NatureConstr nature>
-Solution 
-RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount, 
+Solution
+RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount,
                  unsigned long iterations, prec_t maxresidual) const{
 
     if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
@@ -470,7 +465,7 @@ template Solution RMDP::vi_jac_cst<SolutionType::Optimistic,worstcase_l1>(numvec
 template Solution RMDP::vi_jac_cst<SolutionType::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 template<SolutionType type>
-Solution 
+Solution
 RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                   unsigned long iterations_vi, prec_t maxresidual_vi) const{
 
@@ -550,7 +545,7 @@ RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long it
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
                 prec_t newvalue;
-                
+
                 switch(type){
                 case SolutionType::Robust:
                 case SolutionType::Optimistic:
@@ -678,7 +673,7 @@ Solution RMDP::vi_jac_fix(const numvec& valuefunction, prec_t discount, const in
     if(natpolicy.size() != state_count())
         throw invalid_argument("Dimension of the nature's policy must match the state count.");
 
-                              
+
     numvec oddvalue(0);        // set in even iterations (0 is even)
     numvec evenvalue(0);       // set in odd iterations
 
@@ -902,7 +897,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, con
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
 
-    #pragma omp parallel for 
+    #pragma omp parallel for
     for(size_t s=0; s < n; s++){
         const Transition& t = get_transition(s,policy[s],nature[s]);
         const auto& indexes = t.get_indices();
@@ -920,7 +915,7 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, c
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
 
-    #pragma omp parallel for 
+    #pragma omp parallel for
     for(size_t s=0; s < n; s++){
         // if this is a terminal state, then just go with zero probabilities
         if(states[s].is_terminal())  continue;

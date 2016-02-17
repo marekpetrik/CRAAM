@@ -225,6 +225,12 @@ void Action::normalize_distribution(){
     }
 }
 
+void Action::normalize(){
+    for(Transition& t : outcomes){
+        t.normalize();
+    }
+}
+
 // **************************************************************************************
 //  Outcome Management (a helper class)
 // **************************************************************************************
@@ -240,7 +246,6 @@ Transition& OutcomeManagement::create_outcome(long outcomeid){
     return outcomes[outcomeid];
 }
 
-
 void OutcomeManagement::add_outcome(long outcomeid, const Transition& t){
     create_outcome(outcomeid) = t;
 }
@@ -248,6 +253,12 @@ void OutcomeManagement::add_outcome(long outcomeid, const Transition& t){
 void OutcomeManagement::add_outcome(const Transition& t){
     long outcomeid = outcomes.size();
     create_outcome(outcomeid) = t;
+}
+
+void OutcomeManagement::normalize(){
+    for(Transition& t : outcomes){
+        t.normalize();
+    }
 }
 
 // **************************************************************************************

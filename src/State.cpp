@@ -210,4 +210,10 @@ tuple<long,numvec,prec_t> State::max_min_cst(numvec const& valuefunction, prec_t
 template tuple<long,numvec,prec_t>
 State::max_min_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
 
+void State::normalize(){
+    for(Action& a : actions){
+        a.normalize();
+    }
+}
+
 }

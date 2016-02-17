@@ -107,13 +107,21 @@ public:
 
     /** True if the state is considered terminal. That is, it has
     no actions. */
-    bool is_terminal() const{        
+    bool is_terminal() const{
         return actions.empty();
     };
 
-public: // TODO: change to protected
+    /** Normalizes transition probabilities to sum to one. */
+    void normalize();
+
+public:
     vector<Action> actions;
 };
+
+
+// **************************************************************************************
+//  SA State (SA rectangular, also used for a regular MDP)
+// **************************************************************************************
 
 
 }

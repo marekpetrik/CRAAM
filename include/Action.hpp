@@ -29,7 +29,7 @@ when a new outcome is added, then its weight in the distribution is 0.
 */
 class Action {
 
-public:
+protected:
     // TODO: restrict from resizing!
     /** Do not freely modify this value */
     vector<Transition> outcomes;
@@ -222,6 +222,12 @@ public:
     prec_t get_threshold() const {return threshold;};
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 
+    /** Returns the list of outcomes */
+    const vector<Transition>& get_outcomes() const {return outcomes;};
+
+    /** Normalizes transitions for outcomes */
+    void normalize();
+
 protected:
     prec_t threshold;
     numvec distribution;
@@ -295,6 +301,9 @@ public:
 
     /** Returns the transition. The transition must exist. */
     const Transition& get_transition() const {return outcome;};
+
+    /** Normalizes transition probabilities */
+    void normalize() {outcome.normalize();};
 };
 
 
@@ -312,7 +321,6 @@ protected:
     vector<Transition> outcomes;
 
 public:
-
     /** Empty list of outcomes */
     OutcomeManagement() {};
 
@@ -345,6 +353,12 @@ public:
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
     void add_outcome(const Transition& t);
+
+    /** Returns the list of outcomes */
+    const vector<Transition>& get_outcomes() const {return outcomes;};
+
+    /** Normalizes transitions for outcomes */
+    void normalize();
 };
 
 // **************************************************************************************
