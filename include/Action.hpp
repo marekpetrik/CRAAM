@@ -307,8 +307,21 @@ A class that manages creation and access to outcomes to be used by actions.
 */
 class OutcomeManagement{
 
+protected:
+    /** List of possible outcomes */
+    vector<Transition> outcomes;
+
+public:
+
+    /** Empty list of outcomes */
+    OutcomeManagement() {};
+
+    /** Initializes with a list of outcomes */
+    OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {};
+
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    This method is virtual to make overloading safer.
     */
     virtual Transition& create_outcome(long outcomeid);
 
@@ -323,6 +336,15 @@ class OutcomeManagement{
         return outcomes[outcomeid];};
     size_t outcome_count() const {return outcomes.size();};
 
+
+    /** Adds an outcome defined by the transition.
+    \param outcomeid Id of the new outcome. Intermediate ids are created empty
+    \param t Transition that defines the outcome*/
+    void add_outcome(long outcomeid, const Transition& t);
+
+    /** Adds an outcome defined by the transition as the last outcome.
+    \param t Transition that defines the outcome*/
+    void add_outcome(const Transition& t);
 };
 
 // **************************************************************************************
@@ -332,24 +354,20 @@ class OutcomeManagement{
 /**
 An action in the robust MDP with discrete outcomes.
 */
-class DiscreteOutcomeAction {
-
-protected:
-    /** List of possible outcomes */
-    vector<Transition> outcomes;
+class DiscreteOutcomeAction : public OutcomeManagement {
 
 public:
     /** Type of an identifier for an outcome. It is ignored for the simple action. */
     typedef long OutcomeId;
 
     /** Creates an empty action. */
-    DiscreteOutcomeAction();
+    DiscreteOutcomeAction() {};
 
     /**
     Initializes outcomes to the provided vector
     */
     DiscreteOutcomeAction(const vector<Transition>& outcomes)
-        : outcomes(outcomes){};
+        : OutcomeManagement(outcomes){};
 
     /**
     Computes the maximal outcome for the value function.
@@ -389,21 +407,6 @@ public:
         assert(index >= 0l && index < (long) outcomes.size());
         return outcomes[index].compute_value(valuefunction, discount); };
 
-    /**
-    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
-    */
-    Transition& create_outcome(long outcomeid);
-
-    /** Returns a transition for the outcome to the action. The transition must exist. */
-    const Transition& get_outcome(long outcomeid) const {
-        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
-
-    /** Returns a transition for the outcome to the action. The transition must exist. */
-    Transition& get_outcome(long outcomeid) {
-        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
-    size_t outcome_count() const {return outcomes.size();};
 };
 
 // **************************************************************************************
@@ -425,12 +428,9 @@ The distribution is initialized to be uniform over the provided elements;
 when a new outcome is added, then its weight in the distribution is 0.
 */
 template<NatureConstr nature>
-class WeightedOutcomeAction {
+class WeightedOutcomeAction : OutcomeManagement{
 
 protected:
-
-    /** Do not freely modify this value */
-    vector<Transition> outcomes;
     /** Threshold */
     prec_t threshold;
     /** Weights used in computing the worst/best case */
@@ -442,11 +442,11 @@ public:
 
     /** Creates an empty action. */
     WeightedOutcomeAction()
-        : outcomes(0), threshold(0), distribution(0) {};
+        : OutcomeManagement(), threshold(0), distribution(0) {};
 
     /** Initializes outcomes to the provided vector */
     WeightedOutcomeAction(const vector<Transition>& outcomes)
-        : outcomes(outcomes), threshold(0), distribution(0) {};
+        : OutcomeManagement(outcomes), threshold(0), distribution(0) {};
 
     /**
     Computes the maximal outcome distribution constraints on the nature's distribution.
@@ -492,30 +492,9 @@ public:
 
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    This override also handles properly resizing the distribution.
     */
-    Transition& create_outcome(long outcomeid);
-
-    /** Returns a transition for the outcome to the action. The transition must exist. */
-    const Transition& get_outcome(long outcomeid) const {
-        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
-
-    /** Returns a transition for the outcome to the action. The transition must exist. */
-    Transition& get_outcome(long outcomeid) {
-        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
-
-    /** Number of outcomes in the action */
-    size_t outcome_count() const {return outcomes.size();};
-
-    /** Adds an outcome defined by the transition.
-    \param outcomeid Id of the new outcome. Intermediate ids are created empty
-    \param t Transition that defines the outcome*/
-    void add_outcome(long outcomeid, const Transition& t);
-
-    /** Adds an outcome defined by the transition as the last outcome.
-    \param t Transition that defines the outcome*/
-    void add_outcome(const Transition& t);
+    Transition& create_outcome(long outcomeid) override;
 
     /**
     Sets the base distribution over the outcomes.

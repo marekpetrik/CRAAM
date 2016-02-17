@@ -226,6 +226,31 @@ void Action::normalize_distribution(){
 }
 
 // **************************************************************************************
+//  Outcome Management (a helper class)
+// **************************************************************************************
+
+
+Transition& OutcomeManagement::create_outcome(long outcomeid){
+    if(outcomeid < 0)
+        throw invalid_argument("Outcomeid must be non-negative.");
+
+    if(outcomeid >= (long) outcomes.size())
+        outcomes.resize(outcomeid + 1);
+
+    return outcomes[outcomeid];
+}
+
+
+void OutcomeManagement::add_outcome(long outcomeid, const Transition& t){
+    create_outcome(outcomeid) = t;
+}
+
+void OutcomeManagement::add_outcome(const Transition& t){
+    long outcomeid = outcomes.size();
+    create_outcome(outcomeid) = t;
+}
+
+// **************************************************************************************
 //  Discrete Outcome Action
 // **************************************************************************************
 
@@ -283,15 +308,7 @@ prec_t DiscreteOutcomeAction::average_value(const numvec& valuefunction, prec_t 
     return averagevalue;
 }
 
-Transition& DiscreteOutcomeAction::create_outcome(long outcomeid){
-    if(outcomeid < 0)
-        throw invalid_argument("Outcomeid must be non-negative.");
 
-    if(outcomeid >= (long) outcomes.size())
-        outcomes.resize(outcomeid + 1);
-
-    return outcomes[outcomeid];
-}
 
 // **************************************************************************************
 //  Distribution Outcome Action
@@ -323,6 +340,7 @@ WeightedOutcomeAction<nature>::maximal_value(const numvec& valuefunction, prec_t
 template<NatureConstr nature>
 pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
 WeightedOutcomeAction<nature>::minimal_value(const numvec& valuefunction, prec_t discount) const{
+
     assert(distribution.size() == outcomes.size());
 
     if(outcomes.empty())
@@ -356,6 +374,8 @@ prec_t WeightedOutcomeAction<nature>::average_value(numvec const& valuefunction,
 template<NatureConstr nature>
 prec_t WeightedOutcomeAction<nature>::fixed_value(numvec const& valuefunction, prec_t discount,
                        typename WeightedOutcomeAction<nature>::OutcomeId dist) const{
+
+    assert(distribution.size() == outcomes.size());
 
     if(outcomes.empty())
         throw invalid_argument("Action with no outcomes");
@@ -394,16 +414,6 @@ Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
     return outcomes[outcomeid];
 }
 
-template<NatureConstr nature>
-void WeightedOutcomeAction<nature>::add_outcome(long outcomeid, const Transition& t){
-    create_outcome(outcomeid) = t;
-}
-
-template<NatureConstr nature>
-void WeightedOutcomeAction<nature>::add_outcome(const Transition& t){
-    long outcomeid = outcomes.size();
-    create_outcome(outcomeid) = t;
-}
 
 template<NatureConstr nature>
 void WeightedOutcomeAction<nature>::set_distribution(long outcomeid, prec_t weight){
