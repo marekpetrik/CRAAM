@@ -57,7 +57,7 @@ void RMDP::add_transition_d(long fromid, long actionid, long toid, prec_t probab
 bool RMDP::is_normalized() const{
 
     for(auto const& s : states){
-        for(auto const& a : s.actions){
+        for(auto const& a : s.get_actions()){
             for(auto const& t : a.get_outcomes()){
                 if(!t.is_normalized())
                     return false;
@@ -159,7 +159,7 @@ void RMDP::to_csv(ostream& output, bool header) const{
 
     //idstatefrom
     for(size_t i = 0l; i < this->states.size(); i++){
-        const auto& actions = (this->states[i]).actions;
+        const auto& actions = (this->states[i]).get_actions();
 
         //idaction
         for(size_t j = 0; j < actions.size(); j++){

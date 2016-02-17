@@ -250,11 +250,6 @@ void OutcomeManagement::add_outcome(long outcomeid, const Transition& t){
     create_outcome(outcomeid) = t;
 }
 
-void OutcomeManagement::add_outcome(const Transition& t){
-    long outcomeid = outcomes.size();
-    create_outcome(outcomeid) = t;
-}
-
 void OutcomeManagement::normalize(){
     for(Transition& t : outcomes){
         t.normalize();
@@ -452,5 +447,10 @@ void WeightedOutcomeAction<nature>::normalize_distribution(){
     }
 }
 
+// **************************************************************************************
+//  L1 Outcome Action
+// **************************************************************************************
+
+template class WeightedOutcomeAction<worstcase_l1>;
 
 }

@@ -16,7 +16,7 @@ class State {
 public:
 
     State() : actions(0) {};
-    State(vector<Action> actions) : actions(actions) {};
+    State(const vector<Action>& actions) : actions(actions) {};
 
     /**
     Finds the maximal optimistic action.
@@ -114,15 +114,98 @@ public:
     /** Normalizes transition probabilities to sum to one. */
     void normalize();
 
+    /** Returns set of all actions */
+    const vector<Action>& get_actions() const {return actions;};
+
 public:
     vector<Action> actions;
 };
-
 
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
 // **************************************************************************************
 
+/**
+State for sa-rectangular uncertainty (or no uncertainty) in an MDP
+*/
+template<class AType>
+class SAState{
+
+protected:
+    vector<AType> actions;
+
+public:
+
+    /** An identifier for an action for a fixed solution */
+    typedef long ActionId;
+
+    SAState() : actions(0) {};
+    SAState(const vector<AType>& actions) : actions(actions) {};
+
+    /**
+    Finds the maximal optimistic action.
+    When there are no action then the return is assumed to be 0.
+    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
+    */
+    tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+    max_max(const numvec& valuefunction, prec_t discount) const;
+
+    /**
+    Finds the maximal pessimistic action
+    When there are no action then the return is assumed to be 0
+    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
+    */
+    tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+    max_min(const numvec& valuefunction, prec_t discount) const;
+
+    /**
+    Finds the action with the maximal average return
+    When there are no actions then the return is assumed to be 0.
+    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
+    */
+    pair<typename SAState<AType>::ActionId,prec_t>
+    max_average(const numvec& valuefunction, prec_t discount) const;
+
+    /**
+    Computes the value of a fixed action
+    \return Value of state, 0 if it's terminal regardless of the action index
+    */
+    prec_t fixed_average(numvec const& valuefunction, prec_t discount,
+                         typename SAState<AType>::ActionId actionid) const;
+
+    /**
+    Computes the value of a fixed action.
+    \return Value of state, 0 if it's terminal regardless of the action index
+    */
+    prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
+                       typename SAState<AType>::ActionId actionid,
+                       typename AType::OutcomeId outcomeid) const;
+
+
+    /** Adds an action to the state */
+    void add_action(long actionid, const AType& a);
+
+    /** Adds an action to the last position of the state */
+    void add_action(const AType& a) {add_action(actions.size(),a);};
+
+    /** Returns a specific action */
+    const AType& get_action(long actionid) const {return actions[actionid];};
+
+    /** Returns a specific action */
+    AType& get_action(long actionid) {return actions[actionid];};
+
+    /** Returns set of all actions */
+    const vector<AType>& get_actions() const {return actions;};
+
+    /** Number of actions */
+    size_t action_count() const { return actions.size();};
+
+    /** True if the state is considered terminal (no actions). */
+    bool is_terminal() const {return actions.empty();};
+
+    /** Normalizes transition probabilities to sum to one. */
+    void normalize();
+};
 
 }
 

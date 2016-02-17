@@ -352,7 +352,7 @@ public:
 
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
-    void add_outcome(const Transition& t);
+    void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);};
 
     /** Returns the list of outcomes */
     const vector<Transition>& get_outcomes() const {return outcomes;};
@@ -546,6 +546,11 @@ public:
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 };
 
+// **************************************************************************************
+//  L1 Outcome Action
+// **************************************************************************************
+
+typedef WeightedOutcomeAction<worstcase_l1> L1OutcomeAction;
 
 }
 

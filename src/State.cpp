@@ -216,4 +216,122 @@ void State::normalize(){
     }
 }
 
+// **************************************************************************************
+//  SA State (SA rectangular, also used for a regular MDP)
+// **************************************************************************************
+
+template<class AType>
+tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const{
+
+    if(is_terminal())
+        return make_tuple(-1,-1,0);
+
+    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+    long result = -1l;
+    long result_outcome = -1l;
+
+    for(size_t i = 0; i < actions.size(); i++){
+        const auto& action = actions[i];
+        auto value = action.maximal(valuefunction, discount);
+        if(value.second > maxvalue){
+            maxvalue = value.second;
+            result = i;
+            result_outcome = value.first;
+        }
+    }
+    return make_tuple(result,result_outcome,maxvalue);
+}
+
+template<class AType>
+tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const{
+
+    if(is_terminal())
+        return make_tuple(-1,-1,0);
+
+    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+    long result = -1l;
+    long result_outcome = -1l;
+
+    for(size_t i = 0; i < actions.size(); i++){
+        const auto& action = actions[i];
+        auto value = action.minimal(valuefunction, discount);
+        if(value.second > maxvalue){
+            maxvalue = value.second;
+            result = i;
+            result_outcome = value.first;
+        }
+    }
+    return make_tuple(result,result_outcome,maxvalue);
+}
+
+template<class AType>
+pair<typename SAState<AType>::ActionId,prec_t>
+SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) const{
+    if(is_terminal())
+        return make_pair(-1,0.0);
+
+    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+    long result = -1l;
+
+    for(size_t i = 0; i < actions.size(); i++){
+        auto const& action = actions[i];
+        auto value = action.average(valuefunction, discount);
+
+        if(value > maxvalue){
+            maxvalue = value;
+            result = i;
+        }
+    }
+    return make_pair(result,maxvalue);
+}
+
+template<class AType>
+prec_t SAState<AType>::fixed_average(numvec const& valuefunction, prec_t discount,
+                              typename SAState<AType>::ActionId actionid) const{
+
+    // this is the terminal state, return 0
+    if(is_terminal())
+        return 0;
+
+    if(actionid < 0 || actionid >= (long) actions.size())
+        throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
+
+    return actions[actionid].average(valuefunction, discount);
+}
+
+template<class AType>
+prec_t SAState<AType>::fixed_fixed(numvec const& valuefunction, prec_t discount,
+                            typename SAState<AType>::ActionId actionid,
+                            typename AType::OutcomeId outcomeid) const{
+
+    // this is the terminal state, return 0
+    if(is_terminal())
+        return 0;
+
+    if(actionid < 0 || actionid >= (long) actions.size())
+            throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
+
+    return actions[actionid].fixed(valuefunction, discount, outcomeid);
+}
+
+template<class AType>
+void SAState<AType>::add_action(long actionid, const AType& action){
+    if(actionid < 0){
+        throw invalid_argument("invalid action id");
+    }
+    if(actionid >= (long) actions.size()){
+        actions.resize(actionid+1);
+    }
+    this->actions[actionid] = action;
+}
+
+template<class AType>
+void SAState<AType>::normalize(){
+    for(Action& a : actions){
+        a.normalize();
+    }
+}
+
 }
