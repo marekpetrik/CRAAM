@@ -297,6 +297,34 @@ public:
     const Transition& get_transition() const {return outcome;};
 };
 
+
+// **************************************************************************************
+//  Outcome Management (a helper class)
+// **************************************************************************************
+
+/**
+A class that manages creation and access to outcomes to be used by actions.
+*/
+class OutcomeManagement{
+
+    /**
+    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    */
+    virtual Transition& create_outcome(long outcomeid);
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    const Transition& get_outcome(long outcomeid) const {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+
+    /** Returns a transition for the outcome to the action. The transition must exist. */
+    Transition& get_outcome(long outcomeid) {
+        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
+        return outcomes[outcomeid];};
+    size_t outcome_count() const {return outcomes.size();};
+
+};
+
 // **************************************************************************************
 //  Discrete Outcome Action
 // **************************************************************************************
@@ -413,10 +441,12 @@ public:
     typedef numvec OutcomeId;
 
     /** Creates an empty action. */
-    WeightedOutcomeAction();
+    WeightedOutcomeAction()
+        : outcomes(0), threshold(0), distribution(0) {};
 
     /** Initializes outcomes to the provided vector */
-    Action(const vector<Transition>& outcomes);
+    WeightedOutcomeAction(const vector<Transition>& outcomes)
+        : outcomes(outcomes), threshold(0), distribution(0) {};
 
     /**
     Computes the maximal outcome distribution constraints on the nature's distribution.
@@ -427,7 +457,7 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the maximal bounded solution
      */
-    pair<WeightedOutcomeAction::OutcomeId,prec_t>
+    pair<typename WeightedOutcomeAction::OutcomeId,prec_t>
     maximal_value(numvec const& valuefunction, prec_t discount) const;
 
     /**
@@ -439,7 +469,7 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the minimal bounded solution
      */
-    pair<WeightedOutcomeAction::OutcomeId,prec_t>
+    pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
     minimal_value(numvec const& valuefunction, prec_t discount) const;
 
     /**
@@ -458,7 +488,7 @@ public:
     \return Value of the action
      */
     prec_t fixed_value(numvec const& valuefunction, prec_t discount,
-                       WeightedOutcomeAction::OutcomeId dist) const;
+                       typename WeightedOutcomeAction<nature>::OutcomeId dist) const;
 
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
@@ -474,20 +504,28 @@ public:
     Transition& get_outcome(long outcomeid) {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
+
+    /** Number of outcomes in the action */
     size_t outcome_count() const {return outcomes.size();};
+
+    /** Adds an outcome defined by the transition.
+    \param outcomeid Id of the new outcome. Intermediate ids are created empty
+    \param t Transition that defines the outcome*/
+    void add_outcome(long outcomeid, const Transition& t);
+
+    /** Adds an outcome defined by the transition as the last outcome.
+    \param t Transition that defines the outcome*/
+    void add_outcome(const Transition& t);
 
     /**
     Sets the base distribution over the outcomes.
-    \param distribution New distribution of outcomes. Must have the same size
-                        as the number of outcomes, or length 0.
+    \param distribution New distribution of outcomes.
      */
     void set_distribution(const numvec& distribution);
 
     /**
     Sets weight for a particular outcome.
-    \param distribution New distribution of outcomes. Must be either the same
-                        dimension as the number of outcomes, or length 0. If the length
-                        is 0, it is assumed to be a uniform distribution over states.
+    \param distribution New distribution of outcomes.
     \param weight New weight
      */
     void set_distribution(long outcomeid, prec_t weight);
@@ -514,7 +552,6 @@ public:
     /** Sets threshold value */
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 };
-
 
 
 }

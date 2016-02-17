@@ -229,7 +229,7 @@ void Action::normalize_distribution(){
 //  Discrete Outcome Action
 // **************************************************************************************
 
-pair<RegularAction::OutcomeId,prec_t>
+pair<DiscreteOutcomeAction::OutcomeId,prec_t>
 DiscreteOutcomeAction::maximal_value(const numvec& valuefunction, prec_t discount) const {
 
     if(outcomes.empty())
@@ -250,7 +250,7 @@ DiscreteOutcomeAction::maximal_value(const numvec& valuefunction, prec_t discoun
     return make_pair(result,maxvalue);
 }
 
-pair<RegularAction::OutcomeId,prec_t>
+pair<DiscreteOutcomeAction::OutcomeId,prec_t>
 DiscreteOutcomeAction::minimal_value(const numvec& valuefunction, prec_t discount) const {
 
     if(outcomes.empty())
@@ -298,14 +298,9 @@ Transition& DiscreteOutcomeAction::create_outcome(long outcomeid){
 // **************************************************************************************
 
 
-WeightedOutcomeAction::NormedOutcomeAction(): threshold(0), distribution(0) {}
-
-WeightedOutcomeAction::NormedOutcomeAction(const vector<Transition>& outcomes) :
-        outcomes(outcomes),
-        threshold(0) {}
-
-pair<WeightedOutcomeAction::OutcomeId,prec_t>
-WeightedOutcomeAction::maximal_value(numvec const& valuefunction, prec_t discount) const{
+template<NatureConstr nature>
+pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
+WeightedOutcomeAction<nature>::maximal_value(const numvec& valuefunction, prec_t discount) const{
 
     assert(distribution.size() == outcomes.size());
 
@@ -325,8 +320,9 @@ WeightedOutcomeAction::maximal_value(numvec const& valuefunction, prec_t discoun
     return result;
 }
 
-pair<WeightedOutcomeAction::OutcomeId,prec_t>
-WeightedOutcomeAction::minimal_value(numvec const& valuefunction, prec_t discount) const{
+template<NatureConstr nature>
+pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
+WeightedOutcomeAction<nature>::minimal_value(const numvec& valuefunction, prec_t discount) const{
     assert(distribution.size() == outcomes.size());
 
     if(outcomes.empty())
@@ -341,22 +337,8 @@ WeightedOutcomeAction::minimal_value(numvec const& valuefunction, prec_t discoun
     return nature(outcomevalues, distribution, threshold);
 }
 
-prec_t WeightedOutcomeAction::fixed_value(numvec const& valuefunction, prec_t discount,
-                       WeightedOutcomeAction::OutcomeId dist) const{
-
-    if(outcomes.empty())
-        throw invalid_argument("Action with no outcomes");
-    if(dist.size() != outcomes.size())
-        throw invalid_argument("Distribution size does not match number of outcomes");
-
-    prec_t averagevalue = 0.0;
-    for(size_t i = 0; i < outcomes.size(); i++)
-        averagevalue += distribution[i] * outcomes[i].compute_value(valuefunction, discount);
-
-    return averagevalue;
-}
-
-prec_t WeightedOutcomeAction::average_value(numvec const& valuefunction, prec_t discount) const {
+template<NatureConstr nature>
+prec_t WeightedOutcomeAction<nature>::average_value(numvec const& valuefunction, prec_t discount) const {
 
     assert(distribution.size() == outcomes.size());
 
@@ -371,7 +353,24 @@ prec_t WeightedOutcomeAction::average_value(numvec const& valuefunction, prec_t 
     return averagevalue;
 }
 
-void WeightedOutcomeAction::set_distribution(numvec const& distribution){
+template<NatureConstr nature>
+prec_t WeightedOutcomeAction<nature>::fixed_value(numvec const& valuefunction, prec_t discount,
+                       typename WeightedOutcomeAction<nature>::OutcomeId dist) const{
+
+    if(outcomes.empty())
+        throw invalid_argument("Action with no outcomes");
+    if(dist.size() != outcomes.size())
+        throw invalid_argument("Distribution size does not match number of outcomes");
+
+    prec_t averagevalue = 0.0;
+    for(size_t i = 0; i < outcomes.size(); i++)
+        averagevalue += dist[i] * outcomes[i].compute_value(valuefunction, discount);
+
+    return averagevalue;
+}
+
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::set_distribution(numvec const& distribution){
 
     if(distribution.size() != outcomes.size())
         throw invalid_argument("invalid distribution size");
@@ -384,55 +383,44 @@ void WeightedOutcomeAction::set_distribution(numvec const& distribution){
     this->distribution = distribution;
 }
 
-
-
-Transition& Action::get_transition(long outcomeid){
-    if(outcomeid < 0l || outcomeid >= (long) outcomes.size())
-        throw invalid_argument("invalid outcome number");
-
-    return outcomes[outcomeid];
-}
-
-const Transition& Action::get_transition(long outcomeid) const{
-    if(outcomeid < 0l || outcomeid >= (long) outcomes.size())
-        throw invalid_argument("invalid outcome number");
-
-    return outcomes[outcomeid];
-}
-
-Transition& Action::create_outcome(long outcomeid){
+template<NatureConstr nature>
+Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
-
     if(outcomeid >= (long) outcomes.size())
         outcomes.resize(outcomeid + 1);
-
-    if(use_distribution){
-        // got to resize the distribution too
-        distribution.resize(outcomeid + 1, 0.0);
-    }
+    // got to resize the distribution too and assign 0 weights
+    distribution.resize(outcomeid + 1, 0.0);
     return outcomes[outcomeid];
 }
 
-void Action::add_outcome(long outcomeid, long toid, prec_t probability, prec_t reward){
-    create_outcome(outcomeid).add_sample(toid, probability, reward);
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::add_outcome(long outcomeid, const Transition& t){
+    create_outcome(outcomeid) = t;
 }
 
-void Action::set_distribution(long outcomeid, prec_t weight){
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::add_outcome(const Transition& t){
+    long outcomeid = outcomes.size();
+    create_outcome(outcomeid) = t;
+}
+
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::set_distribution(long outcomeid, prec_t weight){
      distribution[outcomeid] = weight;
 }
 
-void Action::init_distribution(){
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::uniform_distribution(){
     distribution.clear();
     if(outcomes.size() > 0){
         distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
     }
     threshold = 0.0;
-    use_distribution = true;
 }
 
-
-void Action::normalize_distribution(){
+template<NatureConstr nature>
+void WeightedOutcomeAction<nature>::normalize_distribution(){
     auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
 
     if(weightsum > 0.0){
