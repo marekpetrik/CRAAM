@@ -127,6 +127,8 @@ public:
 
 /**
 State for sa-rectangular uncertainty (or no uncertainty) in an MDP
+
+\templatepar
 */
 template<class AType>
 class SAState{
@@ -138,6 +140,8 @@ public:
 
     /** An identifier for an action for a fixed solution */
     typedef long ActionId;
+    /** OutcomeId which comes from outcome*/
+    typedef typename AType::OutcomeId OutcomeId;
 
     SAState() : actions(0) {};
     SAState(const vector<AType>& actions) : actions(actions) {};
