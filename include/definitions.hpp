@@ -31,4 +31,11 @@ template <typename T> vector<size_t> sort_indexes_desc(vector<T> const& v);
 
 pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t);
 
+/*template<class T>
+void print_vector(vector<T> vec){
+    for(auto&& p : vec){
+        cout << p << " ";
+    }
+}*/
+
 }

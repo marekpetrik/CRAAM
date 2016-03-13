@@ -179,6 +179,10 @@ BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
     indvec polvec{0,0};
     BOOST_CHECK_EQUAL_COLLECTIONS(pol.begin(), pol.end(),polvec.begin(),polvec.end());
 
+    auto&& pol2 = imr.solve_robust(10, 0.0, 0.9);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol2.begin(), pol2.end(),polvec.begin(),polvec.end());
+
+
     //auto retval = imr.total_return(pol, 0.99);
     //cout << "Return: " << retval << endl;
 
@@ -398,18 +402,22 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     auto isol = mdpi.solve_reweighted(0, 0.9, randompolicy);
     BOOST_CHECK_EQUAL_COLLECTIONS(randompolicy.begin(), randompolicy.end(), isol.begin(), isol.end());
+    isol = mdpi.solve_robust(0, 0.0, 0.9, randompolicy);
+    BOOST_CHECK_EQUAL_COLLECTIONS(randompolicy.begin(), randompolicy.end(), isol.begin(), isol.end());
 
     isol = mdpi.solve_reweighted(1, 0.9, randompolicy);
-
-    //cout << "Implementable solution: " << endl; print_vector(mdpi.obspol2statepol(isol));cout << endl;
-
     auto sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
     BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
 
-    //cout << sol_impl.total_return(initial) << endl;
+    isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
+    sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
+                    indvec(mdp->state_count(), 0));
+
+    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
 }
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){

@@ -293,7 +293,6 @@ void MDPI_R::initialize_robustmdp(){
 }
 
 void MDPI_R::update_importance_weights(const numvec& weights){
-
     if(weights.size() != state_count()){
         throw invalid_argument("Size of distribution must match the number of states.");
     }
@@ -324,14 +323,6 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 }
 
-/*template<class T>
-void print_vector(vector<T> vec){
-    for(auto&& p : vec){
-        cout << p << " ";
-    }
-}*/
-//
-
 indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& initobspol){
 
     // the nature policy is simply all zeros
@@ -353,16 +344,47 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
-
         // update importance weights
         update_importance_weights(importanceweights);
-
         // compute solution of the robust MDP with the new weights
         Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
-
         // update the policy for the underlying states
         obspol = s.policy;
+        // map the observation policy to the individual states
+        obspol2statepol(obspol, statepol);
+    }
+    return obspol;
+}
 
+indvec MDPI_R::solve_robust(long iterations, prec_t threshold, prec_t discount, const indvec& initobspol){
+
+    // the nature policy is simply all zeros
+    const indvec nature(state_count(), 0);
+
+    if(initobspol.size() > 0 && initobspol.size() != obs_count()){
+        throw invalid_argument("Initial policy must be defined for all observations.");
+    }
+
+    indvec obspol(initobspol);                   // return observation policy
+    if(obspol.size() == 0){
+        obspol.resize(obs_count(),0);
+    }
+    indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
+    obspol2statepol(obspol,statepol);
+
+    robust_mdp.set_uniform_thresholds(threshold);
+
+    for(auto iter : range(0l, iterations)){
+        (void) iter; // to remove the warning
+
+        // compute state distribution
+        numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+        // update importance weights
+        update_importance_weights(importanceweights);
+        // compute solution of the robust MDP with the new weights
+        Solution&& s = robust_mdp.mpi_jac_l1_rob(numvec(0),discount);
+        // update the policy for the underlying states
+        obspol = s.policy;
         // map the observation policy to the individual states
         obspol2statepol(obspol, statepol);
 

@@ -194,6 +194,24 @@ public:
     */
     indvec solve_reweighted(long iterations, prec_t discount, const indvec& initpol = indvec(0));
 
+    /**
+    Uses a robust MDP formulation to solve the MDPI. States in the observation are treated
+    as outcomes. The baseline distribution is inferred from the provided policy.
+
+    The uncertainty is bounded by using an L1 norm deviation and the provided
+    threshold.
+
+    The method can run for several iterations, like solve_reweighted.
+
+    \param iterations Maximal number of iterations; terminates when the policy no longer changes
+    \param threshold Upper bound on the L1 deviation from the baseline distribution.
+    \param discount Discount factor
+    \param initobspol Initial observation policy (optional). When omitted or has length 0
+        a policy that takes the first action (action 0) is used.
+    \returns Policy for observations (an index of each action for each observation)
+    */
+    indvec solve_robust(long iterations, prec_t threshold, prec_t discount, const indvec& initpol = indvec(0));
+
     static unique_ptr<MDPI_R> from_csv(istream& input_mdp, istream& input_state2obs,
                                      istream& input_initial, bool headers = true){
 
