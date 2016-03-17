@@ -696,7 +696,7 @@ protected:
 // **************************************************************************************
 
 /** A solution to a robust MDP.  */
-template<ActionId,OutcomeId>
+template<typename ActionId, typename OutcomeId>
 class GSolution {
 public:
     numvec valuefunction;
@@ -705,14 +705,14 @@ public:
     prec_t residual;
     long iterations;
 
-    Solution():
+    GSolution():
         valuefunction(0), policy(0), outcomes(0),
-        natpolicy(0),residual(-1),iterations(-1) {};
+        residual(-1),iterations(-1) {};
 
-    Solution(numvec const& valuefunction, indvec const& policy,
-             indvec const& outcomes, prec_t residual = -1, long iterations = -1) :
+    GSolution(numvec const& valuefunction, const vector<ActionId>& policy,
+             const vector<OutcomeId>& outcomes, prec_t residual = -1, long iterations = -1) :
         valuefunction(valuefunction), policy(policy), outcomes(outcomes),
-        natpolicy(0),residual(residual),iterations(iterations) {};
+        residual(residual),iterations(iterations) {};
 
     /**
     Computes the total return of the solution given the initial
@@ -879,8 +879,8 @@ public:
      */
     template<SolutionType soltype>
     SolType mpi_jac(prec_t discount, const numvec& valuefunction=numvec(0),
-                         unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                         unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2) const;
+                    unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                    unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2) const;
 
     /**
     Value function evaluation using Jacobi iteration for a fixed policy.

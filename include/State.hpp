@@ -128,7 +128,8 @@ public:
 /**
 State for sa-rectangular uncertainty (or no uncertainty) in an MDP
 
-\templatepar
+\tparam Type of action used in the state. This type determines the
+    type of uncertainty set.
 */
 template<class AType>
 class SAState{

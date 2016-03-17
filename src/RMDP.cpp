@@ -960,7 +960,7 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
 
 
 template<class SType>
-void GRMDP<SType>::create_state(long stateid){
+SType GRMDP<SType>::create_state(long stateid) {
     assert(stateid >= 0);
     if(stateid >= (long) states.size())
         states.resize(stateid + 1);
@@ -984,12 +984,6 @@ template<class SType>
 void GRMDP<SType>::normalize(){
      for(State& s : states)
         s.normalize();
-}
-
-template<class SType>
-void GRMDP<SType>::set_uniform_thresholds(prec_t threshold){
-    for(auto& s : this->states)
-        s.set_thresholds(threshold);
 }
 
 template<class SType>
@@ -1052,19 +1046,17 @@ void GRMDP<SType>::from_csv(GRMDP<SType>& result, istream& input, bool header){
         input >> line;
     }
 
-    return result;
 }
 
 template<class SType>
 void GRMDP<SType>::from_csv_file(GRMDP<SType>& result, const string& filename, bool header){
     ifstream ifs(filename);
-    auto result = from_csv(ifs, header);
+    from_csv(result, ifs, header);
     ifs.close();
-    return result;
 }
 
 template<class SType>
-void RMDP::to_csv(ostream& output, bool header) const{
+void GRMDP<SType>::to_csv(ostream& output, bool header) const{
 
     //write header is so requested
     if(header){
@@ -1126,10 +1118,9 @@ string GRMDP<SType>::to_string() const {
     return result;
 }
 
-
 template<class SType>
 template<SolutionType type>
-GRMDP<SType>::SolType GRMDP<SType>::vi_gs(prec_t discount, numvec valuefunction, unsigned long iterations, prec_t maxresidual) const{
+auto GRMDP<SType>::vi_gs(prec_t discount, numvec valuefunction, unsigned long iterations, prec_t maxresidual) const -> SolType {
 
     static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic || type != SolutionType::Average,
                   "Unknown/invalid (average not supported) optimization type.");
@@ -1157,11 +1148,11 @@ GRMDP<SType>::SolType GRMDP<SType>::vi_gs(prec_t discount, numvec valuefunction,
             tuple<typename SType::ActionId,
                     typename SType::OutcomeId,prec_t> newvalue;
 
-            if(stype == SolutionType::Robust){
+            if(type == SolutionType::Robust){
                 newvalue = state.max_min(valuefunction,discount);
-            }else if(stype == SolutionType::Optimistic){
+            }else if(type == SolutionType::Optimistic){
                 newvalue = state.max_max(valuefunction,discount);
-            } else if(stype == SolutionType::Average){
+            }else if(type == SolutionType::Average){
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                     state.max_average(valuefunction,discount);
 
@@ -1180,7 +1171,7 @@ GRMDP<SType>::SolType GRMDP<SType>::vi_gs(prec_t discount, numvec valuefunction,
 
 template<class SType>
 template<SolutionType type>
-GRMDP<SType>::SolType GRMDP<SType>::vi_jac(prec_t discount, const numvec& valuefunction, unsigned long iterations, prec_t maxresidual) const{
+auto GRMDP<SType>::vi_jac(prec_t discount, const numvec& valuefunction, unsigned long iterations, prec_t maxresidual) const -> SolType{
 
     static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic || type != SolutionType::Average,
                           "Unknown/invalid (average not supported) optimization type.");
@@ -1218,11 +1209,11 @@ GRMDP<SType>::SolType GRMDP<SType>::vi_jac(prec_t discount, const numvec& valuef
             tuple<typename SType::ActionId,
                     typename SType::OutcomeId,prec_t> newvalue;
 
-            if(stype == SolutionType::Robust){
+            if(type == SolutionType::Robust){
                 newvalue = state.max_min(sourcevalue,discount);
-            }else if(stype == SolutionType::Optimistic){
+            }else if(type == SolutionType::Optimistic){
                 newvalue = state.max_max(sourcevalue,discount);
-            } else if(stype == SolutionType::Average){
+            } else if(type == SolutionType::Average){
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                 state.max_average(sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
@@ -1242,8 +1233,12 @@ GRMDP<SType>::SolType GRMDP<SType>::vi_jac(prec_t discount, const numvec& valuef
 
 template<class SType>
 template<SolutionType type>
-GRMDP<SType>::SolType GRMDP<SType>::mpi_jac(prec_t discount, const numvec& valuefunction, unsigned long iterations_pi, prec_t maxresidual_pi,
-                  unsigned long iterations_vi, prec_t maxresidual_vi) const{
+auto GRMDP<SType>::mpi_jac(prec_t discount,
+                           const numvec& valuefunction,
+                           unsigned long iterations_pi,
+                           prec_t maxresidual_pi,
+                            unsigned long iterations_vi,
+                            prec_t maxresidual_vi) const -> SolType{
 
     static_assert(type != SolutionType::Robust || type != SolutionType::Optimistic || type != SolutionType::Average,
                           "Unknown/invalid (average not supported) optimization type.");
@@ -1289,11 +1284,11 @@ GRMDP<SType>::SolType GRMDP<SType>::mpi_jac(prec_t discount, const numvec& value
             tuple<typename SType::ActionId,
                     typename SType::OutcomeId,prec_t> newvalue;
 
-            if(stype == SolutionType::Robust){
+            if(type == SolutionType::Robust){
                 newvalue = state.max_min(*sourcevalue,discount);
-            }else if(stype == SolutionType::Optimistic){
+            }else if(type == SolutionType::Optimistic){
                 newvalue = state.max_max(*sourcevalue,discount);
-            } else if(stype == SolutionType::Average){
+            } else if(type == SolutionType::Average){
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                 state.max_average(*sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
@@ -1322,9 +1317,9 @@ GRMDP<SType>::SolType GRMDP<SType>::mpi_jac(prec_t discount, const numvec& value
                 prec_t newvalue;
 
 
-                if(stype == SolutionType::Robust || stype == SolutionType::Optimistic){
+                if(type == SolutionType::Robust || type == SolutionType::Optimistic){
                     newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],outcomes[s]);
-                } else if(stype == SolutionType::Average){
+                } else if(type == SolutionType::Average){
                     newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
                 }
 
@@ -1339,18 +1334,17 @@ GRMDP<SType>::SolType GRMDP<SType>::mpi_jac(prec_t discount, const numvec& value
 }
 
 template<class SType>
-template<SolutionType type>
-GRMDP<SType>::SolType GRMDP<SType>::vi_jac_fix(prec_t discount, const numvec& valuefunction,
-                                                const GRMDP<SType>::ActionPolicy& policy,
-                                                const GRMDP<SType>::OutcomePolicy& natpolicy,
-                                                unsigned long iterations,
-                                                prec_t maxresidual) const{
+auto GRMDP<SType>::vi_jac_fix(prec_t discount,
+                            const ActionPolicy& policy,
+                            const OutcomePolicy& natpolicy,
+                            const numvec& valuefunction,
+                            unsigned long iterations,
+                            prec_t maxresidual) const -> SolType{
 
     if(policy.size() != state_count())
         throw invalid_argument("Dimension of the policy must match the state count.");
     if(natpolicy.size() != state_count())
         throw invalid_argument("Dimension of the nature's policy must match the state count.");
-
 
     numvec oddvalue(0);        // set in even iterations (0 is even)
     numvec evenvalue(0);       // set in odd iterations
@@ -1389,53 +1383,8 @@ GRMDP<SType>::SolType GRMDP<SType>::vi_jac_fix(prec_t discount, const numvec& va
 }
 
 template<class SType>
-template<SolutionType type>
-GRMDP<SType>::SolType GRMDP<SType>::vi_jac_fix_ave(const numvec& valuefunction, prec_t discount,
-                                                   const GRMDP<SType>::ActionPolicy& policy,
-                                                   unsigned long iterations,
-                                                   prec_t maxresidual) const{
-
-    if(policy.size() != state_count())
-        throw invalid_argument("Dimension of the policy must match the state count.");
-
-    numvec oddvalue(0);        // set in even iterations (0 is even)
-    numvec evenvalue(0);       // set in odd iterations
-
-    if(valuefunction.size() > 0){
-        oddvalue = valuefunction;
-        evenvalue = valuefunction;
-    }else{
-        oddvalue.assign(states.size(),0);
-        evenvalue.assign(states.size(),0);
-    }
-
-    numvec residuals(states.size());
-    prec_t residual = numeric_limits<prec_t>::infinity();
-
-    size_t j; // defined here to be able to report the number of iterations
-
-    numvec * sourcevalue = & oddvalue;
-    numvec * targetvalue = & evenvalue;
-
-    for(j = 0; j < iterations && residual > maxresidual; j++){
-
-        swap(targetvalue, sourcevalue);
-
-        #pragma omp parallel for
-        for(auto s = 0l; s < (long) states.size(); s++){
-            auto newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
-
-            residuals[s] = abs((*sourcevalue)[s] - newvalue);
-            (*targetvalue)[s] = newvalue;
-        }
-        residual = *max_element(residuals.begin(),residuals.end());
-    }
-
-    return Solution(*targetvalue,policy,indvec(0),residual,j);
-}
-
 numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
-                       const indvec& policy, const indvec& nature) const{
+                       const ActionPolicy& policy, const OutcomePolicy& nature) const{
     const auto n = state_count();
 
     // initial distribution
@@ -1465,7 +1414,8 @@ numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
     return initial_svec;
 }
 
-numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
+template<class SType>
+numvec GRMDP<SType>::rewards_state(const ActionPolicy& policy, const OutcomePolicy& nature) const{
     const auto n = state_count();
     numvec rewards(n);
 
@@ -1480,7 +1430,10 @@ numvec RMDP::rewards_state(const indvec& policy, const indvec& nature) const{
     return rewards;
 }
 
-unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, const indvec& nature) const{
+template<class SType>
+unique_ptr<ublas::matrix<prec_t>>
+GRMDP<SType>::transition_mat(const ActionPolicy& policy, const OutcomePolicy& nature) const{
+
     const size_t n = state_count();
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
@@ -1498,7 +1451,10 @@ unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat(const indvec& policy, con
     return result;
 }
 
-unique_ptr<ublas::matrix<prec_t>> RMDP::transition_mat_t(const indvec& policy, const indvec& nature) const{
+template<class SType>
+unique_ptr<ublas::matrix<prec_t>>
+GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& nature) const{
+
     const size_t n = state_count();
     unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
     *result = ublas::zero_matrix<prec_t>(n,n);
