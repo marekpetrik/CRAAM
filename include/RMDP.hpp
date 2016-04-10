@@ -17,12 +17,13 @@ using namespace boost::numeric;
 
 namespace craam {
 
+
 /**
  Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
  worst-case behavior of nature, optimistic corresponds the best case, and average
  represents a weighted mean of the returns.
  */
-enum SolutionType {
+enum class Uncertainty {
     Robust = 0,
     Optimistic = 1,
     Average = 2
@@ -559,12 +560,13 @@ public:
                 This value should be smaller than maxresidual_pi
     \return Computed (approximate) solution
     */
-    Solution mpi_jac_l1_opt(numvec const& valuefunction, prec_t discount,
-                            unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                            unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2) const;
-
+    Solution mpi_jac_l1_opt(numvec const& valuefunction,
+                            prec_t discount,
+                            unsigned long iterations_pi=MAXITER,
+                            prec_t maxresidual_pi=SOLPREC,
+                            unsigned long iterations_vi=MAXITER,
+                            prec_t maxresidual_vi=SOLPREC/2) const;
 public:
-
     vector<State> states;
 protected:
 
@@ -588,7 +590,7 @@ protected:
     \param maxresidual Stop when the maximal residual falls below this value.
     \return Computed (approximate) solution
      */
-    template<SolutionType type>
+    template<Uncertainty type>
     Solution vi_gs_gen(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
     /**
@@ -609,7 +611,7 @@ protected:
     \param maxresidual Stop when the maximal residual falls below this value.
     \return Computed (approximate) solution
      */
-    template<SolutionType type, NatureConstr nature>
+    template<Uncertainty type, NatureConstr nature>
     Solution vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
     /**
@@ -631,7 +633,7 @@ protected:
                 This value should be smaller than maxresidual_pi
     \return Computed (approximate) solution
      */
-    template<SolutionType type, NatureConstr nature>
+    template<Uncertainty type, NatureConstr nature>
     Solution mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                          unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
@@ -651,7 +653,7 @@ protected:
     \param maxresidual Stop when the maximal residual falls below this value.
     \return Computed (approximate) solution
      */
-    template<SolutionType type,NatureConstr nature>
+    template<Uncertainty type,NatureConstr nature>
     Solution vi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
     /**
@@ -664,7 +666,7 @@ protected:
     \param maxresidual Stop when the maximal residual falls below this value.
     \return Computed (approximate) solution
      */
-    template<SolutionType type>
+    template<Uncertainty type>
     Solution vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
     /**
@@ -685,7 +687,7 @@ protected:
                 This value should be smaller than maxresidual_pi
     \return Computed (approximate) solution
      */
-    template<SolutionType type>
+    template<Uncertainty type>
     Solution mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
                          unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
@@ -738,6 +740,9 @@ Some general assumptions (may depend on the state and action classes):
     - Action with no outcomes: Terminates with an error for uncertain models, but
                                assumes 0 return for regular models.
     - Outcome with no target states: Terminates with an error
+
+\tparam SType Type of state, determines s-rectangularity or s,a-rectangularity and
+        also the type of the outcome and action constraints
  */
 template<class SType>
 class GRMDP{
@@ -780,11 +785,11 @@ public:
     size_t state_count() const {return states.size();};
 
     /** Retrieves an existing state */
-    const SType& get_state(long stateid) const {assert(stateid >= 0 && stateid < state_count());
+    const SType& get_state(long stateid) const {assert(stateid >= 0 && size_t(stateid) < state_count());
                                                 return states[stateid];};
 
     /** Retrieves an existing state */
-    SType& get_state(long stateid) {assert(stateid >= 0 && stateid < state_count());
+    SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
     return states[stateid];};
 
     /** Returns list of all states */
@@ -842,25 +847,30 @@ public:
 
     Because this function updates the array value during the iteration, it may be
     difficult to paralelize easily.
-    \param valuefunction Initial value function. Passed by value, because it is modified.
+    \param uncert Type of realization of the uncertainty
     \param discount Discount factor.
+    \param valuefunction Initial value function. Passed by value, because it is modified.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
      */
-    template<SolutionType soltype>
-    SolType vi_gs(prec_t discount,numvec valuefunction=numvec(0),
+    SolType vi_gs(Uncertainty uncert,
+                  prec_t discount,
+                  numvec valuefunction=numvec(0),
                     unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) const;
 
     /**
     Jacobi value iteration variant. This method uses OpenMP to parallelize the computation.
+    \param uncert Type of realization of the uncertainty
     \param valuefunction Initial value function.
     \param discount Discount factor.
     \param iterations Maximal number of iterations to run
     \param maxresidual Stop when the maximal residual falls below this value.
      */
-    template<SolutionType soltype>
-    SolType vi_jac(prec_t discount, const numvec& valuefunction=numvec(0),
-                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) const;
+    SolType vi_jac(Uncertainty uncert,
+                   prec_t discount,
+                   const numvec& valuefunction=numvec(0),
+                    unsigned long iterations=MAXITER,
+                    prec_t maxresidual=SOLPREC) const;
 
     /**
     Modified policy iteration using Jacobi value iteration in the inner loop.
@@ -868,8 +878,9 @@ public:
     In the value iteration step, both the action *and* the outcome are fixed.
 
     Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-    \param valuefunction Initial value function
+    \param uncert Type of realization of the uncertainty
     \param discount Discount factor
+    \param valuefunction Initial value function
     \param iterations_pi Maximal number of policy iteration steps
     \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
     \param iterations_vi Maximal number of inner loop value iterations
@@ -877,10 +888,13 @@ public:
                 This value should be smaller than maxresidual_pi
     \return Computed (approximate) solution
      */
-    template<SolutionType soltype>
-    SolType mpi_jac(prec_t discount, const numvec& valuefunction=numvec(0),
-                    unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                    unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2) const;
+    SolType mpi_jac(Uncertainty uncert,
+                    prec_t discount,
+                    const numvec& valuefunction=numvec(0),
+                    unsigned long iterations_pi=MAXITER,
+                    prec_t maxresidual_pi=SOLPREC,
+                    unsigned long iterations_vi=MAXITER,
+                    prec_t maxresidual_vi=SOLPREC/2) const;
 
     /**
     Value function evaluation using Jacobi iteration for a fixed policy.
@@ -902,7 +916,9 @@ public:
                         prec_t maxresidual=SOLPREC) const;
 
     /**
-    Value function evaluation using Jacobi iteration for a fixed policy.
+    Value function evaluation using Jacobi iteration for a fixed policy
+    and uncertainty realization type.
+    \param uncert Type of realization of the uncertainty
     \param valuefunction Initial value function
     \param discount Discount factor
     \param policy Decision-maker's policy
@@ -911,28 +927,30 @@ public:
             the residual drops below this threshold.
     \return Computed (approximate) solution (value function)
      */
-    template<SolutionType soltype>
-    SolType vi_jac_fix(prec_t discount,
-                        const ActionPolicy& policy,
-                        const numvec& valuefunction=numvec(0),
-                        unsigned long iterations=MAXITER,
-                        prec_t maxresidual=SOLPREC) const;
+    SolType vi_jac_fix(Uncertainty uncert,
+                       prec_t discount,
+                       const ActionPolicy& policy,
+                       const numvec& valuefunction=numvec(0),
+                       unsigned long iterations=MAXITER,
+                       prec_t maxresidual=SOLPREC) const;
 
     /**
     Constructs the transition matrix for the policy.
     \param policy Policy of the decision maker
     \param nature Policy of the nature
     */
-    unique_ptr<ublas::matrix<prec_t>> transition_mat(const ActionPolicy& policy,
-                                                     const OutcomePolicy& nature) const;
+    unique_ptr<ublas::matrix<prec_t>>
+        transition_mat(const ActionPolicy& policy,
+                       const OutcomePolicy& nature) const;
 
     /**
     Constructs a transpose of the transition matrix for the policy.
     \param policy Policy of the decision maker
     \param nature Policy of the nature
     */
-    unique_ptr<ublas::matrix<prec_t>> transition_mat_t(const ActionPolicy& policy,
-                                                       const OutcomePolicy& nature) const;
+    unique_ptr<ublas::matrix<prec_t>>
+        transition_mat_t(const ActionPolicy& policy,
+                         const OutcomePolicy& nature) const;
 
 
     // ----------------------------------------------

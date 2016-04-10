@@ -261,7 +261,7 @@ void OutcomeManagement::normalize(){
 // **************************************************************************************
 
 pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-DiscreteOutcomeAction::maximal_value(const numvec& valuefunction, prec_t discount) const {
+DiscreteOutcomeAction::maximal(const numvec& valuefunction, prec_t discount) const {
 
     if(outcomes.empty())
         throw invalid_argument("Action with no outcomes.");
@@ -282,7 +282,7 @@ DiscreteOutcomeAction::maximal_value(const numvec& valuefunction, prec_t discoun
 }
 
 pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-DiscreteOutcomeAction::minimal_value(const numvec& valuefunction, prec_t discount) const {
+DiscreteOutcomeAction::minimal(const numvec& valuefunction, prec_t discount) const {
 
     if(outcomes.empty())
         throw invalid_argument("Action with no outcomes.");
@@ -302,7 +302,7 @@ DiscreteOutcomeAction::minimal_value(const numvec& valuefunction, prec_t discoun
     return make_pair(result,minvalue);
 }
 
-prec_t DiscreteOutcomeAction::average_value(const numvec& valuefunction, prec_t discount) const {
+prec_t DiscreteOutcomeAction::average(const numvec& valuefunction, prec_t discount) const {
     if(outcomes.empty())
         throw invalid_argument("Action with no outcomes.");
 
@@ -323,7 +323,7 @@ prec_t DiscreteOutcomeAction::average_value(const numvec& valuefunction, prec_t 
 
 template<NatureConstr nature>
 pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-WeightedOutcomeAction<nature>::maximal_value(const numvec& valuefunction, prec_t discount) const{
+WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t discount) const{
 
     assert(distribution.size() == outcomes.size());
 
@@ -345,7 +345,7 @@ WeightedOutcomeAction<nature>::maximal_value(const numvec& valuefunction, prec_t
 
 template<NatureConstr nature>
 pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-WeightedOutcomeAction<nature>::minimal_value(const numvec& valuefunction, prec_t discount) const{
+WeightedOutcomeAction<nature>::minimal(const numvec& valuefunction, prec_t discount) const{
 
     assert(distribution.size() == outcomes.size());
 
@@ -362,7 +362,7 @@ WeightedOutcomeAction<nature>::minimal_value(const numvec& valuefunction, prec_t
 }
 
 template<NatureConstr nature>
-prec_t WeightedOutcomeAction<nature>::average_value(numvec const& valuefunction, prec_t discount) const {
+prec_t WeightedOutcomeAction<nature>::average(numvec const& valuefunction, prec_t discount) const {
 
     assert(distribution.size() == outcomes.size());
 
@@ -378,7 +378,7 @@ prec_t WeightedOutcomeAction<nature>::average_value(numvec const& valuefunction,
 }
 
 template<NatureConstr nature>
-prec_t WeightedOutcomeAction<nature>::fixed_value(numvec const& valuefunction, prec_t discount,
+prec_t WeightedOutcomeAction<nature>::fixed(numvec const& valuefunction, prec_t discount,
                        typename WeightedOutcomeAction<nature>::OutcomeId dist) const{
 
     assert(distribution.size() == outcomes.size());

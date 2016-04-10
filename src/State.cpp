@@ -329,9 +329,11 @@ void SAState<AType>::add_action(long actionid, const AType& action){
 
 template<class AType>
 void SAState<AType>::normalize(){
-    for(Action& a : actions){
+    for(AType& a : actions){
         a.normalize();
     }
 }
+
+template class SAState<RegularAction>;
 
 }
