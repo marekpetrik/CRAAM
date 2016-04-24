@@ -64,11 +64,11 @@ bool RMDP::is_normalized() const{
     }
     return true;
 }
+
 void RMDP::normalize(){
      for(State& s : states)
         s.normalize();
 }
-
 
 void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indvec const& outcomeids, indvec const& toids, numvec const& probs, numvec const& rews){
 
@@ -962,6 +962,7 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
 template<class SType>
 SType GRMDP<SType>::create_state(long stateid) {
     assert(stateid >= 0);
+
     if(stateid >= (long) states.size())
         states.resize(stateid + 1);
     return states[stateid];

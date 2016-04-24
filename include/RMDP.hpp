@@ -746,11 +746,11 @@ protected:
     vector<SType> states;
 
 public:
-    /** Which action to take in which state */
+    /** Type defining action to take in which state */
     typedef vector<typename SType::ActionId> ActionPolicy;
-    /** Which outcome to take in which state*/
+    /** Type defining outcome to take in which state*/
     typedef vector<typename SType::OutcomeId> OutcomePolicy;
-    /**  */
+    /** Type of solution */
     typedef GSolution<typename SType::ActionId, typename SType::OutcomeId> SolType;
 
     /**
@@ -827,7 +827,6 @@ public:
     */
     long is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const;
-
 
     // ----------------------------------------------
     // Solution methods
@@ -934,7 +933,6 @@ public:
     unique_ptr<ublas::matrix<prec_t>> transition_mat_t(const ActionPolicy& policy,
                                                        const OutcomePolicy& nature) const;
 
-
     // ----------------------------------------------
     // Reading and writing files
     // ----------------------------------------------
@@ -994,6 +992,27 @@ public:
     */
     string to_string() const;
 };
+
+
+/**
+Adds a transition probability.
+\param gmdp MDP to add transition to
+\param fromid Starting state ID
+\param actionid Action ID
+\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+\param toid Destination ID
+\param probability Probability of the transition (must be non-negative)
+\param reward The reward associated with the transition.
+ */
+template<SType>
+void add_transition(GRMDP& grmdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
+{
+
+    auto s = grmdp.create_state(fromid);
+    grmdp.create_state(toid);
+
+    .add_action(actionid, outcomeid, toid, probability, reward);
+}
 
 
 }
