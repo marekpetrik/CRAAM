@@ -269,7 +269,7 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    prec_t average_value(const numvec& valuefunction, prec_t discount) const
+    prec_t average(const numvec& valuefunction, prec_t discount) const
         {return value(valuefunction, discount);};
 
     /**
@@ -277,7 +277,7 @@ public:
     purpose of this method is for the general robust MDP setting.
     */
     pair<RegularAction::OutcomeId, prec_t>
-    maximal_value(const numvec& valuefunction, prec_t discount) const
+    maximal(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
     /**
@@ -285,25 +285,35 @@ public:
     purpose of this method is for the general robust MDP setting.
     */
     pair<RegularAction::OutcomeId, prec_t>
-    minimal_value(const numvec& valuefunction, prec_t discount) const
+    minimal(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
     /**
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    prec_t fixed_value(const numvec& valuefunction, prec_t discount,
+    prec_t fixed(const numvec& valuefunction, prec_t discount,
                 RegularAction::OutcomeId index) const
         {return value(valuefunction, discount);};
 
-    /** Returns a transition for the outcome to the action. The transition must exist. */
-    Transition& get_transition() {return outcome;};
+    /** Returns the outcomes. */
+    vector<Transition> get_outcomes() {return vector<Transition>{outcome};};
 
-    /** Returns the transition. The transition must exist. */
-    const Transition& get_transition() const {return outcome;};
+    /** Returns the outcomes. */
+    vector<Transition> get_outcomes() const {return vector<Transition>{outcome};};
+
+    /** Returns the single outcome. */
+    const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
+
+    /** Returns the single outcome. */
+    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0); return outcome;};
 
     /** Normalizes transition probabilities */
     void normalize() {outcome.normalize();};
+
+    /** Returns number of outcomes (1). */
+    size_t outcome_count() const {return 1;};
+
 };
 
 
@@ -342,6 +352,8 @@ public:
     Transition& get_outcome(long outcomeid) {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
+
+    /** Returns number of outcomes. */
     size_t outcome_count() const {return outcomes.size();};
 
 
@@ -390,7 +402,7 @@ public:
     \return The index and value of the maximal outcome
      */
     pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    maximal_value(numvec const& valuefunction, prec_t discount) const;
+    maximal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the minimal outcome for the value function
@@ -399,7 +411,7 @@ public:
     \return The index and value of the maximal outcome
     */
     pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    minimal_value(numvec const& valuefunction, prec_t discount) const;
+    minimal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the average outcome using a uniform distribution.
@@ -407,7 +419,7 @@ public:
     \param discount Discount factor
     \return Mean value of the action
      */
-    prec_t average_value(numvec const& valuefunction, prec_t discount) const;
+    prec_t average(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the action value for a fixed index outcome.
@@ -416,7 +428,7 @@ public:
     \param index Index of the outcome used
     \return Value of the action
      */
-    prec_t fixed_value(numvec const& valuefunction, prec_t discount,
+    prec_t fixed(numvec const& valuefunction, prec_t discount,
                        DiscreteOutcomeAction::OutcomeId index) const{
         assert(index >= 0l && index < (long) outcomes.size());
         return outcomes[index].compute_value(valuefunction, discount); };
@@ -472,7 +484,7 @@ public:
     \return Outcome distribution and the mean value for the maximal bounded solution
      */
     pair<typename WeightedOutcomeAction::OutcomeId,prec_t>
-    maximal_value(numvec const& valuefunction, prec_t discount) const;
+    maximal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the minimal outcome distribution constraints on the nature's distribution
@@ -484,7 +496,7 @@ public:
     \return Outcome distribution and the mean value for the minimal bounded solution
      */
     pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-    minimal_value(numvec const& valuefunction, prec_t discount) const;
+    minimal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the average outcome using a uniform distribution.
@@ -492,7 +504,7 @@ public:
     \param discount Discount factor
     \return Mean value of the action
      */
-    prec_t average_value(numvec const& valuefunction, prec_t discount) const;
+    prec_t average(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the action value for a fixed index outcome.
@@ -501,7 +513,7 @@ public:
     \param index Index of the outcome used
     \return Value of the action
      */
-    prec_t fixed_value(numvec const& valuefunction, prec_t discount,
+    prec_t fixed(numvec const& valuefunction, prec_t discount,
                        typename WeightedOutcomeAction<nature>::OutcomeId dist) const;
 
     /**

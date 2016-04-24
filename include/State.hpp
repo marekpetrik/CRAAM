@@ -133,7 +133,6 @@ State for sa-rectangular uncertainty (or no uncertainty) in an MDP
 */
 template<class AType>
 class SAState{
-
 protected:
     vector<AType> actions;
 
@@ -212,6 +211,7 @@ public:
     void normalize();
 };
 
+typedef SAState<RegularAction> RegularState;
 }
 
 
