@@ -314,6 +314,10 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;};
 
+    /** Appends a string representation to the argument */
+    void to_string(string& result) const{
+        result.append("1(r)");
+    }
 };
 
 
@@ -366,11 +370,17 @@ public:
     \param t Transition that defines the outcome*/
     void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);};
 
+
     /** Returns the list of outcomes */
     const vector<Transition>& get_outcomes() const {return outcomes;};
 
     /** Normalizes transitions for outcomes */
     void normalize();
+
+    /** Appends a string representation to the argument */
+    void to_string(string& result){
+        result.append(std::to_string(get_outcomes().size()));
+    }
 };
 
 // **************************************************************************************
@@ -556,6 +566,13 @@ public:
 
     /** Sets threshold value */
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
+
+    /** Appends a string representation to the argument */
+    void to_string(string& result){
+        result.append(std::to_string(get_outcomes().size()));
+        result.append(" / ");
+        result.append(std::to_string(get_distribution().size()));
+    }
 };
 
 // **************************************************************************************

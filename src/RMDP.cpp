@@ -954,9 +954,9 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
     return states[stateid].get_transition(actionid,outcomeid);
 }
 
-// **************************************************************************************
-//  Generic MDP Class
-// **************************************************************************************
+/// **************************************************************************************
+///  Generic MDP Class
+/// **************************************************************************************
 
 
 template<class SType>
@@ -1008,54 +1008,6 @@ long GRMDP<SType>::is_policy_correct(const ActionPolicy& policy,
 }
 
 template<class SType>
-void GRMDP<SType>::from_csv(GRMDP<SType>& result, istream& input, bool header){
-
-    string line;
-
-    // skip the first row if so instructed
-    if(header) input >> line;
-
-    input >> line;
-    while(input.good()){
-        string cellstring;
-        stringstream linestream(line);
-        long idstatefrom, idstateto, idaction, idoutcome;
-        prec_t probability, reward;
-
-        // read idstatefrom
-        getline(linestream, cellstring, ',');
-        idstatefrom = stoi(cellstring);
-        // read idaction
-        getline(linestream, cellstring, ',');
-        idaction = stoi(cellstring);
-        // read idoutcome
-        getline(linestream, cellstring, ',');
-        idoutcome = stoi(cellstring);
-        // read idstateto
-        getline(linestream, cellstring, ',');
-        idstateto = stoi(cellstring);
-        // read probability
-        getline(linestream, cellstring, ',');
-        probability = stof(cellstring);
-        // read reward
-        getline(linestream, cellstring, ',');
-        reward = stof(cellstring);
-
-        result.add_transition(idstatefrom,idaction,idoutcome,idstateto,probability,reward);
-
-        input >> line;
-    }
-
-}
-
-template<class SType>
-void GRMDP<SType>::from_csv_file(GRMDP<SType>& result, const string& filename, bool header){
-    ifstream ifs(filename);
-    from_csv(result, ifs, header);
-    ifs.close();
-}
-
-template<class SType>
 void GRMDP<SType>::to_csv(ostream& output, bool header) const{
 
     //write header is so requested
@@ -1100,7 +1052,7 @@ string GRMDP<SType>::to_string() const {
     string result;
 
     for(size_t i = 0; i < states.size(); i++){
-        auto& s = get_state(i);
+        const auto& s = get_state(i);
         result.append(std::to_string(i));
         result.append(" : ");
         result.append(std::to_string(s.action_count()));
@@ -1109,9 +1061,8 @@ string GRMDP<SType>::to_string() const {
             result.append("    ");
             result.append(std::to_string(j));
             result.append(" : ");
-            result.append(std::to_string(s.get_action(j).get_outcomes().size()));
-            result.append(" / ");
-            result.append(std::to_string(s.get_action(j).get_distribution().size()));
+            const auto& a = s.get_action(j);
+            a.to_string(result);
             result.append("\n");
         }
     }
@@ -1466,15 +1417,87 @@ GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& 
         const auto& indexes = t.get_indices();
         const auto& probabilities = t.get_probabilities();
 
-        for(size_t j=0; j < t.size(); j++){
+        for(size_t j=0; j < t.size(); j++)
             (*result)(indexes[j],s) = probabilities[j];
-            //cout << indexes[j] << " " << s << " " << probabilities[j] << endl;
-        }
     }
-    //cout << *result << endl;
     return result;
 }
 
+
+/// **********************************************************************
+/// *********************    TEMPLATE DECLARATIONS    ********************
+/// **********************************************************************
+
 template class GRMDP<RegularState>;
+
+
+/// **********************************************************************
+/// ***********************    HELPER FUNCTIONS    ***********************
+/// **********************************************************************
+
+/**
+Adds a transition to the MDP model
+*/
+template<class Model>
+void add_transition(Model& m, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
+
+    m.create_state(toid);
+
+    auto& state_from = m.create_state(fromid);
+    auto& action = state_from.create_action(actionid);
+
+    Transition& outcome = action.create_outcome(outcomeid);
+
+    outcome.add_sample(toid,probability,reward);
+}
+
+template<class Model>
+void from_csv(Model& result, istream& input, bool header){
+
+    string line;
+
+    // skip the first row if so instructed
+    if(header) input >> line;
+
+    input >> line;
+    while(input.good()){
+        string cellstring;
+        stringstream linestream(line);
+        long idstatefrom, idstateto, idaction, idoutcome;
+        prec_t probability, reward;
+
+        // read idstatefrom
+        getline(linestream, cellstring, ',');
+        idstatefrom = stoi(cellstring);
+        // read idaction
+        getline(linestream, cellstring, ',');
+        idaction = stoi(cellstring);
+        // read idoutcome
+        getline(linestream, cellstring, ',');
+        idoutcome = stoi(cellstring);
+        // read idstateto
+        getline(linestream, cellstring, ',');
+        idstateto = stoi(cellstring);
+        // read probability
+        getline(linestream, cellstring, ',');
+        probability = stof(cellstring);
+        // read reward
+        getline(linestream, cellstring, ',');
+        reward = stof(cellstring);
+
+        add_transition<Model>(result,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
+
+        input >> line;
+    }
+    return result;
+}
+
+template<class Model>
+Model& from_csv_file(Model& result, const string& filename, bool header){
+    ifstream ifs(filename);
+    from_csv(result, ifs, header);
+    ifs.close();
+    return result;
+}
 
 }

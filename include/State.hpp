@@ -186,11 +186,11 @@ public:
                        typename AType::OutcomeId outcomeid) const;
 
 
-    /** Adds an action to the state */
-    void add_action(long actionid, const AType& a);
+    /** Creates an action given by actionid if it does not exists. Otherwise returns the existing one. */
+    AType& create_action(long actionid);
 
-    /** Adds an action to the last position of the state */
-    void add_action(const AType& a) {add_action(actions.size(),a);};
+    /** Creates an action at the last position of the state */
+    AType& create_action() {return create_action(actions.size());};
 
     /** Returns a specific action */
     const AType& get_action(long actionid) const {return actions[actionid];};

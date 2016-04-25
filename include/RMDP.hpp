@@ -154,7 +154,8 @@ public:
     /** Normalize all transitions to sum to one for all states, actions, outcomes. */
     void normalize();
 
-    // writing a reading files
+    /// writing and reading files
+
     /**
     Loads an RMDP definition from a simple csv file.States, actions, and
     outcomes are identified by 0-based ids. The columns are separated by
@@ -751,12 +752,13 @@ protected:
     vector<SType> states;
 
 public:
-    /** Which action to take in which state */
+    /** Which action to take in which state. Decision-maker's policy */
     typedef vector<typename SType::ActionId> ActionPolicy;
-    /** Which outcome to take in which state*/
+    /** Which outcome to take in which state. Nature's policy */
     typedef vector<typename SType::OutcomeId> OutcomePolicy;
-    /**  */
-    typedef GSolution<typename SType::ActionId, typename SType::OutcomeId> SolType;
+    /** Solution type */
+    typedef GSolution<typename SType::ActionId, typename SType::OutcomeId>
+                SolType;
 
     /**
     Constructs the RMDP with a pre-allocated number of states. All
@@ -953,31 +955,9 @@ public:
                          const OutcomePolicy& nature) const;
 
 
-    // ----------------------------------------------
-    // Reading and writing files
-    // ----------------------------------------------
-    /**
-    Loads an RMDP definition from a simple csv file.States, actions, and
-    outcomes are identified by 0-based ids. The columns are separated by
-    commas, and rows by new lines.
-
-    The file is formatted with the following columns:
-    idstatefrom, idaction, idoutcome, idstateto, probability, reward
-
-    Note that outcome distributions are not restored.
-    \param result Where to store the loaded MDP
-    \param input Source of the RMDP
-    \param header Whether the first line of the file represents the header.
-                    The column names are not checked for correctness or number!
-     */
-    static void from_csv(GRMDP<SType>& result, istream& input, bool header = true);
-
-    /**
-    Loads the transition probabilities and rewards from a CSV file
-    \param filename Name of the file
-    \param header Whether to create a header of the file too
-     */
-    static void from_csv_file(GRMDP<SType>& result, const string& filename, bool header = true);
+    /// ----------------------------------------------
+    /// Reading and writing files
+    /// ----------------------------------------------
 
     /**
     Saves the model to a stream as a simple csv file. States, actions, and outcomes
@@ -1013,5 +993,53 @@ public:
     string to_string() const;
 };
 
+
+/**
+Adds a transition probability for a particular outcome.
+\param MDP model to add the transition to
+\param fromid Starting state ID
+\param actionid Action ID
+\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
+\param toid Destination ID
+\param probability Probability of the transition (must be non-negative)
+\param reward The reward associated with the transition.
+ */
+template<class MDP>
+void add_transition(MDP& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+
+/**
+Loads an RMDP definition from a simple csv file.States, actions, and
+outcomes are identified by 0-based ids. The columns are separated by
+commas, and rows by new lines.
+
+The file is formatted with the following columns:
+idstatefrom, idaction, idoutcome, idstateto, probability, reward
+
+Note that outcome distributions are not restored.
+\param mdp Model output (also returned)
+\param input Source of the RMDP
+\param header Whether the first line of the file represents the header.
+                The column names are not checked for correctness or number!
+\returns The input model
+ */
+template<class Model>
+Model& from_csv(Model& mdp, istream& input, bool header = true);
+
+
+/**
+Loads the transition probabilities and rewards from a CSV file.
+\param mdp Model output (also returned)
+\param filename Name of the file
+\param header Whether to create a header of the file too
+\returns The input model
+ */
+template<class Model>
+Model& from_csv_file(Model& mdp, const string& filename, bool header = true);
+
+/**
+Adds a transition when there is only a single outcome. There is no outcomeid.
+*/
+//void add_transition(long fromid, long actionid, long toid, prec_t probability, prec_t reward)
+//    {add_transition(fromid, actionid, 0, toid, probability, reward);};
 
 }

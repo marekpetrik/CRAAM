@@ -317,22 +317,24 @@ prec_t SAState<AType>::fixed_fixed(numvec const& valuefunction, prec_t discount,
 }
 
 template<class AType>
-void SAState<AType>::add_action(long actionid, const AType& action){
-    if(actionid < 0){
-        throw invalid_argument("invalid action id");
-    }
-    if(actionid >= (long) actions.size()){
+AType& SAState<AType>::create_action(long actionid){
+    assert(actionid >= 0);
+
+    if(actionid >= (long) actions.size())
         actions.resize(actionid+1);
-    }
-    this->actions[actionid] = action;
+
+    return this->actions[actionid];
 }
 
 template<class AType>
 void SAState<AType>::normalize(){
-    for(AType& a : actions){
+    for(AType& a : actions)
         a.normalize();
-    }
 }
+
+/// **********************************************************************
+/// *********************    TEMPLATE DECLARATIONS    ********************
+/// **********************************************************************
 
 template class SAState<RegularAction>;
 

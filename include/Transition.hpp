@@ -93,17 +93,14 @@ public:
     prec_t mean_reward() const;
 
     /** Returns the number of target states with non-zero transition probabilities.  */
-    size_t size() const{return indices.size(); }
+    size_t size() const {return indices.size();};
 
     /**
-    Returns the maximal indexes involved in the transition.  It
-    returns -1 for and empty transition.
+    Returns the maximal indexes involved in the transition.
+    Returns -1 for and empty transition.
     */
-    long max_index() const{
-        return indices.empty() ? -1 : indices.back();
-    }
+    long max_index() const {return indices.empty() ? -1 : indices.back();};
 
-    // probability manipulation
     /**
     Constructs and returns a dense vector of probabilities.
     \param size Size of the constructed vector
@@ -111,11 +108,12 @@ public:
     numvec probabilities_vector(size_t size) const;
 
     /**
-    Scales transition probabilities and adds them to the provided vector.
+    Scales transition probabilities according to the provided parameter
+    and adds them to the provided vector.
     \param scale Multiplicative modification of transition probabilities
     \param transition Transition probabilities being added to. This value
                         is modified within the function.
-     */
+    */
     void probabilities_addto(prec_t scale, numvec& transition) const;
 
     const indvec& get_indices() const {return indices;};
@@ -126,6 +124,7 @@ public:
     prec_t get_reward(long sampleid) const {return rewards[sampleid];};
 
 protected:
+
     indvec indices;
     numvec probabilities;
     numvec rewards;
