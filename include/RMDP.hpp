@@ -752,6 +752,7 @@ protected:
     vector<SType> states;
 
 public:
+
     /** Which action to take in which state. Decision-maker's policy */
     typedef vector<typename SType::ActionId> ActionPolicy;
     /** Which outcome to take in which state. Nature's policy */
@@ -834,7 +835,6 @@ public:
     */
     long is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const;
-
 
     // ----------------------------------------------
     // Solution methods
@@ -955,6 +955,7 @@ public:
                          const OutcomePolicy& nature) const;
 
 
+
     /// ----------------------------------------------
     /// Reading and writing files
     /// ----------------------------------------------
@@ -996,7 +997,7 @@ public:
 
 /**
 Adds a transition probability for a particular outcome.
-\param MDP model to add the transition to
+\param mdp model to add the transition to
 \param fromid Starting state ID
 \param actionid Action ID
 \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
@@ -1004,6 +1005,7 @@ Adds a transition probability for a particular outcome.
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
  */
+
 template<class MDP>
 void add_transition(MDP& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
 
