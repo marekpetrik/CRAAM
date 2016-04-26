@@ -836,9 +836,9 @@ public:
     long is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const;
 
-    // ----------------------------------------------
-    // Solution methods
-    // ----------------------------------------------
+    /// ----------------------------------------------
+    /// Solution methods
+    /// ----------------------------------------------
 
     /**
     Gauss-Seidel value iteration variant (not parallelized).
@@ -994,6 +994,30 @@ public:
     string to_string() const;
 };
 
+/// **********************************************************************
+/// *********************    TEMPLATE DECLARATIONS    ********************
+/// **********************************************************************
+
+typedef GRMDP<RegularState> MDP;
+typedef GRMDP<DiscreteRobustState> RMDP_D;
+typedef GRMDP<L1RobustState> RMDP_L1;
+
+
+/// **********************************************************************
+/// ***********************    HELPER FUNCTIONS    ***********************
+/// **********************************************************************
+
+/**
+Adds a transition probability for a model with no outcomes.
+\param mdp model to add the transition to
+\param fromid Starting state ID
+\param actionid Action ID
+\param toid Destination ID
+\param probability Probability of the transition (must be non-negative)
+\param reward The reward associated with the transition.
+*/
+template<class Model>
+void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward);
 
 /**
 Adds a transition probability for a particular outcome.
@@ -1004,10 +1028,11 @@ Adds a transition probability for a particular outcome.
 \param toid Destination ID
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
- */
-
-template<class MDP>
-void add_transition(MDP& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+*/
+template<class Model>
+void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
+    add_transition<Model>(mdp, fromid, actionid, 0, toid, probability, reward);
+}
 
 /**
 Loads an RMDP definition from a simple csv file.States, actions, and
@@ -1038,10 +1063,5 @@ Loads the transition probabilities and rewards from a CSV file.
 template<class Model>
 Model& from_csv_file(Model& mdp, const string& filename, bool header = true);
 
-/**
-Adds a transition when there is only a single outcome. There is no outcomeid.
-*/
-//void add_transition(long fromid, long actionid, long toid, prec_t probability, prec_t reward)
-//    {add_transition(fromid, actionid, 0, toid, probability, reward);};
 
 }

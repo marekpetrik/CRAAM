@@ -151,7 +151,7 @@ public:
     When there are no action then the return is assumed to be 0.
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
-    tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+    tuple<ActionId,OutcomeId,prec_t>
     max_max(const numvec& valuefunction, prec_t discount) const;
 
     /**
@@ -159,7 +159,7 @@ public:
     When there are no action then the return is assumed to be 0
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
-    tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
+    tuple<ActionId,OutcomeId,prec_t>
     max_min(const numvec& valuefunction, prec_t discount) const;
 
     /**
@@ -167,7 +167,7 @@ public:
     When there are no actions then the return is assumed to be 0.
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
-    pair<typename SAState<AType>::ActionId,prec_t>
+    pair<ActionId,prec_t>
     max_average(const numvec& valuefunction, prec_t discount) const;
 
     /**
@@ -175,15 +175,14 @@ public:
     \return Value of state, 0 if it's terminal regardless of the action index
     */
     prec_t fixed_average(numvec const& valuefunction, prec_t discount,
-                         typename SAState<AType>::ActionId actionid) const;
+                         ActionId actionid) const;
 
     /**
     Computes the value of a fixed action.
     \return Value of state, 0 if it's terminal regardless of the action index
     */
     prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
-                       typename SAState<AType>::ActionId actionid,
-                       typename AType::OutcomeId outcomeid) const;
+                       ActionId actionid, OutcomeId outcomeid) const;
 
 
     /** Creates an action given by actionid if it does not exists. Otherwise returns the existing one. */
@@ -209,9 +208,23 @@ public:
 
     /** Normalizes transition probabilities to sum to one. */
     void normalize();
+
+    /** Returns the mean reward following the action (and outcome) */
+    prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
+        return get_action(actionid).mean_reward(outcomeid);
+    }
+
+    /** Whether the policies are correct */
+    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
 };
 
+/// **********************************************************************
+/// *********************    SPECIFIC STATE DEFINITIONS    ***************
+/// **********************************************************************
+
 typedef SAState<RegularAction> RegularState;
+typedef SAState<DiscreteOutcomeAction> DiscreteRobustState;
+typedef SAState<L1OutcomeAction> L1RobustState;
 }
 
 

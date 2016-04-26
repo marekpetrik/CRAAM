@@ -221,15 +221,15 @@ void State::normalize(){
 // **************************************************************************************
 
 template<class AType>
-tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
-SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const{
+auto SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const
+            -> tuple<ActionId,OutcomeId,prec_t> {
 
     if(is_terminal())
-        return make_tuple(-1,-1,0);
+        return make_tuple(-1,OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    long result_outcome = -1l;
+    OutcomeId result_outcome;
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
@@ -237,22 +237,22 @@ SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const{
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
-            result_outcome = value.first;
+            result_outcome = move(value.first);
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
 }
 
 template<class AType>
-tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t>
-SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const{
+auto SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const
+            -> tuple<ActionId,OutcomeId,prec_t> {
 
     if(is_terminal())
-        return make_tuple(-1,-1,0);
+        return make_tuple(-1,OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    long result_outcome = -1l;
+    OutcomeId result_outcome;
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
@@ -260,15 +260,16 @@ SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const{
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
-            result_outcome = value.first;
+            result_outcome = move(value.first);
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
 }
 
 template<class AType>
-pair<typename SAState<AType>::ActionId,prec_t>
-SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) const{
+auto SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) const
+                -> pair<ActionId,prec_t>{
+
     if(is_terminal())
         return make_pair(-1,0.0);
 
@@ -284,12 +285,12 @@ SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) const{
             result = i;
         }
     }
-    return make_pair(result,maxvalue);
+    return make_pair(result, maxvalue);
 }
 
 template<class AType>
 prec_t SAState<AType>::fixed_average(numvec const& valuefunction, prec_t discount,
-                              typename SAState<AType>::ActionId actionid) const{
+                              ActionId actionid) const{
 
     // this is the terminal state, return 0
     if(is_terminal())
@@ -303,8 +304,7 @@ prec_t SAState<AType>::fixed_average(numvec const& valuefunction, prec_t discoun
 
 template<class AType>
 prec_t SAState<AType>::fixed_fixed(numvec const& valuefunction, prec_t discount,
-                            typename SAState<AType>::ActionId actionid,
-                            typename AType::OutcomeId outcomeid) const{
+                            ActionId actionid, OutcomeId outcomeid) const{
 
     // this is the terminal state, return 0
     if(is_terminal())
@@ -332,10 +332,21 @@ void SAState<AType>::normalize(){
         a.normalize();
 }
 
+template<class AType>
+bool SAState<AType>::is_action_outcome_correct(ActionId aid, OutcomeId oid) const{
+    if( (aid < 0) || ((size_t)aid >= actions.size()))
+        return false;
+
+    return actions[aid].is_outcome_correct(oid);
+}
+
+
 /// **********************************************************************
 /// *********************    TEMPLATE DECLARATIONS    ********************
 /// **********************************************************************
 
 template class SAState<RegularAction>;
+template class SAState<DiscreteOutcomeAction>;
+template class SAState<L1OutcomeAction>;
 
 }

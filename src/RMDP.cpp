@@ -996,13 +996,8 @@ long GRMDP<SType>::is_policy_correct(const ActionPolicy& policy,
         if(states[si].is_terminal())
             continue;
 
-        const auto p = policy[si];
-        if(p < 0 || policy[si] >= (long) states[si].action_count())
-            return si;
-        const auto& a = states[si].get_action(p);
-
-        const long np = natpolicy[si];
-        if(np < 0 || np >= (long) a.outcome_count())
+        // call function of the state
+        if(!states[si].is_action_outcome_correct(policy[si], natpolicy[si]))
             return si;
     }
     return -1;
@@ -1375,7 +1370,7 @@ numvec GRMDP<SType>::rewards_state(const ActionPolicy& policy, const OutcomePoli
         if(state.is_terminal())
             rewards[s] = 0;
         else
-            rewards[s] = state.get_action(policy[s]).get_outcome(nature[s]).mean_reward();
+            rewards[s] = state.mean_reward(policy[s], nature[s]);
     }
     return rewards;
 }
@@ -1430,25 +1425,22 @@ GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& 
 /// **********************************************************************
 
 template class GRMDP<RegularState>;
-
+template class GRMDP<DiscreteRobustState>;
+template class GRMDP<L1RobustState>;
 
 /// **********************************************************************
 /// ***********************    HELPER FUNCTIONS    ***********************
 /// **********************************************************************
 
 /**
-Adds a transition to the MDP model
+Adds a transition to the MDP model with an outcome number
 */
 template<class Model>
 void add_transition(Model& m, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
-
     m.create_state(toid);
-
     auto& state_from = m.create_state(fromid);
     auto& action = state_from.create_action(actionid);
-
     Transition& outcome = action.create_outcome(outcomeid);
-
     outcome.add_sample(toid,probability,reward);
 }
 

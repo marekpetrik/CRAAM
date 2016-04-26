@@ -44,9 +44,9 @@ public:
                             a distribution function
     */
     Action(bool use_distribution);
+
     /**
     Initializes outcomes to the provided vector
-
     \param use_distribution Whether to automatically create and scale
                             a uniform distribution function to scale to 1
     */
@@ -70,7 +70,7 @@ public:
     */
     pair<long,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
 
-    // average
+    /// ******* average *******
     /**
     Computes the minimal outcome for the value function.
 
@@ -88,7 +88,7 @@ public:
     prec_t average(numvec const& valuefunction, prec_t discount) const{
         return average(valuefunction,discount,distribution);
     }
-    // fixed-outcome
+    /// ***** fixed-outcome *****
     /**
     Computes the action value for a fixed index outcome.
 
@@ -234,9 +234,9 @@ protected:
     bool use_distribution;
 };
 
-// **************************************************************************************
-// Regular action
-// **************************************************************************************
+/// **************************************************************************************
+/// *** Regular action
+/// **************************************************************************************
 
 /**
  * Action in a regular MDP. There is no uncertainty and
@@ -317,13 +317,19 @@ public:
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
         result.append("1(r)");
-    }
+    };
+
+    /** Returns the mean reward from the transition. */
+    prec_t mean_reward(OutcomeId) const { return outcome.mean_reward();};
+
+    /** Whether the provided outcome is valid */
+    bool is_outcome_correct(OutcomeId oid) const {return oid == 0;};
 };
 
 
-// **************************************************************************************
-//  Outcome Management (a helper class)
-// **************************************************************************************
+/// **************************************************************************************
+///  Outcome Management (a helper class)
+/// **************************************************************************************
 
 /**
 A class that manages creation and access to outcomes to be used by actions.
@@ -378,14 +384,15 @@ public:
     void normalize();
 
     /** Appends a string representation to the argument */
-    void to_string(string& result){
+    void to_string(string& result) const{
         result.append(std::to_string(get_outcomes().size()));
     }
+
 };
 
-// **************************************************************************************
-//  Discrete Outcome Action
-// **************************************************************************************
+/// **************************************************************************************
+///  Discrete Outcome Action
+/// **************************************************************************************
 
 /**
 An action in the robust MDP with discrete outcomes.
@@ -443,11 +450,18 @@ public:
         assert(index >= 0l && index < (long) outcomes.size());
         return outcomes[index].compute_value(valuefunction, discount); };
 
+    /** Returns the mean reward from the transition. */
+    prec_t mean_reward(OutcomeId outcome) const { return outcomes[outcome].mean_reward();};
+
+    /** Whether the provided outcome is valid */
+    bool is_outcome_correct(OutcomeId oid) const
+        {return (oid >= 0) && ((size_t) oid < outcomes.size());};
+
 };
 
-// **************************************************************************************
-//  Weighted Outcome Action
-// **************************************************************************************
+/// **************************************************************************************
+///  Weighted Outcome Action
+/// **************************************************************************************
 
 
 /**
@@ -464,7 +478,7 @@ The distribution is initialized to be uniform over the provided elements;
 when a new outcome is added, then its weight in the distribution is 0.
 */
 template<NatureConstr nature>
-class WeightedOutcomeAction : OutcomeManagement{
+class WeightedOutcomeAction : public OutcomeManagement{
 
 protected:
     /** Threshold */
@@ -493,8 +507,7 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the maximal bounded solution
      */
-    pair<typename WeightedOutcomeAction::OutcomeId,prec_t>
-    maximal(numvec const& valuefunction, prec_t discount) const;
+    pair<OutcomeId,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the minimal outcome distribution constraints on the nature's distribution
@@ -505,8 +518,7 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the minimal bounded solution
      */
-    pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-    minimal(numvec const& valuefunction, prec_t discount) const;
+    pair<OutcomeId,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
 
     /**
     Computes the average outcome using a uniform distribution.
@@ -523,8 +535,7 @@ public:
     \param index Index of the outcome used
     \return Value of the action
      */
-    prec_t fixed(numvec const& valuefunction, prec_t discount,
-                       typename WeightedOutcomeAction<nature>::OutcomeId dist) const;
+    prec_t fixed(numvec const& valuefunction, prec_t discount, OutcomeId dist) const;
 
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
@@ -568,16 +579,24 @@ public:
     void set_threshold(prec_t threshold){ this->threshold = threshold; }
 
     /** Appends a string representation to the argument */
-    void to_string(string& result){
+    void to_string(string& result) const {
         result.append(std::to_string(get_outcomes().size()));
         result.append(" / ");
         result.append(std::to_string(get_distribution().size()));
     }
+
+    /** Returns the mean reward from the transition. */
+    prec_t mean_reward(OutcomeId outcomedist) const;
+
+    /** Whether the provided outcome is valid */
+    bool is_outcome_correct(OutcomeId oid) const
+        {return (oid.size() == outcomes.size());};
+
 };
 
-// **************************************************************************************
-//  L1 Outcome Action
-// **************************************************************************************
+/// **************************************************************************************
+///  L1 Outcome Action
+/// **************************************************************************************
 
 typedef WeightedOutcomeAction<worstcase_l1> L1OutcomeAction;
 

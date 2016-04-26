@@ -231,9 +231,9 @@ void Action::normalize(){
     }
 }
 
-// **************************************************************************************
-//  Outcome Management (a helper class)
-// **************************************************************************************
+/// **************************************************************************************
+///  Outcome Management (a helper class)
+/// **************************************************************************************
 
 
 Transition& OutcomeManagement::create_outcome(long outcomeid){
@@ -316,14 +316,14 @@ prec_t DiscreteOutcomeAction::average(const numvec& valuefunction, prec_t discou
 
 
 
-// **************************************************************************************
-//  Distribution Outcome Action
-// **************************************************************************************
+/// **************************************************************************************
+///  Weighted Outcome Action
+/// **************************************************************************************
 
 
 template<NatureConstr nature>
-pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t discount) const{
+auto WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t discount) const
+            -> pair<OutcomeId,prec_t>{
 
     assert(distribution.size() == outcomes.size());
 
@@ -344,8 +344,8 @@ WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t disco
 }
 
 template<NatureConstr nature>
-pair<typename WeightedOutcomeAction<nature>::OutcomeId,prec_t>
-WeightedOutcomeAction<nature>::minimal(const numvec& valuefunction, prec_t discount) const{
+auto WeightedOutcomeAction<nature>::minimal(const numvec& valuefunction, prec_t discount) const
+            -> pair<OutcomeId,prec_t>{
 
     assert(distribution.size() == outcomes.size());
 
@@ -379,7 +379,7 @@ prec_t WeightedOutcomeAction<nature>::average(numvec const& valuefunction, prec_
 
 template<NatureConstr nature>
 prec_t WeightedOutcomeAction<nature>::fixed(numvec const& valuefunction, prec_t discount,
-                       typename WeightedOutcomeAction<nature>::OutcomeId dist) const{
+                                            OutcomeId dist) const{
 
     assert(distribution.size() == outcomes.size());
 
@@ -429,9 +429,8 @@ void WeightedOutcomeAction<nature>::set_distribution(long outcomeid, prec_t weig
 template<NatureConstr nature>
 void WeightedOutcomeAction<nature>::uniform_distribution(){
     distribution.clear();
-    if(outcomes.size() > 0){
+    if(outcomes.size() > 0)
         distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
-    }
     threshold = 0.0;
 }
 
@@ -445,6 +444,19 @@ void WeightedOutcomeAction<nature>::normalize_distribution(){
     }else{
         throw invalid_argument("Distribution sums to 0 and cannot be normalized.");
     }
+}
+
+template<NatureConstr nature>
+prec_t WeightedOutcomeAction<nature>::mean_reward(OutcomeId outcomedist) const{
+    assert(outcomedist.size() == outcomes.size());
+
+    prec_t result = 0;
+
+    const auto n = outcomes.size();
+    for(size_t i=0; i <= n; i++){
+        result += outcomedist[i] * outcomes[i].mean_reward();
+    }
+    return result;
 }
 
 /// **************************************************************************************
