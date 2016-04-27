@@ -109,12 +109,21 @@ public:
 
     /**
     Scales transition probabilities according to the provided parameter
-    and adds them to the provided vector.
+    and adds them to the provided vector. This method ignores rewards.
     \param scale Multiplicative modification of transition probabilities
     \param transition Transition probabilities being added to. This value
                         is modified within the function.
     */
     void probabilities_addto(prec_t scale, numvec& transition) const;
+
+    /**
+    Scales transition probabilities according to the provided parameter
+    and adds them to the provided vector. This method ignores rewards.
+    \param scale Multiplicative modification of transition probabilities
+    \param transition Transition probabilities being added to. This value
+                        is modified within the function.
+    */
+    void probabilities_addto(prec_t scale, Transition& transition) const;
 
     const indvec& get_indices() const {return indices;};
     const numvec& get_probabilities() const {return probabilities;};
@@ -125,8 +134,11 @@ public:
 
 protected:
 
+    /// List of state indices
     indvec indices;
+    /// List of probability distributions to states
     numvec probabilities;
+    /// List of rewards associated with transitions
     numvec rewards;
 };
 

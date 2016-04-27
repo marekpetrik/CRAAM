@@ -40,8 +40,8 @@ Transition::Transition(const indvec& indices, const numvec& probabilities){
 
 Transition::Transition(const numvec& probabilities){
 
-    for(auto k : range((size_t)0,probabilities.size()))
-        add_sample(k,probabilities[k],0.0);
+    for(auto k : range((size_t)0, probabilities.size()))
+        add_sample(k, probabilities[k], 0.0);
 }
 
 void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
@@ -152,10 +152,17 @@ numvec Transition::probabilities_vector(size_t size) const{
 
     return result;
 }
+
 void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
-    for(size_t i = 0; i < size(); i++){
+
+    for(size_t i = 0; i < size(); i++)
         transition[indices[i]] += scale*probabilities[i];
-    }
+}
+
+void Transition::probabilities_addto(prec_t scale, Transition& transition) const{
+
+    for(size_t i = 0; i < size(); i++)
+        transition.add_sample(indices[i], scale*probabilities[i], 0);
 }
 
 }

@@ -1066,7 +1066,9 @@ string GRMDP<SType>::to_string() const {
 }
 
 template<class SType>
-auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction, unsigned long iterations, prec_t maxresidual) const -> SolType {
+auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction,
+                         unsigned long iterations, prec_t maxresidual) const
+                            -> SolType {
 
     //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
     //              "Unknown/invalid (average not supported) optimization type.");
@@ -1091,8 +1093,7 @@ auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction
         for(size_t s = 0l; s < states.size(); s++){
             const auto& state = states[s];
 
-            tuple<typename SType::ActionId,
-                    typename SType::OutcomeId,prec_t> newvalue;
+            tuple<ActionId,OutcomeId,prec_t> newvalue;
 
             if(type == Uncertainty::Robust){
                 newvalue = state.max_min(valuefunction,discount);
@@ -1102,7 +1103,7 @@ auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                     state.max_average(valuefunction,discount);
 
-                newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
+                newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
             }
 
             residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
@@ -1151,8 +1152,7 @@ auto GRMDP<SType>::vi_jac(Uncertainty type, prec_t discount, const numvec& value
         for(auto s = 0l; s < (long) states.size(); s++){
             const auto& state = states[s];
 
-            tuple<typename SType::ActionId,
-                    typename SType::OutcomeId,prec_t> newvalue;
+            tuple<ActionId,OutcomeId,prec_t> newvalue;
 
             if(type == Uncertainty::Robust){
                 newvalue = state.max_min(sourcevalue,discount);
@@ -1161,7 +1161,8 @@ auto GRMDP<SType>::vi_jac(Uncertainty type, prec_t discount, const numvec& value
             } else if(type == Uncertainty::Average){
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                 state.max_average(sourcevalue,discount);
-                newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
+
+                newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
             }
 
             residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
@@ -1226,8 +1227,7 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
         for(auto s = 0l; s < (long) states.size(); s++){
             const auto& state = states[s];
 
-            tuple<typename SType::ActionId,
-                    typename SType::OutcomeId,prec_t> newvalue;
+            tuple<ActionId,OutcomeId,prec_t> newvalue;
 
             if(type == Uncertainty::Robust){
                 newvalue = state.max_min(*sourcevalue,discount);
@@ -1236,7 +1236,7 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
             } else if(type == Uncertainty::Average){
                 pair<typename SType::ActionId,prec_t> avgvalue =
                                 state.max_average(*sourcevalue,discount);
-                newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
+                newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
             }
 
             residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
@@ -1385,7 +1385,7 @@ GRMDP<SType>::transition_mat(const ActionPolicy& policy, const OutcomePolicy& na
 
     #pragma omp parallel for
     for(size_t s=0; s < n; s++){
-        const Transition& t = states[s].get_action(policy[s]).get_outcome(nature[s]);
+        const Transition&& t = states[s].mean_transition(policy[s],nature[s]);
         const auto& indexes = t.get_indices();
         const auto& probabilities = t.get_probabilities();
 
@@ -1409,7 +1409,7 @@ GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& 
         // if this is a terminal state, then just go with zero probabilities
         if(states[s].is_terminal())  continue;
 
-        const Transition& t = states[s].get_action(policy[s]).get_outcome(nature[s]);
+        const Transition&& t = states[s].mean_transition(policy[s],nature[s]);
         const auto& indexes = t.get_indices();
         const auto& probabilities = t.get_probabilities();
 
@@ -1418,7 +1418,6 @@ GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& 
     }
     return result;
 }
-
 
 /// **********************************************************************
 /// *********************    TEMPLATE DECLARATIONS    ********************

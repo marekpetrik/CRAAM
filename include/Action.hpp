@@ -276,7 +276,7 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<RegularAction::OutcomeId, prec_t>
+    pair<OutcomeId, prec_t>
     maximal(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
@@ -284,7 +284,7 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    pair<RegularAction::OutcomeId, prec_t>
+    pair<OutcomeId, prec_t>
     minimal(const numvec& valuefunction, prec_t discount) const
         {return make_pair(0,value(valuefunction, discount));};
 
@@ -292,8 +292,7 @@ public:
     Computes a value of the action: see RegularAction::value. The
     purpose of this method is for the general robust MDP setting.
     */
-    prec_t fixed(const numvec& valuefunction, prec_t discount,
-                RegularAction::OutcomeId index) const
+    prec_t fixed(const numvec& valuefunction, prec_t discount, OutcomeId index) const
         {return value(valuefunction, discount);};
 
     /** Returns the outcomes. */
@@ -319,11 +318,14 @@ public:
         result.append("1(r)");
     };
 
+    /** Whether the provided outcome is valid */
+    bool is_outcome_correct(OutcomeId oid) const {return oid == 0;};
+
     /** Returns the mean reward from the transition. */
     prec_t mean_reward(OutcomeId) const { return outcome.mean_reward();};
 
-    /** Whether the provided outcome is valid */
-    bool is_outcome_correct(OutcomeId oid) const {return oid == 0;};
+    /** Returns the mean transition probabilities. Ignore rewards. */
+    Transition mean_transition(OutcomeId) const {return outcome;};
 };
 
 
@@ -450,13 +452,16 @@ public:
         assert(index >= 0l && index < (long) outcomes.size());
         return outcomes[index].compute_value(valuefunction, discount); };
 
-    /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId outcome) const { return outcomes[outcome].mean_reward();};
-
     /** Whether the provided outcome is valid */
     bool is_outcome_correct(OutcomeId oid) const
         {return (oid >= 0) && ((size_t) oid < outcomes.size());};
 
+
+    /** Returns the mean reward from the transition. */
+    prec_t mean_reward(OutcomeId oid) const { return outcomes[oid].mean_reward();};
+
+    /** Returns the mean transition probabilities */
+    Transition mean_transition(OutcomeId oid) const {return outcomes[oid];};
 };
 
 /// **************************************************************************************
@@ -585,13 +590,16 @@ public:
         result.append(std::to_string(get_distribution().size()));
     }
 
-    /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId outcomedist) const;
-
     /** Whether the provided outcome is valid */
     bool is_outcome_correct(OutcomeId oid) const
         {return (oid.size() == outcomes.size());};
 
+
+    /** Returns the mean reward from the transition. */
+    prec_t mean_reward(OutcomeId outcomedist) const;
+
+    /** Returns the mean transition probabilities */
+    Transition mean_transition(OutcomeId outcomedist) const;
 };
 
 /// **************************************************************************************

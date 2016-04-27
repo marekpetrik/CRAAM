@@ -753,10 +753,15 @@ protected:
 
 public:
 
+    /** Action identifier in a policy. Copies type from state type. */
+    typedef typename SType::ActionId ActionId;
+    /** Action identifier in a policy. Copies type from state type. */
+    typedef typename SType::OutcomeId OutcomeId;
+
     /** Which action to take in which state. Decision-maker's policy */
-    typedef vector<typename SType::ActionId> ActionPolicy;
+    typedef vector<ActionId> ActionPolicy;
     /** Which outcome to take in which state. Nature's policy */
-    typedef vector<typename SType::OutcomeId> OutcomePolicy;
+    typedef vector<OutcomeId> OutcomePolicy;
     /** Solution type */
     typedef GSolution<typename SType::ActionId, typename SType::OutcomeId>
                 SolType;

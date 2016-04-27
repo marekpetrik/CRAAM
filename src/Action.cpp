@@ -338,7 +338,7 @@ auto WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t 
     }
 
     auto result = nature(outcomevalues, distribution, threshold);
-    result.second = - result.second;
+    result.second = -result.second;
 
     return result;
 }
@@ -368,7 +368,6 @@ prec_t WeightedOutcomeAction<nature>::average(numvec const& valuefunction, prec_
 
     if(outcomes.empty())
         throw invalid_argument("Action with no outcomes");
-
 
     prec_t averagevalue = 0.0;
     for(size_t i = 0; i < outcomes.size(); i++)
@@ -451,13 +450,25 @@ prec_t WeightedOutcomeAction<nature>::mean_reward(OutcomeId outcomedist) const{
     assert(outcomedist.size() == outcomes.size());
 
     prec_t result = 0;
-
     const auto n = outcomes.size();
     for(size_t i=0; i <= n; i++){
         result += outcomedist[i] * outcomes[i].mean_reward();
     }
     return result;
 }
+
+template<NatureConstr nature>
+Transition WeightedOutcomeAction<nature>::mean_transition(OutcomeId outcomedist) const{
+    assert(outcomedist.size() == outcomes.size());
+
+    Transition result;
+    const auto n = outcomes.size();
+    for(size_t i=0; i <= n; i++){
+        outcomes[i].probabilities_addto(outcomedist[i], result);
+    }
+    return result;
+}
+
 
 /// **************************************************************************************
 ///  L1 Outcome Action

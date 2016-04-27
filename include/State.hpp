@@ -209,13 +209,19 @@ public:
     /** Normalizes transition probabilities to sum to one. */
     void normalize();
 
-    /** Returns the mean reward following the action (and outcome) */
+    /** Whether the policies are correct */
+    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
+
+    /** Returns the mean reward following the action (and outcome). */
     prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
         return get_action(actionid).mean_reward(outcomeid);
     }
 
-    /** Whether the policies are correct */
-    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
+    /** Returns the mean transition probabilities following the action and outcome. Ignore rewards. */
+    Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
+        return move(get_action(actionid).mean_transition(outcomeid));
+    }
+
 };
 
 /// **********************************************************************
