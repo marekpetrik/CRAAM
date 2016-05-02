@@ -960,7 +960,7 @@ const Transition& RMDP::get_transition(long stateid, long actionid, long outcome
 
 
 template<class SType>
-SType GRMDP<SType>::create_state(long stateid) {
+SType& GRMDP<SType>::create_state(long stateid) {
     assert(stateid >= 0);
 
     if(stateid >= (long) states.size())
@@ -1431,17 +1431,6 @@ template class GRMDP<L1RobustState>;
 /// ***********************    HELPER FUNCTIONS    ***********************
 /// **********************************************************************
 
-/**
-Adds a transition to the MDP model with an outcome number
-*/
-template<class Model>
-void add_transition(Model& m, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
-    m.create_state(toid);
-    auto& state_from = m.create_state(fromid);
-    auto& action = state_from.create_action(actionid);
-    Transition& outcome = action.create_outcome(outcomeid);
-    outcome.add_sample(toid,probability,reward);
-}
 
 template<class Model>
 void from_csv(Model& result, istream& input, bool header){

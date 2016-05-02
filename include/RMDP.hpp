@@ -781,13 +781,13 @@ public:
     States with intermediate ids are also created
     \return The new state
     */
-    SType create_state(long stateid);
+    SType& create_state(long stateid);
 
     /**
     Creates a new state at the end of the states
     \return The new state
     */
-    SType create_state(){ return create_state(states.size());};
+    SType& create_state(){ return create_state(states.size());};
 
     /** Number of states */
     size_t state_count() const {return states.size();};
@@ -863,7 +863,8 @@ public:
     SolType vi_gs(Uncertainty uncert,
                   prec_t discount,
                   numvec valuefunction=numvec(0),
-                    unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) const;
+                  unsigned long iterations=MAXITER,
+                  prec_t maxresidual=SOLPREC) const;
 
     /**
     Jacobi value iteration variant. This method uses OpenMP to parallelize the computation.
@@ -1017,26 +1018,32 @@ Adds a transition probability for a model with no outcomes.
 \param mdp model to add the transition to
 \param fromid Starting state ID
 \param actionid Action ID
-\param toid Destination ID
-\param probability Probability of the transition (must be non-negative)
-\param reward The reward associated with the transition.
-*/
-template<class Model>
-void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward);
-
-/**
-Adds a transition probability for a particular outcome.
-\param mdp model to add the transition to
-\param fromid Starting state ID
-\param actionid Action ID
 \param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
 \param toid Destination ID
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
 */
 template<class Model>
+void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
+    mdp.create_state(toid);
+    auto& state_from = mdp.create_state(fromid);
+    auto& action = state_from.create_action(actionid);
+    Transition& outcome = action.create_outcome(outcomeid);
+    outcome.add_sample(toid,probability,reward);
+}
+
+/**
+Adds a transition probability for a particular outcome.
+\param mdp model to add the transition to
+\param fromid Starting state ID
+\param actionid Action ID
+\param toid Destination ID
+\param probability Probability of the transition (must be non-negative)
+\param reward The reward associated with the transition.
+*/
+template<class Model>
 void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
-    add_transition<Model>(mdp, fromid, actionid, 0, toid, probability, reward);
+    add_transition<Model>(mdp, fromid, actionid, 0l, toid, probability, reward);
 }
 
 /**

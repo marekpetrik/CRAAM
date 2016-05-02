@@ -304,8 +304,14 @@ public:
     /** Returns the single outcome. */
     const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
 
+    /**
+    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    This method does nothing in this action.
+    */
+    Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;};
+
     /** Returns the single outcome. */
-    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0); return outcome;};
+    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
 
     /** Normalizes transition probabilities */
     void normalize() {outcome.normalize();};
@@ -545,6 +551,10 @@ public:
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This override also handles properly resizing the distribution.
+
+    The baseline distribution value for the new outcome(s) are set to be:
+    1/(outcomeid+1)
+    Weights for existing outcomes are scaled appropriately.
     */
     Transition& create_outcome(long outcomeid) override;
 

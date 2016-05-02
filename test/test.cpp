@@ -29,6 +29,7 @@ using namespace craam;
 #define BOOST_TEST_MODULE MainModule
 #include <boost/test/unit_test.hpp>
 
+// new
 BOOST_AUTO_TEST_CASE( basic_tests ) {
     Transition t1({1,2}, {0.1,0.2}, {3,4});
     Transition t2({1,2}, {0.1,0.2}, {5,4});
@@ -57,35 +58,45 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
     BOOST_CHECK_LE (v2-1.75, 0.01);
 }
 
-BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
-    RMDP rmdp(3);
+/// Model can be any of the GRMDP types
+template<class Model>
+Model create_test_mdp(){
+    Model rmdp(3);
 
     // nonrobust
     // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
-    rmdp.add_transition_d(0,1,1,1,0);
-    rmdp.add_transition_d(1,1,2,1,0);
-    rmdp.add_transition_d(2,1,2,1,1.1);
+    add_transition<Model>(rmdp,0,1,1,1.0,0.0);
+    add_transition<Model>(rmdp,1,1,2,1.0,0.0);
+    add_transition<Model>(rmdp,2,1,2,1.0,1.1);
 
-    rmdp.add_transition_d(0,0,0,1,0);
-    rmdp.add_transition_d(1,0,0,1,1);
-    rmdp.add_transition_d(2,0,1,1,1);
+    add_transition<Model>(rmdp,0,0,0,1.0,0.0);
+    add_transition<Model>(rmdp,1,0,0,1.0,1.0);
+    add_transition<Model>(rmdp,2,0,1,1.0,1.0);
+
+    return rmdp;
+}
+
+BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
+
+    auto rmdp = create_test_mdp<RMDP_L1>();
 
     Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
 
     numvec initial{0,0,0};
 
-    // small number of iterations (not the true value function)
-    auto&& re = rmdp.vi_gs_rob(initial,0.9,20,0);
-
     numvec val_rob{7.68072,8.67072,9.77072};
     indvec pol_rob{1,1,1};
     indvec natpol_rob{0,0,0};
+
+
+    // small number of iterations (not the true value function)
+    auto re = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,20,0);
 
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
     // test jac value iteration
-    auto&& re2 = rmdp.vi_jac_rob(initial,0.9, 20,0);
+    auto re2 = rmdp.vi_jac(Uncertainty::Robust,0.9, initial,20,0);
 
     numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
@@ -97,14 +108,15 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     const prec_t ret_true = 9.93666666;
 
     // robust
-    auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);
+    auto&& re3 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    auto&& re4 = rmdp.vi_jac_rob(initial,0.9, 10000,0);
+    auto&& re4 = rmdp.vi_jac(Uncertainty::Robust,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
+/*
     // optimistic
     auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
@@ -138,7 +150,7 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     auto&& rewards = rmdp.rewards_state(re3.policy,re3.outcomes);
     auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
     BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
-
+*/
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
@@ -154,7 +166,6 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     rmdp.add_transition_d(0,0,0,1,0);
     rmdp.add_transition_d(1,0,0,1,1);
     rmdp.add_transition_d(2,0,1,1,1);
-
 
     numvec initial{0,0,0};
 
