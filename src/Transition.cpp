@@ -154,7 +154,6 @@ numvec Transition::probabilities_vector(size_t size) const{
 }
 
 void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
-
     for(size_t i = 0; i < size(); i++)
         transition[indices[i]] += scale*probabilities[i];
 }

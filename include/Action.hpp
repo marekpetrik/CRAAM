@@ -553,7 +553,8 @@ public:
     This override also handles properly resizing the distribution.
 
     The baseline distribution value for the new outcome(s) are set to be:
-    1/(outcomeid+1)
+    1/(new_outcomeid+1)
+    That is, it assumes uniform distribution of the outcomes.
     Weights for existing outcomes are scaled appropriately.
     */
     Transition& create_outcome(long outcomeid) override;

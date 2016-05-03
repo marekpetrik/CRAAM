@@ -412,10 +412,24 @@ template<NatureConstr nature>
 Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
+
+    // check if need to scale the existing weights
+    if(outcomes.size() > 0){
+        auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
+        // only scale when the sum is not zero
+        if(weightsum > 0){
+            prec_t normal = 1.0 / weightsum;
+            transform(distribution.begin(), distribution.end(),distribution.begin(),
+                      [normal](prec_t x){return x * normal;});
+        }
+    }
+
     if(outcomeid >= (long) outcomes.size())
         outcomes.resize(outcomeid + 1);
-    // got to resize the distribution too and assign 0 weights
-    distribution.resize(outcomeid + 1, 0.0);
+
+    // got to resize the distribution too and assign 1 weights
+    distribution.resize(outcomeid+1, 1.0/prec_t(outcomeid+1));
+
     return outcomes[outcomeid];
 }
 
