@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <numeric>
 
 #include "Transition.hpp"
 #include "Action.hpp"
@@ -76,9 +77,10 @@ Model create_test_mdp(){
     return rmdp;
 }
 
-BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
-
-    auto rmdp = create_test_mdp<RMDP_L1>();
+template<class Model>
+void test_simple_vi(){
+    /// Tests simple non-robust value iteration with the various models
+    auto rmdp = create_test_mdp<Model>();
 
     Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
 
@@ -116,27 +118,28 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
-/*
     // optimistic
-    auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
+    auto&& re5 = rmdp.vi_gs(Uncertainty::Optimistic,0.9, initial, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    auto&& re6 = rmdp.vi_jac_opt(initial,0.9, 10000,0);
+    auto&& re6 = rmdp.vi_jac(Uncertainty::Optimistic,0.9, initial, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
+
     // average
-    auto&& re7 = rmdp.vi_gs_ave(initial,0.9, 10000,0);
+    auto&& re7 = rmdp.vi_gs(Uncertainty::Average, 0.9, initial, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re7.policy.begin(),re7.policy.end());
 
-    auto&& re8 = rmdp.vi_jac_ave(initial,0.9, 10000,0);
+    auto&& re8 = rmdp.vi_jac(Uncertainty::Average,0.9, initial, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
+
     // fixed evaluation
-    auto&& re9 = rmdp.vi_jac_fix(initial,0.9,pol_rob,natpol_rob,10000,0);
+    auto&& re9 = rmdp.vi_jac_fix(0.9,pol_rob,natpol_rob,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
 
     // check the computed returns
@@ -150,8 +153,18 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     auto&& rewards = rmdp.rewards_state(re3.policy,re3.outcomes);
     auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
     BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
-*/
 }
+
+BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
+ test_simple_vi<MDP>();
+}
+BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
+ test_simple_vi<RMDP_D>();
+}
+BOOST_AUTO_TEST_CASE(simple_rmdpl1_vi_of_nonrobust) {
+ test_simple_vi<RMDP_L1>();
+}
+
 
 BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     // run mpi but use parameters that should recover the same solution as vi

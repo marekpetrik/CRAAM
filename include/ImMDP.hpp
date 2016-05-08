@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include <random>
 
 using namespace std;
 
@@ -57,7 +58,7 @@ public:
     /**
     Converts a policy defined in terms of observations to a policy defined in
     terms of states.
-    \param obspol Policy that maps observations to actions to take    
+    \param obspol Policy that maps observations to actions to take
     \return Observation policy
     */
     indvec obspol2statepol(const indvec& obspol) const;

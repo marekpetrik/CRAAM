@@ -314,9 +314,10 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
             case Uncertainty::Optimistic:
                 newvalue = state.max_max_cst<nature>(valuefunction, discount);
                 break;
-            default:
-                //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic, "Unknown/invalid (average not supported) optimization type.");
-                throw invalid_argument("Unknown/invalid (average not supported) optimization type.");
+            case Uncertainty::Average:
+                static_assert(type == Uncertainty::Robust || type == Uncertainty::Optimistic,
+                               "Unknown/invalid (average not supported) optimization type.");
+
             }
             residual = max(residual, abs(valuefunction[s] - get<2>(newvalue) ));
             valuefunction[s] = get<2>(newvalue);
@@ -329,7 +330,7 @@ Solution RMDP::vi_gs_cst(numvec valuefunction, prec_t discount, unsigned long it
 
 template Solution RMDP::vi_gs_cst<Uncertainty::Robust,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_gs_cst<Uncertainty::Optimistic,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-template Solution RMDP::vi_gs_cst<Uncertainty::Average,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+//template Solution RMDP::vi_gs_cst<Uncertainty::Average,worstcase_l1>(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 template<Uncertainty type>
 Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
@@ -378,8 +379,6 @@ Solution RMDP::vi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned
                 avgvalue = state.max_average(sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
                 break;
-            default:
-                throw invalid_argument("Unknown optimization type.");
             }
 
             residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
@@ -430,7 +429,7 @@ RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount,
         numvec & targetvalue = i % 2 == 0 ? evenvalue : oddvalue;
 
         #pragma omp parallel for
-        for(auto s = 0l; s <  (long)this->states.size(); s++){
+        for(size_t s = 0; s <  this->states.size(); s++){
             const auto& state = this->states[s];
 
             tuple<long,numvec,prec_t> newvalue;
@@ -441,9 +440,9 @@ RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount,
             case Uncertainty::Optimistic:
                 newvalue = state.max_max_l1(sourcevalue,discount);
                 break;
-            default:
-                //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic, "Unknown/invalid (average not supported) optimization type.");
-                throw invalid_argument("Unknown/invalid (average not supported) optimization type.");
+            case Uncertainty::Average:
+                static_assert(type == Uncertainty::Robust || type == Uncertainty::Optimistic,
+                               "Unknown/invalid (average not supported) optimization type.");
             }
 
             residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
@@ -460,7 +459,7 @@ RMDP::vi_jac_cst(numvec const& valuefunction, prec_t discount,
 
 template Solution RMDP::vi_jac_cst<Uncertainty::Robust,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 template Solution RMDP::vi_jac_cst<Uncertainty::Optimistic,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
-template Solution RMDP::vi_jac_cst<Uncertainty::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
+//template Solution RMDP::vi_jac_cst<Uncertainty::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const;
 
 template<Uncertainty type>
 Solution
@@ -518,8 +517,6 @@ RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long it
                 avgvalue = state.max_average(*sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,-1,avgvalue.second);
                 break;
-            default:
-                throw invalid_argument("unknown optimization type.");
             }
 
             residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
@@ -552,8 +549,6 @@ RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long it
                 case Uncertainty::Average:
                     newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
                     break;
-                default:
-                    throw invalid_argument("Unknown optimization type.");
                 }
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
@@ -567,14 +562,13 @@ RMDP::mpi_jac_gen(numvec const& valuefunction, prec_t discount, unsigned long it
 
 template Solution RMDP::mpi_jac_gen<Uncertainty::Robust>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_gen<Uncertainty::Optimistic>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
-template Solution RMDP::mpi_jac_gen<Uncertainty::Average>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
+//template Solution RMDP::mpi_jac_gen<Uncertainty::Average>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
 template<Uncertainty type, NatureConstr nature>
-Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi,
-                 unsigned long iterations_vi, prec_t maxresidual_vi) const{
+Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount,
+                           unsigned long iterations_pi, prec_t maxresidual_pi,
+                            unsigned long iterations_vi, prec_t maxresidual_vi) const{
 
-
-    if(type == Uncertainty::Average) throw invalid_argument("computing average is not supported by this function");
 
     if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
         throw invalid_argument("Incorrect size of value function.");
@@ -624,8 +618,9 @@ Solution RMDP::mpi_jac_cst(numvec const& valuefunction, prec_t discount, unsigne
             case Uncertainty::Optimistic:
                 newvalue = state.max_max_l1(*sourcevalue,discount);
                 break;
-            default:
-                throw invalid_argument("unsupported optimization type.");
+            case Uncertainty::Average:
+                static_assert(type == Uncertainty::Robust || type == Uncertainty::Optimistic,
+                               "Unknown/invalid (average not supported) optimization type.");
             }
 
             residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
@@ -753,7 +748,7 @@ Solution RMDP::vi_jac_fix_ave(const numvec& valuefunction, prec_t discount, cons
 
 template Solution RMDP::mpi_jac_cst<Uncertainty::Robust,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 template Solution RMDP::mpi_jac_cst<Uncertainty::Optimistic,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
-template Solution RMDP::mpi_jac_cst<Uncertainty::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
+//template Solution RMDP::mpi_jac_cst<Uncertainty::Average,worstcase_l1>(numvec const& valuefunction, prec_t discount, unsigned long iterations_pi, prec_t maxresidual_pi, unsigned long iterations_vi, prec_t maxresidual_vi) const;
 
 Solution RMDP::vi_gs_rob(numvec valuefunction, prec_t discount, unsigned long iterations, prec_t maxresidual) const{
 
@@ -1095,15 +1090,18 @@ auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction
 
             tuple<ActionId,OutcomeId,prec_t> newvalue;
 
-            if(type == Uncertainty::Robust){
+            switch(type){
+            case Uncertainty::Robust:
                 newvalue = state.max_min(valuefunction,discount);
-            }else if(type == Uncertainty::Optimistic){
+                break;
+            case Uncertainty::Optimistic:
                 newvalue = state.max_max(valuefunction,discount);
-            }else if(type == Uncertainty::Average){
+                break;
+            case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                                    state.max_average(valuefunction,discount);
-
+                    state.max_average(valuefunction,discount);
                 newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
+                break;
             }
 
             residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
@@ -1154,15 +1152,18 @@ auto GRMDP<SType>::vi_jac(Uncertainty type, prec_t discount, const numvec& value
 
             tuple<ActionId,OutcomeId,prec_t> newvalue;
 
-            if(type == Uncertainty::Robust){
+            switch(type){
+            case Uncertainty::Robust:
                 newvalue = state.max_min(sourcevalue,discount);
-            }else if(type == Uncertainty::Optimistic){
+                break;
+            case Uncertainty::Optimistic:
                 newvalue = state.max_max(sourcevalue,discount);
-            } else if(type == Uncertainty::Average){
+                break;
+            case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                                state.max_average(sourcevalue,discount);
-
+                    state.max_average(sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
+                break;
             }
 
             residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
@@ -1229,14 +1230,18 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
 
             tuple<ActionId,OutcomeId,prec_t> newvalue;
 
-            if(type == Uncertainty::Robust){
+            switch(type){
+            case Uncertainty::Robust:
                 newvalue = state.max_min(*sourcevalue,discount);
-            }else if(type == Uncertainty::Optimistic){
+                break;
+            case Uncertainty::Optimistic:
                 newvalue = state.max_max(*sourcevalue,discount);
-            } else if(type == Uncertainty::Average){
+                break;
+            case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                                state.max_average(*sourcevalue,discount);
+                    state.max_average(*sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
+                break;
             }
 
             residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
@@ -1261,11 +1266,14 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
             for(auto s = 0l; s < (long) states.size(); s++){
                 prec_t newvalue;
 
-
-                if(type == Uncertainty::Robust || type == Uncertainty::Optimistic){
+                switch(type){
+                case Uncertainty::Robust:
+                case Uncertainty::Optimistic:
                     newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],outcomes[s]);
-                } else if(type == Uncertainty::Average){
+                    break;
+                case Uncertainty::Average:
                     newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
+                    break;
                 }
 
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
@@ -1340,13 +1348,9 @@ numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
     // get transition matrix
     unique_ptr<ublas::matrix<prec_t>> t_mat(transition_mat_t(policy,nature));
 
-    //cout << "Transition matrix transpose P^T: " << *t_mat << endl;
-
     // construct main matrix
     (*t_mat) *= -discount;
     (*t_mat) += ublas::identity_matrix<prec_t>(n);
-
-    //cout << "Constructed matrix (A): " << *t_mat << endl;
 
     // solve set of linear equations
     ublas::permutation_matrix<prec_t> P(n);
