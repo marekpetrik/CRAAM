@@ -1343,6 +1343,7 @@ numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
     // initial distribution
     auto&& initial_svec = init.probabilities_vector(n);
     ublas::vector<prec_t> initial_vec(n);
+    // TODO: this is a wasteful copy operation
     copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
 
     // get transition matrix

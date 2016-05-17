@@ -248,7 +248,7 @@ protected:
 
 public:
     /** Type of an identifier for an outcome. It is ignored for the simple action. */
-    typedef int OutcomeId;
+    typedef long OutcomeId;
 
     /** Creates an empty action. */
     RegularAction(){};

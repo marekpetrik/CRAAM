@@ -960,8 +960,6 @@ public:
         transition_mat_t(const ActionPolicy& policy,
                          const OutcomePolicy& nature) const;
 
-
-
     /// ----------------------------------------------
     /// Reading and writing files
     /// ----------------------------------------------
@@ -1004,6 +1002,15 @@ public:
 /// *********************    TEMPLATE DECLARATIONS    ********************
 /// **********************************************************************
 
+/**
+Regular MDP with discrete actions and one outcome per action
+
+    ActionId = long
+    OutcomeId = long
+
+    ActionPolicy = vector<ActionId>
+    OutcomePolicy = vector<OutcomeId>
+*/
 typedef GRMDP<RegularState> MDP;
 typedef GRMDP<DiscreteRobustState> RMDP_D;
 typedef GRMDP<L1RobustState> RMDP_L1;

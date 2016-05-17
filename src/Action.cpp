@@ -464,8 +464,8 @@ prec_t WeightedOutcomeAction<nature>::mean_reward(OutcomeId outcomedist) const{
     assert(outcomedist.size() == outcomes.size());
 
     prec_t result = 0;
-    const auto n = outcomes.size();
-    for(size_t i=0; i <= n; i++){
+
+    for(size_t i=0; i < outcomes.size(); i++){
         result += outcomedist[i] * outcomes[i].mean_reward();
     }
     return result;
@@ -476,8 +476,8 @@ Transition WeightedOutcomeAction<nature>::mean_transition(OutcomeId outcomedist)
     assert(outcomedist.size() == outcomes.size());
 
     Transition result;
-    const auto n = outcomes.size();
-    for(size_t i=0; i <= n; i++){
+
+    for(size_t i=0; i < outcomes.size(); i++){
         outcomes[i].probabilities_addto(outcomedist[i], result);
     }
     return result;

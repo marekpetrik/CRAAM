@@ -6,7 +6,7 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
-set(VERSION "0.4.0")
+set(VERSION "0.5.0")
 project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)

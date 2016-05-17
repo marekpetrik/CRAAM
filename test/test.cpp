@@ -78,7 +78,7 @@ Model create_test_mdp(){
 }
 
 template<class Model>
-void test_simple_vi(){
+void test_simple_vi(typename Model::OutcomePolicy natpol_rob){
     /// Tests simple non-robust value iteration with the various models
     auto rmdp = create_test_mdp<Model>();
 
@@ -88,8 +88,6 @@ void test_simple_vi(){
 
     numvec val_rob{7.68072,8.67072,9.77072};
     indvec pol_rob{1,1,1};
-    indvec natpol_rob{0,0,0};
-
 
     // small number of iterations (not the true value function)
     auto re = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,20,0);
@@ -127,7 +125,6 @@ void test_simple_vi(){
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
-
     // average
     auto&& re7 = rmdp.vi_gs(Uncertainty::Average, 0.9, initial, 10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
@@ -137,9 +134,8 @@ void test_simple_vi(){
     CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
-
     // fixed evaluation
-    auto&& re9 = rmdp.vi_jac_fix(0.9,pol_rob,natpol_rob,initial,10000,0);
+    auto&& re9 = rmdp.vi_jac_fix(0.9,pol_rob,natpol_rob,initial,10000,0.0);
     CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
 
     // check the computed returns
@@ -156,13 +152,15 @@ void test_simple_vi(){
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
- test_simple_vi<MDP>();
+    test_simple_vi<MDP>(indvec{0,0,0});
 }
+
 BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
- test_simple_vi<RMDP_D>();
+    test_simple_vi<RMDP_D>(indvec{0,0,0});
 }
+
 BOOST_AUTO_TEST_CASE(simple_rmdpl1_vi_of_nonrobust) {
- test_simple_vi<RMDP_L1>();
+    test_simple_vi<RMDP_L1>(vector<numvec>{numvec{1},numvec{1},numvec{1}});
 }
 
 
