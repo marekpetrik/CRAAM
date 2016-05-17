@@ -1032,7 +1032,10 @@ Adds a transition probability for a model with no outcomes.
 */
 template<class Model>
 void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
+
+    // make sure that the destination state exists
     mdp.create_state(toid);
+
     auto& state_from = mdp.create_state(fromid);
     auto& action = state_from.create_action(actionid);
     Transition& outcome = action.create_outcome(outcomeid);
@@ -1081,6 +1084,5 @@ Loads the transition probabilities and rewards from a CSV file.
  */
 template<class Model>
 Model& from_csv_file(Model& mdp, const string& filename, bool header = true);
-
 
 }

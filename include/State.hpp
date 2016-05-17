@@ -185,7 +185,8 @@ public:
                        ActionId actionid, OutcomeId outcomeid) const;
 
 
-    /** Creates an action given by actionid if it does not exists. Otherwise returns the existing one. */
+    /** Creates an action given by actionid if it does not exists.
+    Otherwise returns the existing one. */
     AType& create_action(long actionid);
 
     /** Creates an action at the last position of the state */
@@ -217,7 +218,7 @@ public:
         return get_action(actionid).mean_reward(outcomeid);
     }
 
-    /** Returns the mean transition probabilities following the action and outcome. Ignore rewards. */
+    /** Returns the mean transition probabilities following the action and outcome. */
     Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
         return move(get_action(actionid).mean_transition(outcomeid));
     }

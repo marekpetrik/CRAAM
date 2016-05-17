@@ -296,9 +296,6 @@ public:
         {return value(valuefunction, discount);};
 
     /** Returns the outcomes. */
-    vector<Transition> get_outcomes() {return vector<Transition>{outcome};};
-
-    /** Returns the outcomes. */
     vector<Transition> get_outcomes() const {return vector<Transition>{outcome};};
 
     /** Returns the single outcome. */

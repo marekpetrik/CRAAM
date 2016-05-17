@@ -59,7 +59,9 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
     BOOST_CHECK_LE (v2-1.75, 0.01);
 }
 
-/// Model can be any of the GRMDP types
+/// ********************************************************************************
+/// ***** Model construction methods ***********************************************
+/// ********************************************************************************
 template<class Model>
 Model create_test_mdp(){
     Model rmdp(3);
@@ -76,6 +78,12 @@ Model create_test_mdp(){
 
     return rmdp;
 }
+
+
+
+/// ********************************************************************************
+/// ***** MDP value iteration ****************************************************
+/// ********************************************************************************
 
 template<class Model>
 void test_simple_vi(typename Model::OutcomePolicy natpol_rob){
@@ -164,31 +172,28 @@ BOOST_AUTO_TEST_CASE(simple_rmdpl1_vi_of_nonrobust) {
 }
 
 
-BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
+/// ********************************************************************************
+/// ***** MDP modified policy iteration ********************************************
+/// ********************************************************************************
+
+template<class Model>
+void test_simple_mdp_mpi_like_vi(){
+
     // run mpi but use parameters that should recover the same solution as vi
 
-    RMDP rmdp(3);
-
-    // nonrobust
-    rmdp.add_transition_d(0,1,1,1,0);
-    rmdp.add_transition_d(1,1,2,1,0);
-    rmdp.add_transition_d(2,1,2,1,1.1);
-
-    rmdp.add_transition_d(0,0,0,1,0);
-    rmdp.add_transition_d(1,0,0,1,1);
-    rmdp.add_transition_d(2,0,1,1,1);
+    auto rmdp = create_test_mdp<Model>();
 
     numvec initial{0,0,0};
 
     // small number of iterations
-    auto&& re = rmdp.vi_gs_rob(initial,0.9,20,0);
+    auto&& re = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,20,0);
 
     numvec val_rob{7.68072,8.67072,9.77072};
     indvec pol_rob{1,1,1};
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    auto&& re2 = rmdp.mpi_jac_rob(initial,0.9, 20,0, 0,0);
+    auto&& re2 = rmdp.mpi_jac(Uncertainty::Robust,0.9,initial,20,0,0,0);
 
     numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
@@ -198,78 +203,62 @@ BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi) {
     numvec val_rob3{8.91,9.9,11.0};
 
     // robust
-    auto&& re3 = rmdp.vi_gs_rob(initial,0.9, 10000,0);
+    auto&& re3 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    auto&& re4 = rmdp.vi_jac_rob(initial,0.9, 10000,0);
+    auto&& re4 = rmdp.vi_jac(Uncertainty::Robust,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
 
     // optimistic
-    auto&& re5 = rmdp.vi_gs_opt(initial,0.9, 10000,0);
+    auto&& re5 = rmdp.vi_gs(Uncertainty::Optimistic,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    auto&& re6 = rmdp.vi_jac_opt(initial,0.9, 10000,0);
+    auto&& re6 = rmdp.vi_jac(Uncertainty::Optimistic,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
     // average
-    auto&& re7 = rmdp.vi_gs_ave(initial,0.9, 10000,0);
+    auto&& re7 = rmdp.vi_gs(Uncertainty::Average,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re7.policy.begin(),re7.policy.end());
 
-    auto&& re8 = rmdp.vi_jac_ave(initial,0.9, 10000,0);
+    auto&& re8 = rmdp.vi_jac(Uncertainty::Average,0.9,initial,10000,0);
     CHECK_CLOSE_COLLECTION(val_rob3,re8.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 }
 
-BOOST_AUTO_TEST_CASE(simple_mdp_mpi_nonrobust) {
-    RMDP rmdp(3);
-
-    // nonrobust
-    rmdp.add_transition_d(0,1,1,1,0);
-    rmdp.add_transition_d(1,1,2,1,0);
-    rmdp.add_transition_d(2,1,2,1,1.1);
-
-    rmdp.add_transition_d(0,0,0,1,0);
-    rmdp.add_transition_d(1,0,0,1,1);
-    rmdp.add_transition_d(2,0,1,1,1);
-
-
-    numvec initial{0,0,0};
-
-    // many iterations
-    numvec val_rob3{8.91,9.9,11.0};
-    indvec pol_rob{1,1,1};
-
-    // robust
-    auto re = rmdp.mpi_jac_rob(initial,0.9, 100,0, 100, 0);
-    CHECK_CLOSE_COLLECTION(val_rob3,re.valuefunction,1e-2);
-    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
-
+BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi_mdp) {
+    test_simple_mdp_mpi_like_vi<MDP>();
 }
 
-BOOST_AUTO_TEST_CASE(simple_mdp_fixed_size) {
-    RMDP rmdp(2);
-
-    rmdp.add_transition_d(0,1,1,1,0);
-
-    rmdp.add_transition_d(1,1,2,1,0);
-
+BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi_drmdp) {
+    test_simple_mdp_mpi_like_vi<RMDP_D>();
 }
 
-BOOST_AUTO_TEST_CASE(check_add_transition) {
+BOOST_AUTO_TEST_CASE(simple_mdp_mpi_like_vi_rmdpl1) {
+    test_simple_mdp_mpi_like_vi<RMDP_L1>();
+}
 
-    RMDP rmdp(10);
+
+/// ********************************************************************************
+/// ***** Check MDP resize *********************************************************
+/// ********************************************************************************
+
+
+template <class Model>
+void test_check_add_transition(typename Model::OutcomeId firstoutcome){
+
+    Model rmdp;
 
     // check adding to the end
-    rmdp.add_transition(0,0,0,5,0.1,1);
-    rmdp.add_transition(0,0,0,7,0.1,2);
+    add_transition(rmdp,0,0,0,5,0.1,1);
+    add_transition(rmdp,0,0,0,7,0.1,2);
 
-    const Transition& transition = rmdp.get_transition(0,0,0);
+    Transition&& transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
 
     BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
     BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
@@ -277,7 +266,8 @@ BOOST_AUTO_TEST_CASE(check_add_transition) {
     BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
 
     // check updating the last element
-    rmdp.add_transition(0,0,0,7,0.4,4);
+    add_transition(rmdp,0,0,0,7,0.4,4);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
 
     BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
     BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
@@ -288,9 +278,9 @@ BOOST_AUTO_TEST_CASE(check_add_transition) {
     vector<double> tp{0.1,0.5};
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 
-
     // check inserting an element into the middle
-    rmdp.add_transition(0,0,0,6,0.1,0.5);
+    add_transition(rmdp,0,0,0,6,0.1,0.5);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
 
     BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
     BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
@@ -301,9 +291,9 @@ BOOST_AUTO_TEST_CASE(check_add_transition) {
     tp = vector<double>{0.1,0.1,0.5};
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 
-
     // check updating an element in the middle
-    rmdp.add_transition(0,0,0,6,0.1,1.5);
+    add_transition(rmdp,0,0,0,6,0.1,1.5);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
 
     BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
     BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
@@ -314,6 +304,19 @@ BOOST_AUTO_TEST_CASE(check_add_transition) {
     tp = vector<double>{0.1,0.2,0.5};
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
 }
+
+BOOST_AUTO_TEST_CASE(check_add_transition_mdp) {
+    test_check_add_transition<MDP>(0);
+}
+
+BOOST_AUTO_TEST_CASE(check_add_transition_rmdpd) {
+    test_check_add_transition<RMDP_D>(0);
+}
+
+BOOST_AUTO_TEST_CASE(check_add_transition_rmdpl1) {
+    test_check_add_transition<RMDP_L1>(numvec{1.0});
+}
+
 
 BOOST_AUTO_TEST_CASE(simple_mdp_resize) {
     RMDP rmdp(0);

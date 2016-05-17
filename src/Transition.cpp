@@ -49,7 +49,7 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
     if(probability < -0.001) throw invalid_argument("probabilities must be non-negative.");
     if(stateid < 0) throw invalid_argument("State id must be non-negative.");
 
-    // if the probability is 0, just do not add it
+    // if the probability is 0 or negative, just do not add the sample
     if(probability <= 0){
         return;
     }
@@ -71,7 +71,7 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
             present = true;
         }
         else{
-            // find the closest existing index to the
+            // find the closest existing index to the new one
             auto fiter = lower_bound(indices.begin(),indices.end(),stateid);
             findex = fiter - indices.begin();
             present = (*fiter == stateid);
@@ -161,7 +161,7 @@ void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
 void Transition::probabilities_addto(prec_t scale, Transition& transition) const{
 
     for(size_t i = 0; i < size(); i++)
-        transition.add_sample(indices[i], scale*probabilities[i], 0);
+        transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
 }
 
 }
