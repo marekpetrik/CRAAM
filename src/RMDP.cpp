@@ -81,7 +81,7 @@ void RMDP::add_transitions(indvec const& fromids, indvec const& actionids, indve
 }
 
 void RMDP::set_uniform_thresholds(prec_t threshold){
-    for(auto& s : this->states)
+    for(auto& s : states)
         s.set_thresholds(threshold);
 }
 
@@ -986,7 +986,7 @@ template<class SType>
 long GRMDP<SType>::is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const {
 
-    for(auto si : range((size_t) 0, state_count())){
+    for(auto si : indices(states) ){
         // ignore terminal states
         if(states[si].is_terminal())
             continue;
@@ -1432,58 +1432,5 @@ template class GRMDP<RegularState>;
 template class GRMDP<DiscreteRobustState>;
 template class GRMDP<L1RobustState>;
 
-/// **********************************************************************
-/// ***********************    HELPER FUNCTIONS    ***********************
-/// **********************************************************************
-
-
-template<class Model>
-void from_csv(Model& result, istream& input, bool header){
-
-    string line;
-
-    // skip the first row if so instructed
-    if(header) input >> line;
-
-    input >> line;
-    while(input.good()){
-        string cellstring;
-        stringstream linestream(line);
-        long idstatefrom, idstateto, idaction, idoutcome;
-        prec_t probability, reward;
-
-        // read idstatefrom
-        getline(linestream, cellstring, ',');
-        idstatefrom = stoi(cellstring);
-        // read idaction
-        getline(linestream, cellstring, ',');
-        idaction = stoi(cellstring);
-        // read idoutcome
-        getline(linestream, cellstring, ',');
-        idoutcome = stoi(cellstring);
-        // read idstateto
-        getline(linestream, cellstring, ',');
-        idstateto = stoi(cellstring);
-        // read probability
-        getline(linestream, cellstring, ',');
-        probability = stof(cellstring);
-        // read reward
-        getline(linestream, cellstring, ',');
-        reward = stof(cellstring);
-
-        add_transition<Model>(result,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
-
-        input >> line;
-    }
-    return result;
-}
-
-template<class Model>
-Model& from_csv_file(Model& result, const string& filename, bool header){
-    ifstream ifs(filename);
-    from_csv(result, ifs, header);
-    ifs.close();
-    return result;
-}
 
 }

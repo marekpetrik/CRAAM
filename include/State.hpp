@@ -203,6 +203,8 @@ public:
 
     /** Number of actions */
     size_t action_count() const { return actions.size();};
+    /** Number of actions */
+    size_t size() const { return action_count();};
 
     /** True if the state is considered terminal (no actions). */
     bool is_terminal() const {return actions.empty();};

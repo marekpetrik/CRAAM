@@ -370,6 +370,8 @@ public:
 
     /** Returns number of outcomes. */
     size_t outcome_count() const {return outcomes.size();};
+    /** Returns number of outcomes. */
+    size_t size() const {return outcome_count();};
 
 
     /** Adds an outcome defined by the transition.
