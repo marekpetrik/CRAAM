@@ -1,5 +1,5 @@
 #include "definitions.hpp"
-
+#include "RMDP.hpp"
 #include "ImMDP.hpp"
 
 #include <algorithm>
@@ -21,7 +21,7 @@ T max_value(vector<T> x){
 }
 
 
-void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
+void MDPI::check_parameters(const MDP& mdp, const indvec& state2observ,
                             const Transition& initial){
 
     // *** check consistency of provided parameters ***
@@ -41,7 +41,7 @@ void MDPI::check_parameters(const RMDP& mdp, const indvec& state2observ,
 
 }
 
-MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+MDPI::MDPI(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
            const Transition& initial)
             : mdp(mdp), state2observ(state2observ), initial(initial),
               obscount(1+max_value(state2observ)),
@@ -66,8 +66,8 @@ MDPI::MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
     }
 }
 
-MDPI::MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial)
-            : MDPI(shared_ptr<const RMDP>(new RMDP(mdp)),state2observ, initial){}
+MDPI::MDPI(const MDP& mdp, const indvec& state2observ, const Transition& initial)
+            : MDPI(make_shared<const MDP>(mdp),state2observ, initial){}
 
 
 void MDPI::obspol2statepol(const indvec& obspol, indvec& statepol) const{
@@ -109,7 +109,7 @@ prec_t MDPI::total_return(const indvec& obspol, prec_t discount, prec_t precisio
     indvec&& statepol = obspol2statepol(obspol);
     indvec natpolicy(mdp->state_count(), (size_t) 0);
 
-    Solution&& sol = mdp->vi_jac_fix(numvec(0),discount, statepol, natpolicy, MAXITER, precision);
+    auto&& sol = mdp->vi_jac_fix(discount, statepol, natpolicy, numvec(0), MAXITER, precision);
 
     return sol.total_return(initial);
 }
@@ -162,13 +162,14 @@ unique_ptr<T> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
 
 
     // read mdp
-    auto mdp = RMDP::from_csv(input_mdp);
+    MDP mdp;
+    craam::from_csv(mdp,input_mdp);
 
     // read state2obs
     string line;
     if(headers) input_state2obs >> line; // skip the header
 
-    indvec state2obs(mdp->state_count());
+    indvec state2obs(mdp.state_count());
     input_state2obs >> line;
     while(input_state2obs.good()){
         string cellstring;
@@ -201,8 +202,7 @@ unique_ptr<T> MDPI::from_csv(istream& input_mdp, istream& input_state2obs,
         input_initial >> line;
     }
 
-    shared_ptr<const RMDP> csmdp = const_pointer_cast<const RMDP>(
-                            shared_ptr<RMDP>(std::move(mdp)));
+    shared_ptr<const MDP> csmdp = make_shared<const MDP>(std::move(mdp));
     return make_unique<T>(csmdp, state2obs, initial);
 }
 
@@ -238,27 +238,27 @@ unique_ptr<MDPI_R> MDPI::from_csv_file<MDPI_R>(const string& input_mdp, const st
 Transition MDPI::transition2obs(const Transition& tran){
     if((size_t) tran.max_index() >= state_count())
         throw invalid_argument("Transition to a non-existing state.");
-    
+
     Transition result;
-    
+
     for(auto i : range((size_t)0, tran.size())){
         const long state = tran.get_indices()[i];
         const prec_t prob = tran.get_probabilities()[i];
-        const prec_t reward = tran.get_rewards()[i];        
-        
+        const prec_t reward = tran.get_rewards()[i];
+
         result.add_sample(state2obs(state), prob, reward);
     }
     return result;
 }
 
-MDPI_R::MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+MDPI_R::MDPI_R(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial),
             state2outcome(mdp->state_count(),-1){
     initialize_robustmdp();
 }
 
 
-MDPI_R::MDPI_R(const RMDP& mdp, const indvec& state2observ,
+MDPI_R::MDPI_R(const MDP& mdp, const indvec& state2observ,
             const Transition& initial) : MDPI(mdp, state2observ, initial),
             state2outcome(mdp.state_count(),-1){
 
@@ -274,7 +274,7 @@ void MDPI_R::initialize_robustmdp(){
     // keep track of the number of outcomes for each
     indvec outcome_count(obs_count, 0);
 
-    for(auto state_index : range((size_t) 0, mdp->state_count())){
+    for(size_t state_index : indices(*mdp)){
         auto obs = state2observ[state_index];
 
         // make sure to at least create a terminal state when there are no actions for it
@@ -282,15 +282,10 @@ void MDPI_R::initialize_robustmdp(){
 
         // maps the transitions
         for(auto action_index : range(0l, action_counts[obs])){
-            // check to make sure that there is no robustness
-            auto oc = mdp->get_state(state_index).get_action(action_index).outcome_count();
-            if(oc > 1)
-                throw invalid_argument("Robust base MDP is not supported; " + to_string(oc)
-                                       + " outcomes in state " + to_string(state_index) +
-                                       " and action " + to_string(action_index) );
 
-            const Transition& old_tran = mdp->get_transition(state_index,action_index,0);
+            const Transition& old_tran = mdp->get_state(state_index).get_action(action_index).get_outcome();
             Transition& new_tran = robust_mdp.create_transition(obs,action_index,outcome_count[obs]);
+
             // make sure that the action is using a distribution (it will be needed almost surely)
             robust_mdp.get_state(obs).get_action(action_index).init_distribution();
 
@@ -364,7 +359,7 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
 
     // map the initial distribution to observations in order to evaluate the return
     const Transition oinitial = transition2obs(initial);
-    
+
     for(auto iter : range(0l, iterations)){
         (void) iter; // to remove the warning
 
@@ -373,9 +368,9 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
 
         // update importance weights
         update_importance_weights(importanceweights);
-        
+
         Solution&& sf = robust_mdp.vi_jac_fix_ave(numvec(0), discount, obspol);
-   
+
         // compute solution of the robust MDP with the new weights
         Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
 

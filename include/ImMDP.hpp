@@ -34,7 +34,7 @@ public:
     \param initial A representation of the initial distribution. The rewards
                     in this transition are ignored (and should be 0).
     */
-    MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
          const Transition& initial);
 
     /**
@@ -48,7 +48,7 @@ public:
     \param initial A representation of the initial distribution. The rewards
                     in this transition are ignored (and should be 0).
     */
-    MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
     size_t obs_count() const { return obscount; };
     size_t state_count() const {return mdp->state_count(); };
@@ -78,7 +78,7 @@ public:
     Transition transition2obs(const Transition& tran);
 
     /** Internal MDP representation */
-    shared_ptr<const RMDP> get_mdp() {return mdp;};
+    shared_ptr<const MDP> get_mdp() {return mdp;};
 
     /** Initial distribution of MDP */
     Transition get_initial() const {return initial;};
@@ -139,7 +139,7 @@ public:
 protected:
 
     /** the underlying MDP */
-    shared_ptr<const RMDP> mdp;
+    shared_ptr<const MDP> mdp;
     /** maps index of a state to the index of the observation */
     indvec state2observ;
     /** initial distribution */
@@ -153,7 +153,7 @@ protected:
      Checks whether the parameters are correct. Throws an exception if the parameters
      are wrong.
      */
-    static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    static void check_parameters(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 };
 
 
@@ -169,14 +169,14 @@ public:
     Calls the base constructor and also constructs the corresponding
     robust MDP
      */
-    MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI_R(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
             const Transition& initial);
 
     /**
     Calls the base constructor and also constructs the corresponding
     robust MDP.
     */
-    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI_R(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
     const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */

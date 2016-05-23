@@ -22,7 +22,7 @@ Transition::Transition(const indvec& indices, const numvec& probabilities,
 
     auto sorted = sort_indexes(indices);
 
-    for(auto&& k : sorted)
+    for(auto k : sorted)
         add_sample(indices[k],probabilities[k],rewards[k]);
 }
 
@@ -40,7 +40,7 @@ Transition::Transition(const indvec& indices, const numvec& probabilities){
 
 Transition::Transition(const numvec& probabilities){
 
-    for(auto k : range((size_t)0, probabilities.size()))
+    for(auto k : util::lang::indices(probabilities))
         add_sample(k, probabilities[k], 0.0);
 }
 
@@ -104,8 +104,11 @@ bool Transition::is_normalized() const{
 }
 
 void Transition::normalize(){
-    prec_t sp = sum_probabilities();
+    // nothing to do if there are no transitions
+    if(probabilities.empty())
+        return;
 
+    prec_t sp = sum_probabilities();
     if(sp != 0.0){
         for(auto& p : probabilities)
             p /= sp;
@@ -115,29 +118,26 @@ void Transition::normalize(){
 }
 
 prec_t Transition::compute_value(numvec const& valuefunction, prec_t discount) const{
-    auto scount = indices.size();
 
-    //TODO: check how much complexity these statements are adding
-    if(scount == 0)
-        throw range_error("No transitions defined.");
+    if(indices.empty())
+        throw range_error("No transitions defined. Cannot compute value.");
 
     prec_t value = 0.0;
 
-    for(size_t c = 0; c < scount; c++){
+    for(size_t c : util::lang::indices(indices)){
         value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
     }
     return value;
 }
 
 prec_t Transition::mean_reward() const{
-    auto scount = indices.size();
 
-    if(scount == 0)
-        throw range_error("No transitions defined.");
+    if(indices.empty())
+        throw range_error("No transitions defined. Cannot compute mean reward.");
 
     prec_t value = 0.0;
 
-    for(size_t c = 0; c < scount; c++){
+    for(size_t c : util::lang::indices(indices)){
         value +=  probabilities[c] * rewards[c];
     }
     return value;
@@ -146,7 +146,7 @@ prec_t Transition::mean_reward() const{
 numvec Transition::probabilities_vector(size_t size) const{
     numvec result(size, 0.0);
 
-    for(size_t i = 0; i < this->size(); i++){
+    for(size_t i : util::lang::indices(*this)){
         result[indices[i]] = probabilities[i];
     }
 
@@ -154,13 +154,13 @@ numvec Transition::probabilities_vector(size_t size) const{
 }
 
 void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
-    for(size_t i = 0; i < size(); i++)
+    for(size_t i : util::lang::indices(*this))
         transition[indices[i]] += scale*probabilities[i];
 }
 
 void Transition::probabilities_addto(prec_t scale, Transition& transition) const{
 
-    for(size_t i = 0; i < size(); i++)
+    for(size_t i : util::lang::indices(*this))
         transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
 }
 

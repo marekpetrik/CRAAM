@@ -43,36 +43,37 @@ Optimal solution: Action 1, with value function:
     [1.1 gamma^2/(1-gamma), 1.1 gamma/(1-gamma), 1.1/(1-gamma)]
 
 */
-RMDP make_chain1(){
-    RMDP rmdp(3);
+MDP make_chain1(){
+    MDP rmdp(3);
 
-    rmdp.add_transition_d(0,1,1,1,0);
-    rmdp.add_transition_d(1,1,2,1,0);
-    rmdp.add_transition_d(2,1,2,1,1.1);
+    add_transition(rmdp,0,1,1,1,0);
+    add_transition(rmdp,1,1,2,1,0);
+    add_transition(rmdp,2,1,2,1,1.1);
 
-    rmdp.add_transition_d(0,0,0,1,0);
-    rmdp.add_transition_d(1,0,0,1,1);
-    rmdp.add_transition_d(2,0,1,1,1);
+    add_transition(rmdp,0,0,0,1,0);
+    add_transition(rmdp,1,0,0,1,1);
+    add_transition(rmdp,2,0,1,1,1);
 
     return rmdp;
 }
 
 BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
 
-    shared_ptr<RMDP> mdp(new RMDP());
+    auto mdp = make_shared<MDP>();
     vector<long> observations({0,0});
     Transition initial(vector<long>{0,1},vector<prec_t>{0.5,0.5},vector<prec_t>{0,0});
 
-    mdp->add_transition_d(0,0,1,1.0,1.0);
-    mdp->add_transition_d(1,0,0,1.0,1.0);
+    add_transition(*mdp,0,0,1,1.0,1.0);
+    add_transition(*mdp,1,0,0,1.0,1.0);
     BOOST_CHECK_EQUAL(mdp->state_count(), 2);
 
-    MDPI im(const_pointer_cast<const RMDP>(mdp), observations, initial);
+    MDPI im(const_pointer_cast<const MDP>(mdp), observations, initial);
 
     MDPI im2(*mdp,observations,initial);
 
     // check that we really have a copy
-    mdp->add_transition_d(1,0,2,1.0,1.0);
+    add_transition(*mdp,1,0,2,1.0,1.0);
+
     BOOST_CHECK_EQUAL(mdp->state_count(), 3);
     BOOST_CHECK_EQUAL(im.get_mdp()->state_count(), 3);
     BOOST_CHECK_EQUAL(im2.get_mdp()->state_count(), 2);
@@ -80,14 +81,14 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi ) {
 
 BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
-    shared_ptr<RMDP> mdp(new RMDP());
+    auto mdp = make_shared<MDP>();
     vector<long> observations({0,0});
     Transition initial(vector<long>{0,1},vector<prec_t>{0.5,0.5},vector<prec_t>{0,0});
 
-    mdp->add_transition_d(0,0,1,1.0,1.0);
-    mdp->add_transition_d(1,0,0,1.0,2.0);
+    add_transition(*mdp,0,0,1,1.0,1.0);
+    add_transition(*mdp,1,0,0,1.0,2.0);
 
-    MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
+    MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
     const RMDP& rmdp = imr.get_robust_mdp();
 
@@ -106,26 +107,27 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
 BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
 
-    shared_ptr<RMDP> mdp(new RMDP());
-    vector<long> observations({0,0,1});
+    auto mdp = make_shared<MDP>();
+    vector<long> observations{0,0,1};
+
     Transition initial(vector<long>{0,1,2},vector<prec_t>{1.0/3.0,1.0/3.0,1.0/3.0},
                         vector<prec_t>{0,0,0});
 
     // action 0
-    mdp->add_transition_d(0,0,0,0.5,1.0);
-    mdp->add_transition_d(0,0,1,0.5,1.0);
+    add_transition(*mdp,0,0,0,0.5,1.0);
+    add_transition(*mdp,0,0,1,0.5,1.0);
 
-    mdp->add_transition_d(1,0,0,0.5,2.0);
-    mdp->add_transition_d(1,0,1,0.5,2.0);
+    add_transition(*mdp,1,0,0,0.5,2.0);
+    add_transition(*mdp,1,0,1,0.5,2.0);
 
-    mdp->add_transition_d(2,0,2,1.0,1.2);
+    add_transition(*mdp,2,0,2,1.0,1.2);
 
     // action 1
-    mdp->add_transition_d(0,1,2,1.0,1.2);
-    mdp->add_transition_d(1,1,2,1.0,1.2);
+    add_transition(*mdp,0,1,2,1.0,1.2);
+    add_transition(*mdp,1,1,2,1.0,1.2);
 
     BOOST_TEST_CHECKPOINT("Constructing MDPI_R.");
-    MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
+    MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
     const RMDP& rmdp = imr.get_robust_mdp();
 
@@ -152,26 +154,26 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
 
 BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
 
-    shared_ptr<RMDP> mdp(new RMDP());
+    auto mdp = make_shared<MDP>();
     vector<long> observations({0,0,1});
     Transition initial(vector<long>{0,1,2},vector<prec_t>{1.0/3.0,1.0/3.0,1.0/3.0},
                         vector<prec_t>{0,0,0});
 
     // action 0
-    mdp->add_transition_d(0,0,0,0.5,1.0);
-    mdp->add_transition_d(0,0,1,0.5,1.0);
+    add_transition(*mdp,0,0,0,0.5,1.0);
+    add_transition(*mdp,0,0,1,0.5,1.0);
 
-    mdp->add_transition_d(1,0,0,0.5,2.0);
-    mdp->add_transition_d(1,0,1,0.5,2.0);
+    add_transition(*mdp,1,0,0,0.5,2.0);
+    add_transition(*mdp,1,0,1,0.5,2.0);
 
-    mdp->add_transition_d(2,0,2,1.0,1.2);
+    add_transition(*mdp,2,0,2,1.0,1.2);
 
     // action 1
-    mdp->add_transition_d(0,1,2,1.0,1.2);
-    mdp->add_transition_d(1,1,2,1.0,1.2);
+    add_transition(*mdp,0,1,2,1.0,1.2);
+    add_transition(*mdp,1,1,2,1.0,1.2);
 
     BOOST_TEST_CHECKPOINT("Constructing MDPI_R.");
-    MDPI_R imr(const_pointer_cast<const RMDP>(mdp), observations, initial);
+    MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
     BOOST_TEST_CHECKPOINT("Solving MDPI_R.");
     auto&& pol = imr.solve_reweighted(10, 0.9);
@@ -187,7 +189,7 @@ BOOST_AUTO_TEST_CASE( small_reweighted_solution ) {
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
-    RMDP&& rmdp1 = make_chain1();
+    MDP&& rmdp1 = make_chain1();
 
     Transition initial(indvec{0,1,2},numvec{1.0/3.0,1.0/3.0,1/3.0});
     indvec state2obs{0,0,1};
@@ -219,7 +221,7 @@ BOOST_AUTO_TEST_CASE(simple_mdpo_save_load_save_load) {
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
-    RMDP&& rmdp1 = make_chain1();
+    MDP&& rmdp1 = make_chain1();
 
     Transition initial(indvec{0,1,2},numvec{1.0/3.0,1.0/3.0,1/3.0});
     indvec state2obs{0,0,1};
@@ -368,7 +370,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     auto mdp = smdp.get_mdp();
     auto&& initial = smdp.get_initial();
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     //cout << "Optimal policy: " << endl; print_vector(sol.policy); cout << endl;
 
@@ -403,7 +405,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     //cout << "Implementable solution: " << endl; print_vector(mdpi.obspol2statepol(isol));cout << endl;
 
-    auto sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
+    auto sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
@@ -418,7 +420,7 @@ BOOST_AUTO_TEST_CASE(test_return_of_implementable){
 
     const prec_t gamma = 0.99;
 
-    RMDP&& mdp = make_chain1();
+    MDP&& mdp = make_chain1();
     indvec observations = {0,0,0};
     Transition  initial1(numvec({1.0, 0.0, 0.0})),
                 initial2(numvec({0.0, 1.0, 0.0})),

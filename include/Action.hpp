@@ -302,6 +302,12 @@ public:
     /** Returns the single outcome. */
     const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
 
+    /** Returns the single outcome. */
+    const Transition& get_outcome() const {return outcome;};
+
+    /** Returns the single outcome. */
+    Transition& get_outcome() {return outcome;};
+
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method does nothing in this action.

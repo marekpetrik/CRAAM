@@ -126,7 +126,7 @@ typedef DSample<DiscreteSimulator> DiscreteDSample;
 Turns arbitrary samples to discrete ones assuming that actions are
 *state independent*. That is the actions must have consistent names
 across states. This assumption can cause problems
-when samples are missing.
+when some samples are missing.
 
 The internally-held discrete samples can be accessed and modified
 from the outside. Also, adding more samples will modify the discrete
@@ -373,9 +373,10 @@ Constructs MDP from integer samples. In integer samples, each
 decision state, expectation state, and action are identified
 by an integer.
 
-Important: There must be an outcome for each state and action.
+Important: There must be at least one observed sample for each state and action.
 Otherwise, the MDP solution will not be defined and the
-solver will throw and invalid_argument exception.
+solver will throw an invalid_argument exception. This can happen when
+we have a sample for action 2 but no sample for action 0.
 */
 class SampledMDP{
 public:
@@ -388,14 +389,15 @@ public:
     provided samples.
 
     At this point, the method can be called only once, but
-    the plan is to make it possible to call it multiple times
+    in the future it should be possible to call it multiple times
     to add more samples.
+
     \param samples Source of the samples
     */
     void add_samples(const DiscreteSamples& samples);
 
     /** \returns A constant pointer to the internal MDP */
-    shared_ptr<const RMDP> get_mdp() const {return const_pointer_cast<const RMDP>(mdp);}
+    shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
 
     /** Initial distribution */
     Transition get_initial() const {return initial;}
@@ -403,7 +405,7 @@ public:
 protected:
 
     /** Internal MDP representation */
-    shared_ptr<RMDP> mdp;
+    shared_ptr<MDP> mdp;
 
     /** Initial distribution */
     Transition initial;

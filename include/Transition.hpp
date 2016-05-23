@@ -95,6 +95,9 @@ public:
     /** Returns the number of target states with non-zero transition probabilities.  */
     size_t size() const {return indices.size();};
 
+    /** Checks if the transition is empty. */
+    bool empty() const {return indices.empty();};
+
     /**
     Returns the maximal indexes involved in the transition.
     Returns -1 for and empty transition.
