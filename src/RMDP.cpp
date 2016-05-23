@@ -1042,17 +1042,17 @@ template<class SType>
 string GRMDP<SType>::to_string() const {
     string result;
 
-    for(size_t i = 0; i < states.size(); i++){
-        const auto& s = get_state(i);
-        result.append(std::to_string(i));
+    for(size_t si : indices(states)){
+        const auto& s = get_state(si);
+        result.append(std::to_string(si));
         result.append(" : ");
         result.append(std::to_string(s.action_count()));
         result.append("\n");
-        for(size_t j = 0; j < s.action_count(); j++){
+        for(size_t ai : indices(s)){
             result.append("    ");
-            result.append(std::to_string(j));
+            result.append(std::to_string(ai));
             result.append(" : ");
-            const auto& a = s.get_action(j);
+            const auto& a = s.get_action(ai);
             a.to_string(result);
             result.append("\n");
         }

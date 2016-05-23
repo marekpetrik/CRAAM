@@ -806,7 +806,7 @@ public:
                                     return states[stateid];};
 
     /** Returns list of all states */
-    const vector<SType> get_states() const {return states;};
+    const vector<SType>& get_states() const {return states;};
 
     /**
     Check if all transitions in the process sum to one.
@@ -1083,9 +1083,7 @@ Note that outcome distributions are not restored.
 template<class Model>
 Model& from_csv(Model& mdp, istream& input, bool header = true){
 {
-
     string line;
-
     // skip the first row if so instructed
     if(header) input >> line;
 
@@ -1140,16 +1138,56 @@ Model& from_csv_file(Model& mdp, const string& filename, bool header = true){
 
 /**
 Uniformly sets the thresholds to the provided value for all states and actions.
-This method should be used only with models that support thresholds
+This method should be used only with models that support thresholds.
+
+This function only applies to models that have thresholds, such as ones using
+"WeightedOutcomeAction" or its derivatives.
+
 \param model Model to set thresholds for
 \param threshold New thresholds value
 */
 template<class Model>
 void set_thresholds(Model& mdp, prec_t threshold){
     for(auto si : indices(mdp)){
-        auto state = mdp.get_state(si);
+        auto& state = mdp.get_state(si);
         for(auto ai : indices(state)){
             state.get_action(ai).set_threshold(threshold);
+        }
+    }
+}
+
+/**
+Checks whether outcome distributions sum to 1 for all states and actions.
+
+This function only applies to models that have thresholds, such as ones using
+"WeightedOutcomeAction" or its derivatives.
+
+*/
+template<class Model>
+bool is_outcomes_normalized(const Model& mdp){
+    for(auto si : indices(mdp)){
+        auto& state = mdp.get_state(si);
+        for(auto ai : indices(state)){
+            if(!state.get_action(ai).is_distribution_normalized())
+                return false;
+        }
+    }
+    return true;
+}
+
+/**
+Normalizes outcome distributions for all states and actions.
+
+This function only applies to models that have thresholds, such as ones using
+"WeightedOutcomeAction" or its derivatives.
+
+*/
+template<class Model>
+void normalize_outcomes(Model& mdp){
+    for(auto si : indices(mdp)){
+        auto& state = mdp.get_state(si);
+        for(auto ai : indices(state)){
+            state.get_action(ai).normalize_distribution();
         }
     }
 }

@@ -5,6 +5,7 @@
 #include <limits>
 #include <cassert>
 
+
 #include "definitions.hpp"
 #include "Transition.hpp"
 
@@ -318,7 +319,7 @@ public:
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
-        result.append("1(r)");
+        result.append("1(reg)");
     };
 
     /** Whether the provided outcome is valid */
@@ -552,20 +553,27 @@ public:
     This override also handles properly resizing the distribution.
 
     The baseline distribution value for the new outcome(s) are set to be:
-    1/(new_outcomeid+1)
+        1/(new_outcomeid+1)
     That is, it assumes uniform distribution of the outcomes.
-    Weights for existing outcomes are scaled appropriately.
+    Weights for existing outcomes are scaled appropriately to sum to a value
+    that would be equal to a sum of uniformly distributed values.
     */
     Transition& create_outcome(long outcomeid) override;
 
     /**
     Sets the base distribution over the outcomes.
+
+    The function check for correctness of the distribution.
+
     \param distribution New distribution of outcomes.
      */
     void set_distribution(const numvec& distribution);
 
     /**
     Sets weight for a particular outcome.
+
+    The function *does not* check for correctness of the distribution.
+
     \param distribution New distribution of outcomes.
     \param weight New weight
      */
@@ -582,6 +590,11 @@ public:
     void normalize_distribution();
 
     /**
+    Checks whether the outcome distribution is normalized.
+    */
+    bool is_distribution_normalized() const;
+
+    /**
     Sets an initial uniform value for the threshold (0) and the distribution.
     If the distribution already exists, then it is overwritten.
     */
@@ -591,7 +604,7 @@ public:
     prec_t get_threshold() const {return threshold;};
 
     /** Sets threshold value */
-    void set_threshold(prec_t threshold){ this->threshold = threshold; }
+    void set_threshold(prec_t threshold){this->threshold = threshold; }
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const {
@@ -603,7 +616,6 @@ public:
     /** Whether the provided outcome is valid */
     bool is_outcome_correct(OutcomeId oid) const
         {return (oid.size() == outcomes.size());};
-
 
     /** Returns the mean reward from the transition. */
     prec_t mean_reward(OutcomeId outcomedist) const;

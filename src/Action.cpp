@@ -4,6 +4,7 @@
 #include<limits>
 #include<algorithm>
 #include<stdexcept>
+#include<cmath>
 
 using namespace std;
 
@@ -256,9 +257,9 @@ void OutcomeManagement::normalize(){
     }
 }
 
-// **************************************************************************************
-//  Discrete Outcome Action
-// **************************************************************************************
+/// **************************************************************************************
+///  Discrete Outcome Action
+/// **************************************************************************************
 
 pair<DiscreteOutcomeAction::OutcomeId,prec_t>
 DiscreteOutcomeAction::maximal(const numvec& valuefunction, prec_t discount) const {
@@ -320,6 +321,38 @@ prec_t DiscreteOutcomeAction::average(const numvec& valuefunction, prec_t discou
 ///  Weighted Outcome Action
 /// **************************************************************************************
 
+template<NatureConstr nature>
+Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
+    if(outcomeid < 0)
+        throw invalid_argument("Outcomeid must be non-negative.");
+
+    // new size of the list of outcomes
+    size_t newsize = outcomeid + 1;
+    // current size of the set
+    size_t oldsize = outcomes.size();
+    // new uniform weight for each element
+    prec_t newweight = 1.0/prec_t(outcomeid+1);
+
+    // check if need to scale the existing weights
+    if(oldsize > 0){
+        auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
+        // only scale when the sum is not zero
+
+        if(weightsum > 0){
+            prec_t normal = (oldsize * newweight) / weightsum;
+            transform(distribution.begin(), distribution.end(),distribution.begin(),
+                      [normal](prec_t x){return x * normal;});
+        }
+    }
+
+    if(outcomeid >= (long) outcomes.size())
+        outcomes.resize(newsize);
+
+    // got to resize the distribution too and assign weights that are uniform
+    distribution.resize(newsize, newweight);
+
+    return outcomes[outcomeid];
+}
 
 template<NatureConstr nature>
 auto WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t discount) const
@@ -398,44 +431,20 @@ template<NatureConstr nature>
 void WeightedOutcomeAction<nature>::set_distribution(numvec const& distribution){
 
     if(distribution.size() != outcomes.size())
-        throw invalid_argument("invalid distribution size");
+        throw invalid_argument("Invalid distribution size.");
     prec_t sum = accumulate(distribution.begin(),distribution.end(), 0.0);
     if(sum < 0.99 || sum > 1.001)
-        throw invalid_argument("invalid distribution");
+        throw invalid_argument("Distribution does not sum to 1.");
     if((*min_element(distribution.begin(),distribution.end())) < 0)
-        throw invalid_argument("distribution must be non-negative");
+        throw invalid_argument("Distribution must be non-negative.");
 
     this->distribution = distribution;
-}
-
-template<NatureConstr nature>
-Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
-    if(outcomeid < 0)
-        throw invalid_argument("Outcomeid must be non-negative.");
-
-    // check if need to scale the existing weights
-    if(outcomes.size() > 0){
-        auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
-        // only scale when the sum is not zero
-        if(weightsum > 0){
-            prec_t normal = 1.0 / weightsum;
-            transform(distribution.begin(), distribution.end(),distribution.begin(),
-                      [normal](prec_t x){return x * normal;});
-        }
-    }
-
-    if(outcomeid >= (long) outcomes.size())
-        outcomes.resize(outcomeid + 1);
-
-    // got to resize the distribution too and assign 1 weights
-    distribution.resize(outcomeid+1, 1.0/prec_t(outcomeid+1));
-
-    return outcomes[outcomeid];
 }
 
 
 template<NatureConstr nature>
 void WeightedOutcomeAction<nature>::set_distribution(long outcomeid, prec_t weight){
+     assert(outcomeid >= 0 && (size_t) outcomeid < outcomes.size());
      distribution[outcomeid] = weight;
 }
 
@@ -457,6 +466,11 @@ void WeightedOutcomeAction<nature>::normalize_distribution(){
     }else{
         throw invalid_argument("Distribution sums to 0 and cannot be normalized.");
     }
+}
+
+template<NatureConstr nature>
+bool WeightedOutcomeAction<nature>::is_distribution_normalized() const{
+    return abs(1.0-accumulate(distribution.begin(), distribution.end(), 0.0)) < SOLPREC;
 }
 
 template<NatureConstr nature>
