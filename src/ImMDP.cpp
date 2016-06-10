@@ -278,16 +278,14 @@ void MDPI_R::initialize_robustmdp(){
         auto obs = state2observ[state_index];
 
         // make sure to at least create a terminal state when there are no actions for it
-        robust_mdp.assure_state_exists(obs);
+        robust_mdp.create_state(obs);
 
         // maps the transitions
         for(auto action_index : range(0l, action_counts[obs])){
-
+            // get original MDP transition
             const Transition& old_tran = mdp->get_state(state_index).get_action(action_index).get_outcome();
-            Transition& new_tran = robust_mdp.create_transition(obs,action_index,outcome_count[obs]);
-
-            // make sure that the action is using a distribution (it will be needed almost surely)
-            robust_mdp.get_state(obs).get_action(action_index).init_distribution();
+            // create a new transition
+            Transition& new_tran = robust_mdp.create_state(obs).create_action(action_index).create_outcome(outcome_count[obs]);
 
             // copy the original transitions (they are automatically consolidated while being added)
             for(auto k : range((size_t) 0, old_tran.size())){
@@ -308,20 +306,20 @@ void MDPI_R::update_importance_weights(const numvec& weights){
     }
 
     // loop over all mdp states and set weights
-    for(size_t i = 0; i < weights.size(); i++){
+    for(size_t i : indices(weights)){
         const auto rmdp_stateid = state2observ[i];
         const auto rmdp_outcomeid = state2outcome[i];
 
         // loop over all actions
         auto& rstate = robust_mdp.get_state(rmdp_stateid);
-        for(auto& a : rstate.actions){
+        for(auto& a : rstate.get_actions()){
             a.set_distribution(rmdp_outcomeid, weights[i]);
         }
     }
 
     // now normalize the weights to they sum to one
     for(auto& s : robust_mdp.states){
-        for(auto& a : s.actions){
+        for(auto& a : s.get_actions()){
             // check if the distribution sums to 0 (not visited)
             const numvec& dist = a.get_distribution();
             if(accumulate(dist.begin(), dist.end(), 0.0) > 0.0){
@@ -329,7 +327,7 @@ void MDPI_R::update_importance_weights(const numvec& weights){
             }
             else{
                 // just set it to be uniform
-                a.init_distribution();
+                a.uniform_distribution();
             }
         }
     }
@@ -369,10 +367,8 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
         // update importance weights
         update_importance_weights(importanceweights);
 
-        Solution&& sf = robust_mdp.vi_jac_fix_ave(numvec(0), discount, obspol);
-
         // compute solution of the robust MDP with the new weights
-        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
+        auto&& s = robust_mdp.mpi_jac(Uncertainty::Average, discount);
 
         // update the policy for the underlying states
         obspol = s.policy;

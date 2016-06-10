@@ -158,8 +158,10 @@ protected:
 
 
 /**
-    An MDP with implementability constraints. The class contains solution
-    methods that rely on robust MDP reformulation of the problem.
+An MDP with implementability constraints. The class contains solution
+methods that rely on robust MDP reformulation of the problem.
+
+Uses L1 version of the robust MDP
  */
 class MDPI_R : public MDPI{
 
@@ -178,7 +180,7 @@ public:
     */
     MDPI_R(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
-    const RMDP& get_robust_mdp() const {
+    const RMDP_L1& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
@@ -224,7 +226,7 @@ public:
 
 protected:
     /** Robust representation of the MDPI */
-    RMDP robust_mdp;
+    RMDP_L1 robust_mdp;
     /** Maps the index of the mdp state to the index of the observation
     within the state corresponding to the observation (multiple states per observation) */
     indvec state2outcome;
