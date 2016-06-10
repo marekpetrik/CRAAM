@@ -312,14 +312,16 @@ void MDPI_R::update_importance_weights(const numvec& weights){
 
         // loop over all actions
         auto& rstate = robust_mdp.get_state(rmdp_stateid);
-        for(auto& a : rstate.get_actions()){
-            a.set_distribution(rmdp_outcomeid, weights[i]);
+        for(size_t ai : indices(rstate)){
+            rstate.get_action(ai).set_distribution(rmdp_outcomeid, weights[i]);
         }
     }
 
     // now normalize the weights to they sum to one
-    for(auto& s : robust_mdp.states){
-        for(auto& a : s.get_actions()){
+    for(size_t si : indices(robust_mdp)){
+        auto& s = robust_mdp.get_state(si);
+        for(size_t ai : indices(s)){
+            auto& a = s.get_action(ai);
             // check if the distribution sums to 0 (not visited)
             const numvec& dist = a.get_distribution();
             if(accumulate(dist.begin(), dist.end(), 0.0) > 0.0){

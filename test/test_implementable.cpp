@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
-    const RMDP& rmdp = imr.get_robust_mdp();
+    const auto& rmdp = imr.get_robust_mdp();
 
     BOOST_CHECK_EQUAL(rmdp.state_count(), 1);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 1);
@@ -98,10 +98,10 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-    Solution&& so = rmdp.mpi_jac_opt(iv,0.9,100,0.0,10,0.0);
+    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
-    Solution&& sr = rmdp.mpi_jac_rob(iv,0.9,100,0.0,10,0.0);
+    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }
 
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     BOOST_TEST_CHECKPOINT("Constructing MDPI_R.");
     MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
-    const RMDP& rmdp = imr.get_robust_mdp();
+    const auto& rmdp = imr.get_robust_mdp();
 
     BOOST_TEST_CHECKPOINT("Checking MDP properties.");
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
@@ -145,10 +145,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     vector<prec_t> target_v_rob{12.0,12.0};
 
     BOOST_TEST_CHECKPOINT("Solving RMDP");
-    Solution&& so = rmdp.mpi_jac_opt(iv,0.9,100,0.0,10,0.0);
+    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 
-    Solution&& sr = rmdp.mpi_jac_rob(iv,0.9,100,0.0,10,0.0);
+    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(sr.valuefunction, target_v_rob, 1e-3);
 }
 
@@ -416,7 +416,6 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){
     // test return with different initial states
-
 
     const prec_t gamma = 0.99;
 
