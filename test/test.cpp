@@ -110,14 +110,14 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
     BOOST_CHECK (ret - 1.15 <= 0.01);
 
     // check maximum selection
-    Action a1({t1,t2}),a2({t1,t3});
+    DiscreteOutcomeAction a1({t1,t2}),a2({t1,t3});
     BOOST_CHECK_EQUAL(a1.maximal(valuefunction, 0.9).first, 1);
     BOOST_CHECK_EQUAL(a1.minimal(valuefunction,0.9).first, 0);
     BOOST_CHECK_EQUAL(a2.maximal(valuefunction, 0.9).first, 1);
     BOOST_CHECK_EQUAL(a2.minimal(valuefunction,0.9).first, 0);
 
-    Action a3({t2});
-    State s1({a1,a2,a3});
+    DiscreteOutcomeAction a3({t2});
+    DiscreteRobustState s1({a1,a2,a3});
     auto v1 = get<2>(s1.max_max(valuefunction,0.9));
     auto v2 = get<2>(s1.max_min(valuefunction,0.9));
     BOOST_CHECK_LE (-0.01, v1-2.13);
