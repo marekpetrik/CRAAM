@@ -90,7 +90,8 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
-    const auto& rmdp = imr.get_robust_mdp();
+    // COPY ! so we can change the threshold
+    auto rmdp = imr.get_robust_mdp();
 
     BOOST_CHECK_EQUAL(rmdp.state_count(), 1);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 1);
@@ -98,6 +99,7 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
+    set_thresholds(rmdp, 2.0);
     auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
@@ -129,8 +131,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     BOOST_TEST_CHECKPOINT("Constructing MDPI_R.");
     MDPI_R imr(const_pointer_cast<const MDP>(mdp), observations, initial);
 
-    const auto& rmdp = imr.get_robust_mdp();
+    // Copy to change threshold
+    auto rmdp = imr.get_robust_mdp();
 
+    set_thresholds(rmdp, 2.0);
     BOOST_TEST_CHECKPOINT("Checking MDP properties.");
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 2);
