@@ -6,10 +6,12 @@
 
 using namespace std;
 
+using namespace util::lang;
+
 namespace craam{
 namespace msen {
 
-SampledMDP::SampledMDP() : mdp(make_shared<RMDP>()) {}
+SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 
 void SampledMDP::add_samples(const DiscreteSamples& samples){
 
@@ -35,14 +37,25 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
             long decstate = sa.first;
             long action = sa.second;
 
-            mdp->assure_state_exists(es.decstate_to);
-            Transition& t = mdp->create_transition(decstate, action, 0);
+            // make sure that the destination state exists
+            mdp->create_state(es.decstate_to);
 
-            t.add_sample(es.decstate_to, es.weight, es.reward);
+            mdp->create_state(decstate).create_action(action).get_outcome().
+                    add_sample(es.decstate_to, es.weight, es.reward);
         }
     }
 
-    // ** Then normalize the transitions
+    // make sure that there are no missing action samples
+    for(size_t si : indices(*mdp)){
+        const auto& state = mdp->get_state(si);
+        for(size_t ai : indices(state)){
+            if(state.get_action(ai).get_outcome().empty()){
+                throw invalid_argument("No sample for state " + to_string(si) + " and action " + to_string(ai) + ".");
+            }
+        }
+    }
+
+    // ** Then normalize the transition probabilities
     mdp->normalize();
 
     // set initial distribution
@@ -50,7 +63,6 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         initial.add_sample(state, 1.0, 0.0);
     }
     initial.normalize();
-
     initialized = true;
 }
 }

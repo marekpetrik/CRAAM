@@ -5,14 +5,20 @@
 
 namespace craam {
 
-tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t discount) const{
+// **************************************************************************************
+//  SA State (SA rectangular, also used for a regular MDP)
+// **************************************************************************************
+
+template<class AType>
+auto SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const
+            -> tuple<ActionId,OutcomeId,prec_t> {
 
     if(is_terminal())
-        return make_tuple(-1,-1,0);
+        return make_tuple(-1,OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    long result_outcome = -1l;
+    OutcomeId result_outcome;
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
@@ -20,20 +26,22 @@ tuple<long,long,prec_t> State::max_max(numvec const& valuefunction, prec_t disco
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
-            result_outcome = value.first;
+            result_outcome = move(value.first);
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
 }
 
-tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t discount) const{
+template<class AType>
+auto SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const
+            -> tuple<ActionId,OutcomeId,prec_t> {
 
     if(is_terminal())
-        return make_tuple(-1,-1,0);
+        return make_tuple(-1,OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    long result_outcome = -1l;
+    OutcomeId result_outcome;
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
@@ -41,13 +49,16 @@ tuple<long,long,prec_t> State::max_min(numvec const& valuefunction, prec_t disco
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
-            result_outcome = value.first;
+            result_outcome = move(value.first);
         }
     }
     return make_tuple(result,result_outcome,maxvalue);
 }
 
-pair<long,prec_t> State::max_average(numvec const& valuefunction, prec_t discount) const{
+template<class AType>
+auto SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) const
+                -> pair<ActionId,prec_t>{
+
     if(is_terminal())
         return make_pair(-1,0.0);
 
@@ -63,23 +74,12 @@ pair<long,prec_t> State::max_average(numvec const& valuefunction, prec_t discoun
             result = i;
         }
     }
-    return make_pair(result,maxvalue);
+    return make_pair(result, maxvalue);
 }
 
-// functions used in modified policy iteration
-prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long actionid, numvec const& distribution) const{
-
-    // this is the terminal state, return 0
-    if(is_terminal())
-        return 0;
-
-    if(actionid < 0 || actionid >= (long) actions.size())
-        throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
-
-    return actions[actionid].average(valuefunction, discount, distribution);
-}
-
-prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long actionid) const{
+template<class AType>
+prec_t SAState<AType>::fixed_average(numvec const& valuefunction, prec_t discount,
+                              ActionId actionid) const{
 
     // this is the terminal state, return 0
     if(is_terminal())
@@ -91,8 +91,9 @@ prec_t State::fixed_average(numvec const& valuefunction, prec_t discount, long a
     return actions[actionid].average(valuefunction, discount);
 }
 
-
-prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long actionid, long outcomeid) const{
+template<class AType>
+prec_t SAState<AType>::fixed_fixed(numvec const& valuefunction, prec_t discount,
+                            ActionId actionid, OutcomeId outcomeid) const{
 
     // this is the terminal state, return 0
     if(is_terminal())
@@ -104,110 +105,37 @@ prec_t State::fixed_fixed(numvec const& valuefunction, prec_t discount, long act
     return actions[actionid].fixed(valuefunction, discount, outcomeid);
 }
 
-Transition& State::create_transition(long actionid, long outcomeid){
+template<class AType>
+AType& SAState<AType>::create_action(long actionid){
+    assert(actionid >= 0);
 
-    if(actionid < 0){
-        throw invalid_argument("invalid action id");
-    }
-    if(actionid >= (long) actions.size()){
+    if(actionid >= (long) actions.size())
         actions.resize(actionid+1);
-    }
-    return actions[actionid].create_outcome(outcomeid);
+
+    return this->actions[actionid];
 }
 
-Transition& State::get_transition(long actionid, long outcomeid){
-    /**
-       Returns the transition. The transition must exist.
-     */
-    if(actionid < 0l || actionid >= (long) actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    return actions[actionid].get_transition(outcomeid);
+template<class AType>
+void SAState<AType>::normalize(){
+    for(AType& a : actions)
+        a.normalize();
 }
 
-const Transition& State::get_transition(long actionid, long outcomeid) const{
-    if(actionid < 0l || actionid >= (long) actions.size()){
-        throw invalid_argument("invalid action number");
-    }
-    return actions[actionid].get_transition(outcomeid);
+template<class AType>
+bool SAState<AType>::is_action_outcome_correct(ActionId aid, OutcomeId oid) const{
+    if( (aid < 0) || ((size_t)aid >= actions.size()))
+        return false;
+
+    return actions[aid].is_outcome_correct(oid);
 }
 
-void State::add_action(long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
-    if(actionid < 0){
-        throw invalid_argument("invalid action id");
-    }
-    if(actionid >= (long) actions.size()){
-        actions.resize(actionid+1);
-    }
-    this->actions[actionid].add_outcome(outcomeid, toid, probability, reward);
-}
 
-void State::set_thresholds(prec_t threshold){
-    for(auto & a : actions){
-        a.set_threshold(threshold);
-    }
-}
+/// **********************************************************************
+/// *********************    TEMPLATE DECLARATIONS    ********************
+/// **********************************************************************
 
-template<NatureConstr nature>
-tuple<long,numvec,prec_t> State::max_max_cst(numvec const& valuefunction, prec_t discount) const{
-
-    if(is_terminal()){
-        return make_tuple(-1,numvec(0),0.0);
-    }
-
-    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-    long actionresult = -1l;
-
-    // TODO: change this to an rvalue?
-    numvec outcomeresult;
-
-    for(size_t i = 0; i < this->actions.size(); i++){
-        const auto& action = actions[i];
-
-        auto outcomevalue = action.maximal_cst<nature>(valuefunction, discount);
-        auto value = outcomevalue.second;
-
-        if(value > maxvalue){
-            maxvalue = value;
-            actionresult = i;
-            outcomeresult = outcomevalue.first;
-        }
-    }
-    return make_tuple(actionresult,outcomeresult,maxvalue);
-}
-
-template tuple<long,numvec,prec_t>
-State::max_max_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
-
-template<NatureConstr nature>
-tuple<long,numvec,prec_t> State::max_min_cst(numvec const& valuefunction, prec_t discount) const{
-
-    if(is_terminal()){
-        return make_tuple(-1,numvec(0),0.0);
-    }
-
-    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-    long actionresult = -1l;
-
-    numvec outcomeresult;
-
-    for(size_t i = 0; i < this->actions.size(); i++){
-        const auto& action = actions[i];
-
-        auto outcomevalue = action.minimal_cst<nature>(valuefunction, discount);
-        auto value = outcomevalue.second;
-
-        if(value > maxvalue){
-            maxvalue = value;
-            actionresult = i;
-            outcomeresult = outcomevalue.first;
-        }
-    }
-    return make_tuple(actionresult,outcomeresult,maxvalue);
-
-}
-
-template tuple<long,numvec,prec_t>
-State::max_min_cst<worstcase_l1>(numvec const& valuefunction, prec_t discount) const;
+template class SAState<RegularAction>;
+template class SAState<DiscreteOutcomeAction>;
+template class SAState<L1OutcomeAction>;
 
 }

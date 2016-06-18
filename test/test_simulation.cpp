@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());
 
-    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+    shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
     for(auto i : range((size_t)0, mdp->state_count())){
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
             BOOST_CHECK_LE(mdp->get_state(i).action_count(), 2);
     }
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 47.6799, 1e-3);
 }
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());
 
-    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+    shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
     for(auto i : range((size_t)0, mdp->state_count())){
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
             BOOST_CHECK_EQUAL(mdp->get_state(i).action_count(), 2);
     }
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
 }

@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include <random>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ public:
     \param initial A representation of the initial distribution. The rewards
                     in this transition are ignored (and should be 0).
     */
-    MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
          const Transition& initial);
 
     /**
@@ -47,7 +48,7 @@ public:
     \param initial A representation of the initial distribution. The rewards
                     in this transition are ignored (and should be 0).
     */
-    MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
     size_t obs_count() const { return obscount; };
     size_t state_count() const {return mdp->state_count(); };
@@ -58,13 +59,26 @@ public:
     Converts a policy defined in terms of observations to a policy defined in
     terms of states.
     \param obspol Policy that maps observations to actions to take
-    \param statepol Optional state policy target
+    \return Observation policy
     */
     indvec obspol2statepol(const indvec& obspol) const;
+    /**
+    Converts a policy defined in terms of observations to a policy defined in
+    terms of states.
+    \param obspol Policy that maps observations to actions to take
+    \param statepol State policy target
+    */
     void obspol2statepol(const indvec& obspol, indvec& statepol) const;
 
+    /**
+    Converts a transition from states to observations, adding probabilities
+    of individual states. Rewards are a convex combination of the original
+    values.
+    */
+    Transition transition2obs(const Transition& tran);
+
     /** Internal MDP representation */
-    shared_ptr<const RMDP> get_mdp() {return mdp;};
+    shared_ptr<const MDP> get_mdp() {return mdp;};
 
     /** Initial distribution of MDP */
     Transition get_initial() const {return initial;};
@@ -125,7 +139,7 @@ public:
 protected:
 
     /** the underlying MDP */
-    shared_ptr<const RMDP> mdp;
+    shared_ptr<const MDP> mdp;
     /** maps index of a state to the index of the observation */
     indvec state2observ;
     /** initial distribution */
@@ -139,13 +153,15 @@ protected:
      Checks whether the parameters are correct. Throws an exception if the parameters
      are wrong.
      */
-    static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    static void check_parameters(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 };
 
 
 /**
-    An MDP with implementability constraints. The class contains solution
-    methods that rely on robust MDP reformulation of the problem.
+An MDP with implementability constraints. The class contains solution
+methods that rely on robust MDP reformulation of the problem.
+
+Uses L1 version of the robust MDP
  */
 class MDPI_R : public MDPI{
 
@@ -155,16 +171,16 @@ public:
     Calls the base constructor and also constructs the corresponding
     robust MDP
      */
-    MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI_R(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
             const Transition& initial);
 
     /**
     Calls the base constructor and also constructs the corresponding
     robust MDP.
     */
-    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI_R(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
-    const RMDP& get_robust_mdp() const {
+    const RMDP_L1& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
@@ -228,7 +244,7 @@ public:
 
 protected:
     /** Robust representation of the MDPI */
-    RMDP robust_mdp;
+    RMDP_L1 robust_mdp;
     /** Maps the index of the mdp state to the index of the observation
     within the state corresponding to the observation (multiple states per observation) */
     indvec state2outcome;

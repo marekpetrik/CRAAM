@@ -3,6 +3,12 @@
 #include "config.hpp"
 #include <vector>
 
+#ifdef IS_DEBUG
+// TODO: this is DEBUG ONLY 
+#include <iostream> 
+#include <string>
+#endif
+
 using namespace std;
 
 namespace craam {
@@ -39,3 +45,18 @@ void print_vector(vector<T> vec){
 }*/
 
 }
+
+
+#ifdef IS_DEBUG
+/**
+ * This is a useful functionality for debugging
+ */
+template<class T>
+std::ostream & operator<<(std::ostream &os, const std::vector<T>& vec)
+{
+    for(const auto& p : vec){
+        cout << p << " ";
+    }
+    return os;
+}
+#endif
