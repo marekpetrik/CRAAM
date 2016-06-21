@@ -278,8 +278,7 @@ private:
     const int initstate;
 
 public:
-    typedef int DState;
-    typedef pair<int,int> EState;
+    typedef int State;
     typedef int Action;
 
     /**
@@ -365,13 +364,12 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     // initialize action values
     sd.add_action(-1); sd.add_action(+1);
     //initialize state values
-    for(auto i : range(-terminal_state,terminal_state)) sd.add_dstate(i);
+    for(auto i : range(-terminal_state,terminal_state)) sd.add_state(i);
 
     sd.add_samples(samples);
 
-    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
-    BOOST_CHECK_EQUAL(samples.decsamples.size(), sd.get_discrete()->decsamples.size());
-    BOOST_CHECK_EQUAL(samples.expsamples.size(), sd.get_discrete()->expsamples.size());
+    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
+    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());

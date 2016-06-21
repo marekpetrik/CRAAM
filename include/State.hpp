@@ -36,6 +36,59 @@ public:
     SAState() : actions(0) {};
     SAState(const vector<AType>& actions) : actions(actions) {};
 
+    /** Number of actions */
+    size_t action_count() const { return actions.size();};
+
+    /** Number of actions */
+    size_t size() const { return action_count();};
+
+    /** Creates an action given by actionid if it does not exists.
+    Otherwise returns the existing one. */
+    AType& create_action(long actionid);
+
+    /** Creates an action at the last position of the state */
+    AType& create_action() {return create_action(actions.size());};
+
+    /** Returns an existing action */
+    const AType& get_action(long actionid) const 
+                {assert(actionid >= 0 && size_t(actionid) < action_count());
+                 return actions[actionid];};
+
+    /** Returns an existing action */
+    const AType& operator[](long actionid) const {return get_action(actionid);}
+
+    /** Returns an existing action */
+    AType& get_action(long actionid) 
+                {assert(actionid >= 0 && size_t(actionid) < action_count());
+                 return actions[actionid];};
+
+    /** Returns an existing action */
+    AType& operator[](long actionid) {return get_action(actionid);}
+
+    /** Returns set of all actions */
+    const vector<AType>& get_actions() const {return actions;};
+
+    /** True if the state is considered terminal (no actions). */
+    bool is_terminal() const {return actions.empty();};
+
+    /** Normalizes transition probabilities to sum to one. */
+    void normalize();
+
+    /** Checks whether the prescribed action and outcome are correct */
+    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
+
+    /** Returns the mean reward following the action (and outcome). */
+    prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
+        return get_action(actionid).mean_reward(outcomeid);
+    }
+
+    /** Returns the mean transition probabilities following the action and outcome. */
+    Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
+        return move(get_action(actionid).mean_transition(outcomeid));
+    }
+
+
+
     /**
     Finds the maximal optimistic action.
     When there are no action then the return is assumed to be 0.
@@ -74,46 +127,6 @@ public:
     prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
                        ActionId actionid, OutcomeId outcomeid) const;
 
-
-    /** Creates an action given by actionid if it does not exists.
-    Otherwise returns the existing one. */
-    AType& create_action(long actionid);
-
-    /** Creates an action at the last position of the state */
-    AType& create_action() {return create_action(actions.size());};
-
-    /** Returns a specific action */
-    const AType& get_action(long actionid) const {return actions[actionid];};
-
-    /** Returns a specific action */
-    AType& get_action(long actionid) {return actions[actionid];};
-
-    /** Returns set of all actions */
-    const vector<AType>& get_actions() const {return actions;};
-
-    /** Number of actions */
-    size_t action_count() const { return actions.size();};
-    /** Number of actions */
-    size_t size() const { return action_count();};
-
-    /** True if the state is considered terminal (no actions). */
-    bool is_terminal() const {return actions.empty();};
-
-    /** Normalizes transition probabilities to sum to one. */
-    void normalize();
-
-    /** Whether the policies are correct */
-    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
-
-    /** Returns the mean reward following the action (and outcome). */
-    prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
-        return get_action(actionid).mean_reward(outcomeid);
-    }
-
-    /** Returns the mean transition probabilities following the action and outcome. */
-    Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
-        return move(get_action(actionid).mean_transition(outcomeid));
-    }
 
 };
 

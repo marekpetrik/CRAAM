@@ -361,12 +361,8 @@ indvec MDPI_R::solve_reweighted(long iterations, prec_t discount, const indvec& 
         // update importance weights
         update_importance_weights(importanceweights);
         // compute solution of the robust MDP with the new weights
-<<<<<<< HEAD
-        Solution&& s = robust_mdp.mpi_jac_ave(numvec(0),discount);
-=======
         auto&& s = robust_mdp.mpi_jac(Uncertainty::Average, discount);
 
->>>>>>> generic_models
         // update the policy for the underlying states
         obspol = s.policy;
         // map the observation policy to the individual states
@@ -391,19 +387,23 @@ indvec MDPI_R::solve_robust(long iterations, prec_t threshold, prec_t discount, 
     indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
     obspol2statepol(obspol,statepol);
 
-    robust_mdp.set_uniform_thresholds(threshold);
+    set_thresholds(robust_mdp, threshold);
 
     for(auto iter : range(0l, iterations)){
         (void) iter; // to remove the warning
 
         // compute state distribution
         numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+        
         // update importance weights
         update_importance_weights(importanceweights);
+        
         // compute solution of the robust MDP with the new weights
-        Solution&& s = robust_mdp.mpi_jac_l1_rob(numvec(0),discount);
+        auto&& s = robust_mdp.mpi_jac(Uncertainty::Robust,discount);
+        
         // update the policy for the underlying states
         obspol = s.policy;
+
         // map the observation policy to the individual states
         obspol2statepol(obspol, statepol);
 

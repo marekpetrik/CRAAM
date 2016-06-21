@@ -13,11 +13,10 @@
 #include "cpp11-range-master/range.hpp"
 
 
-using namespace std;
-using namespace boost::numeric;
-
 namespace craam {
 
+using namespace std;
+using namespace boost::numeric;
 using namespace util::lang;
 
 /**
@@ -137,8 +136,14 @@ public:
                                                 return states[stateid];};
 
     /** Retrieves an existing state */
+    const SType& operator[](long stateid) const {return get_state(stateid);};
+    
+    /** Retrieves an existing state */
     SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
                                     return states[stateid];};
+
+    /** Retrieves an existing state */
+    SType& operator[](long stateid){return get_state(stateid);};
 
     /** Returns list of all states */
     const vector<SType>& get_states() const {return states;};
@@ -515,7 +520,6 @@ Normalizes outcome distributions for all states and actions.
 
 This function only applies to models that have thresholds, such as ones using
 "WeightedOutcomeAction" or its derivatives.
-
 */
 template<class Model>
 void normalize_outcomes(Model& mdp){
