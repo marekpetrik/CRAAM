@@ -14,17 +14,17 @@ SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 
 void SampledMDP::add_samples(const DiscreteSamples& samples){
 
-    // copy the state and action counts to be 
+    // copy the state and action counts to be
     vector<vector<size_t>> old_state_action_counts = state_action_counts;
 
     // add transition samples
     for(const DiscreteSample& s : samples.get_samples()){
-      
+
         // -----------------
         // Computes sample weight:
         // the idea is to normalize new samples by the same
         // value as the existing samples and then re-normalize
-        // this is linear complexity 
+        // this is linear complexity
         // -----------------
         // this needs to be initialized to 1.0
         prec_t weight = 1.0;
@@ -33,8 +33,8 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         // resize transition counts
         // the actual values are updated later
         if((size_t) s.state_from() >= state_action_counts.size()){
-            state_action_counts.resize(s.state_from());
-            
+            state_action_counts.resize(s.state_from()+1);
+
             // we know that the value will not be found in old data
             weight_initialized = true;
         }
@@ -42,35 +42,36 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         // check if we have something for the action
         vector<size_t>& actioncount = state_action_counts[s.state_from()];
         if((size_t)s.action() >= actioncount.size()){
-            actioncount.resize(s.action());
+            actioncount.resize(s.action()+1);
 
             // we know that the value will not be found in old data
             weight_initialized = true;
         }
-        
+
         // update the new count
+        assert(size_t(s.state_from()) < state_action_counts.size());
+        assert(size_t(s.action()) < state_action_counts[s.state_from()].size());
+
         state_action_counts[s.state_from()][s.action()]++;
 
         // get number of existing transitions
         // this is only run when we do not know that we have no prior
         // sample
-        if(!weight_initialized){
+        if(!weight_initialized &&
+                (size_t(s.state_from()) < old_state_action_counts.size()) &&
+                (size_t(s.action()) < old_state_action_counts[s.state_from()].size())) {
 
-            // check that everything is as it should be
-            assert(size_t(s.state_from()) < old_state_action_counts.size());
-            assert(size_t(s.action()) < old_state_action_counts[s.state_from()].size());
-
-            size_t count = old_state_action_counts[s.state_from()][s.action()]++;
+            size_t cnt = old_state_action_counts[s.state_from()][s.action()];
 
             // adjust the weight of the new sample to be consistent
             // with the previous normalization (use 1.0 if no previous action)
-            weight = 1.0 / prec_t(count);
+            weight = 1.0 / prec_t(cnt);
         }
         // -----------------------
 
-        // adds a transition 
-        add_transition( *mdp, s.state_from(), s.action(), s.state_to(), 
-                        weight*s.weight(), 
+        // adds a transition
+        add_transition( *mdp, s.state_from(), s.action(), s.state_to(),
+                        weight*s.weight(),
                         s.reward());
     }
 

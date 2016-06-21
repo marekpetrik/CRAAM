@@ -32,7 +32,7 @@ public:
     Sample(const State& state_from, const Action& action, const State& state_to,
            prec_t reward, prec_t weight, long step, long run):
         _state_from(state_from), _action(action),
-        _state_to(state_to), _reward(reward), _step(step), _step(step), _run(run){};
+        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){};
 
     /** Original state */
     State state_from() const {return _state_from;};
@@ -91,11 +91,11 @@ public:
     };
 
     /** Adds a sample starting in a decision state */
-    void add_sample(const State& state_from, const Action& action, 
-                    const State& state_to, prec_t reward, prec_t weight, 
+    void add_sample(const State& state_from, const Action& action,
+                    const State& state_to, prec_t reward, prec_t weight,
                     long step, long run){
-    
-        samples.emplace_back(state_from, action, state_to, reward, weight, 
+
+        samples.emplace_back(state_from, action, state_to, reward, weight,
                              step, run);
     }
 
@@ -108,8 +108,8 @@ public:
         set<int> runs;
 
         for(const auto& es : samples){
-           result += es.reward * pow(discount,es.step);
-           runs.insert(es.run);
+           result += es.reward() * pow(discount,es.step());
+           runs.insert(es.run());
         }
 
         result /= runs.size();
@@ -298,7 +298,7 @@ public:
                                         add_action(es.state_from(), es.action()),
                                         add_state(es.state_to()),
                                         es.reward(), es.weight(),
-                                        es.step, es.run);
+                                        es.step(), es.run());
         }
     }
 

@@ -33,7 +33,6 @@ using namespace util::lang;
 //#define BOOST_TEST_MODULE MainModule
 #include <boost/test/unit_test.hpp>
 
-
 struct TestState{
     int index;
 
@@ -76,7 +75,7 @@ BOOST_AUTO_TEST_CASE(basic_simulation) {
     TestSim sim;
 
     auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
-    BOOST_CHECK_EQUAL(samples.get_samples().size(),50);
+    BOOST_CHECK_EQUAL(samples.get_samples().size(), 50);
 }
 
 
@@ -112,7 +111,6 @@ public:
         return initstate;
     }
 
-
     pair<double,int> transition(int pos, int action) {
         int nextpos = d(gen) ? pos + action : pos;
         return make_pair((double) pos, nextpos);
@@ -130,6 +128,7 @@ public:
         return actions_list;
     }
 };
+
 
 /** A counter that terminates at either end as defined by the end state */
 class CounterTerminal : public Counter {
@@ -195,7 +194,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
     SampleDiscretizerSD<CounterTerminal> sd;
     sd.add_samples(samples);
 
-    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
+    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
     BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
 
     SampledMDP smdp;
@@ -228,7 +227,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     SampleDiscretizerSI<CounterTerminal> sd;
     sd.add_samples(samples);
 
-    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
+    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
     BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
 
 

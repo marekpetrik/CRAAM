@@ -292,13 +292,7 @@ public:
         return initstate;
     }
 
-    pair<int,int> transition_dec(int state, int action) const{
-        return make_pair(state,action);
-    }
-
-    pair<double,int> transition_exp(const pair<int,int> expstate) {
-        int pos = expstate.first;
-        int act = expstate.second;
+    pair<double,int> transition(int pos, int act) {
 
         int nextpos = d(gen) ? pos + act : pos;
         return make_pair((double) pos, nextpos);
@@ -418,7 +412,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
-    sol_impl = mdp->vi_jac_fix(numvec(0),0.9, mdpi.obspol2statepol(isol),
+    sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);

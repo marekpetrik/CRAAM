@@ -86,18 +86,18 @@ void simulate_stateless(
         typename Sim::State&& state = sim.init_state();
         samples.add_initial(state);
 
-        for(auto step : range(horizon)){
+        for(auto step : range(0l,horizon)){
             // check form termination conditions
             if(sim.end_condition(state) || (tran_limit > 0 && transitions > tran_limit) )
                 break;
 
             auto&& action = policy(state);
-            auto&& rewarState = sim.transition(state,action);
+            auto&& rewardState = sim.transition(state,action);
 
-            auto reward = rewarState.first;
-            auto nextstate = move(rewarState.second);
+            auto reward = rewardState.first;
+            auto nextstate = move(rewardState.second);
 
-            samples.add(Sample<Sim>(state, move(action), nextstate, reward, 1.0, step, run));
+            samples.add_sample(move(state), move(action), nextstate, reward, 1.0, step, run);
             state = move(nextstate);
 
             // test the termination probability only after at least one transition
@@ -110,7 +110,6 @@ void simulate_stateless(
             break;
     }
 }
-
 
 /**
 Runs the simulator and generates samples.
