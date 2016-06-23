@@ -1,6 +1,7 @@
 #include "definitions.hpp"
 #include "RMDP.hpp"
 #include "ImMDP.hpp"
+#include "modeltools.hpp"
 
 #include <algorithm>
 #include <memory>

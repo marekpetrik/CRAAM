@@ -1,4 +1,5 @@
 #include "Samples.hpp"
+#include "modeltools.hpp"
 
 #include <utility>
 #include <vector>

@@ -1,6 +1,6 @@
 # distutils: language = c++
 # distutils: libraries = craam
-# distutils: library_dirs = craam/lib 
+# distutils: library_dirs = ../lib 
 # distutils: include_dirs = ../include ../ext_include
 
 import numpy as np 
@@ -17,6 +17,9 @@ import warnings
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam':
                                             
+    cdef cppclass Uncertainty:
+        pass 
+
     cdef cppclass Transition:
 
         Transition() 
@@ -32,5 +35,12 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
         vector[double]& get_rewards() 
     
         size_t size() 
+
+
+cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty':
+        cdef Uncertainty Robust
+        cdef Uncertainty Optimistic
+        cdef Uncertainty Average 
+    
 
 

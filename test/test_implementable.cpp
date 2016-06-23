@@ -3,6 +3,7 @@
 #include "Transition.hpp"
 #include "Simulation.hpp"
 #include "Samples.hpp"
+#include "modeltools.hpp"
 
 #include "cpp11-range-master/range.hpp"
 #include <boost/functional/hash.hpp>

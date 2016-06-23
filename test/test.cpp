@@ -8,6 +8,7 @@
 #include "State.hpp"
 #include "RMDP.hpp"
 #include "definitions.hpp"
+#include "modeltools.hpp"
 
 using namespace std;
 using namespace craam;
