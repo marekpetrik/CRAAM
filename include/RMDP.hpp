@@ -357,4 +357,8 @@ typedef GRMDP<RegularState> MDP;
 typedef GRMDP<DiscreteRobustState> RMDP_D;
 typedef GRMDP<L1RobustState> RMDP_L1;
 
+typedef GSolution<long, long> SolutionDscDsc;
+typedef GSolution<long, numvec> SolutionDscProb;
+
+
 }
