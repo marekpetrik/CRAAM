@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());

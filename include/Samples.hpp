@@ -7,11 +7,15 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <cassert>
 
-using namespace std;
+#include "cpp11-range-master/range.hpp"
 
 namespace craam{
 namespace msen {
+
+using namespace util::lang;
+using namespace std;
 
 /// -----------------------------------------------------------------------------------------
 
@@ -85,9 +89,20 @@ public:
         this->initial.push_back(decstate);
     };
 
+    /** Adds an initial state */
+    void add_initial(State&& decstate){
+        this->initial.push_back(decstate);
+    };
+
     /** Adds a sample starting in a decision state */
     void add_sample(const Sample<Sim>& sample){
-        samples.push_back(sample);
+        states_from.push_back(sample.state_from());
+        actions.push_back(sample.action());
+        states_to.push_back(sample.state_to());
+        rewards.push_back(sample.reward());
+        weights.push_back(sample.weight());
+        steps.push_back(sample.step());
+        runs.push_back(sample.run());
     };
 
     /** Adds a sample starting in a decision state */
@@ -95,8 +110,27 @@ public:
                     const State& state_to, prec_t reward, prec_t weight,
                     long step, long run){
 
-        samples.emplace_back(state_from, action, state_to, reward, weight,
-                             step, run);
+        states_from.push_back(state_from);
+        actions.push_back(action);
+        states_to.push_back(state_to);
+        rewards.push_back(reward);
+        weights.push_back(weight);
+        steps.push_back(step);
+        runs.push_back(run);
+    }
+
+    /** Adds a sample starting in a decision state */
+    void add_sample(State&& state_from, Action&& action,
+                    State&& state_to, prec_t reward, prec_t weight,
+                    long step, long run){
+
+        states_from.push_back(state_from);
+        actions.push_back(action);
+        states_to.push_back(state_to);
+        rewards.push_back(reward);
+        weights.push_back(weight);
+        steps.push_back(step);
+        runs.push_back(run);
     }
 
     /**
@@ -107,25 +141,52 @@ public:
         prec_t result = 0;
         set<int> runs;
 
-        for(const auto& es : samples){
-           result += es.reward() * pow(discount,es.step());
-           runs.insert(es.run());
+        for(size_t si : indices(*this)){
+
+            auto es = get_sample(si);
+            result += es.reward() * pow(discount,es.step());
+            runs.insert(es.run());
         }
 
         result /= runs.size();
         return result;
     };
 
-    /** List of all samples */
-    const vector<Sample<Sim>>& get_samples() const{return samples;};
+    /** Number of samples */
+    size_t size() const {return states_from.size();};
+
+    /** Access to samples */
+    Sample<Sim> get_sample(long i) const{
+        assert(i >=0 && size_t(i) < size());
+        return Sample<Sim>(states_from[i],actions[i],states_to[i],rewards[i],weights[i],steps[i],runs[i]);};
+
+    /** Access to samples */
+    Sample<Sim> operator[](long i) const{
+        return get_sample(i);
+    };
+
     /** List of initial states */
     const vector<State>& get_initial() const{return initial;};
 
+    const vector<State>& get_states_from() const{return states_from;};
+    const vector<Action>& get_actions() const{return actions;};
+    const vector<State>& get_states_to() const{return states_to;};
+    const vector<prec_t>& get_rewards() const{return rewards;};
+    const vector<prec_t>& get_weights() const{return weights;};
+    const vector<long>& get_runs() const{return runs;};
+    const vector<long>& get_steps() const{return steps;};
+
 protected:
 
-    vector<Sample<Sim>> samples;
-    vector<State> initial;
+    vector<State> states_from;
+    vector<Action> actions;
+    vector<State> states_to;
+    vector<prec_t> rewards;
+    vector<prec_t> weights;
+    vector<long> runs;
+    vector<long> steps;
 
+    vector<State> initial;
 };
 
 /// -----------------------------------------------------------------------------------------
@@ -193,7 +254,8 @@ public:
         }
 
         // samples
-        for(const auto& ds : samples.get_samples()){
+        for(auto si : indices(samples)){
+            const auto ds = samples.get_sample(si);
             discretesamples->add_sample(
                                      add_state(ds.state_from()),
                                      add_action(ds.action()),
@@ -293,7 +355,10 @@ public:
         }
 
         // transition samples
-        for(const auto& es : samples.get_samples()){
+        for(auto si : indices(samples)){
+            
+            const auto es = samples.get_sample(si);
+            
             discretesamples->add_sample(add_state(es.state_from()),
                                         add_action(es.state_from(), es.action()),
                                         add_state(es.state_to()),

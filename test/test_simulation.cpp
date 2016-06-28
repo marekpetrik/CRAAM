@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(basic_simulation) {
     TestSim sim;
 
     auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), 50);
+    BOOST_CHECK_EQUAL(samples.size(), 50);
 }
 
 
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
 
 
     SampledMDP smdp;

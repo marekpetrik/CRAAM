@@ -5,11 +5,11 @@
 #include <vector>
 #include <string>
 
-using namespace std;
-
-using namespace util::lang;
 
 namespace craam{namespace msen {
+
+using namespace std;
+using namespace util::lang;
 
 SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 
@@ -19,7 +19,9 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
     vector<vector<size_t>> old_state_action_counts = state_action_counts;
 
     // add transition samples
-    for(const DiscreteSample& s : samples.get_samples()){
+    for(size_t si : indices(samples)){
+
+        DiscreteSample s = samples.get_sample(si);
 
         // -----------------
         // Computes sample weight:
