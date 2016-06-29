@@ -39,22 +39,27 @@ An example definition of a simulator should have the following methods:
 class Simulator{
 public:
     /// Type of states
-    typedef dec_state_type State;
+    typedef state_type State;
+    
     /// Type of actions
     typedef action_type Action;
 
     /// Returns a sample from the initial states.
     State init_state();
+    
     /// Returns a sample of the reward and a decision state following an expectation state
     pair<double,State> transition(State, Action);
+
     /// Checks whether the decision state is terminal
     bool end_condition(State) const;
 
     /// ** The following functions are not necessary for the simulation
-    /// State dependent action list (use RandomPolicySD)
-    vector<Action> actions(State)  const;
-    /// State-indpendent action list (use RandomPolicySI)
-    vector<Action> actions const;
+    /// State dependent actions, with discrete number of actions (long id each action)
+    /// use -1 if actions are not discrete
+    long action_count(State) const;
+
+    /// State dependent action with the given index 
+    Action action(State, index) const;
 }
 \endcode
 
@@ -69,7 +74,7 @@ public:
 \param prob_term The probability of termination in each step
  */
 template<class Sim, class SampleType=Samples<Sim>>
-void simulate_stateless(
+void simulate(
             Sim& sim, SampleType& samples,
             const function<typename Sim::Action(typename Sim::State&)>& policy,
             long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
@@ -118,82 +123,103 @@ See the other version of the method for more details. This variant
 constructs and returns the samples object.
 */
 template<class Sim, class SampleType=Samples<Sim>>
-SampleType simulate_stateless(
+SampleType simulate(
             Sim& sim,
             const function<typename Sim::Action(typename Sim::State&)>& policy,
             long horizon, long runs, long tran_limit=-1, prec_t prob_term=0.0,
             random_device::result_type seed = random_device{}()){
 
     SampleType samples = SampleType();
-    simulate_stateless(sim, samples, policy, horizon, runs, tran_limit, prob_term, seed);
+    simulate(sim, samples, policy, horizon, runs, tran_limit, prob_term, seed);
     return samples;
 }
 
 /// ************************************************************************************
-/// **** Random policies ****
+/// **** Random(ized) policies ****
 /// ************************************************************************************
 
 /**
-A random policy with state-dependent action sets.
+A random policy with state-dependent action sets which are discrete.
 
 \tparam Sim Simulator class for which the policy is to be constructed.
             Must implement an instance method actions(State).
  */
 template<class Sim>
-class RandomPolicySD {
+class RandomPolicy{
 
 public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
 
-    RandomPolicySD(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
+
+    RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
     /** Returns a random action */
-    typename Sim::Action operator() (typename Sim::State State){
-        const vector<typename Sim::Action>&& actions = sim.actions(State);
-
-        auto actioncount = actions.size();
-        uniform_int_distribution<> dst(0,actioncount-1);
-
-        return actions[dst(gen)];
+    Action operator() (State state){
+        uniform_int_distribution<> dst(0,sim.action_count(state)-1);
+        return sim.action(state,dst(gen));
     };
 
 private:
     const Sim& sim;
     default_random_engine gen;
-
 };
+
+
+
+/// ************************************************************************************
+/// **** MDP simulation ****
+/// ************************************************************************************
 
 /**
-An object that behaves as a random policy for problems
-with state-independent action sets.
+A simulator that behaves as the provided MDP. A state of MDP.size() is
+considered to be the terminal state.
 
-The actions are copied internally.
+If the sum of all transitions is less than 1, then the remainder is assumed to 
+be the probability of transitioning to the terminal state.
+*/
+class ModelSimulator{
 
-\tparam Sim Simulator class for which the policy is to be constructed.
-            Must implement an instance method actions().
- */
-template<class Sim>
-class RandomPolicySI {
 public:
+    /// Type of states
+    typedef long State;
+    /// Type of actions
+    typedef long Action;
 
-    RandomPolicySI(const Sim& sim, random_device::result_type seed = random_device{}())
-        : sim(sim), gen(seed), actions(sim.actions())
-    {};
+    /** Build a model simulator and share and MDP */
+    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial):
+        mdp(mdp), initial(initial){};
 
-    /** Returns a random action */
-    typename Sim::Action operator() (typename Sim::State state){
-        auto actioncount = actions.size();
-        uniform_int_distribution<> dst(0,actioncount-1);
+    /** Build a model simulator and share and MDP */
+    ModelSimulator(shared_ptr<MDP> mdp, const Transition& initial) : 
+        ModelSimulator(const_pointer_cast<const MDP>(mdp), initial) {};
 
-        return actions[dst(gen)];
-    };
+    /// Returns a sample from the initial states.
+    State init_state();
+    
+    /// Returns a sample of the reward and a decision state following an expectation state
+    pair<double,State> transition(State, Action);
 
-private:
+    /// Checks whether the decision state is terminal
+    bool end_condition(State s) const 
+        {return size_t(s) >= mdp->size();};
 
-    const Sim& sim;
-    default_random_engine gen;
-    const vector<typename Sim::Action> actions;   // list of actions is constant
+    /// State dependent action list 
+    size_t action_count(State state) const 
+        {return (*mdp)[state].size();};
+    
+    /// Returns an action with the given index
+    Action action(State, long index) const
+        {return index;};
+
+protected:
+    /** MDP used for the simulation */
+    shared_ptr<const MDP> mdp;
+    /** Initial distribution */
+    Transition initial;
 };
+
 
 } // end namespace msen
 } // end namespace craam

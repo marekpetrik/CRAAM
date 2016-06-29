@@ -61,9 +61,9 @@ public:
         return false;
     };
 
-    vector<int> actions(TestState) const{
-        return vector<int>{1};
-    };
+    long action_count(TestState) const{return 1;}
+
+    int action(TestState, long) const{return 1;}
 
 };
 
@@ -74,7 +74,7 @@ int test_policy(TestState){
 BOOST_AUTO_TEST_CASE(basic_simulation) {
     TestSim sim;
 
-    auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
+    auto samples = simulate<TestSim>(sim,test_policy,10,5);
     BOOST_CHECK_EQUAL(samples.size(), 50);
 }
 
@@ -120,13 +120,11 @@ public:
         return false;
     }
 
-    vector<int> actions(int) const{
-        return actions_list;
+    int action(State state, long index) const{
+        return actions_list[index];
     }
 
-    vector<int> actions() const{
-        return actions_list;
-    }
+    size_t action_count(State) const{return actions_list.size();};
 };
 
 
@@ -154,77 +152,32 @@ namespace std{
 
 
 
-BOOST_AUTO_TEST_CASE(simulation_multiple_counter_sd ) {
-    Counter sim(0.9,0,1);
-
-    RandomPolicySD<Counter> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
-
-    samples = simulate_stateless(sim,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
-
-    Counter sim2(0.9,3,1);
-    samples = simulate_stateless(sim2,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
-}
-
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
 
-    RandomPolicySI<Counter> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
+    RandomPolicy<Counter> random_pol(sim,1);
+    auto samples = simulate(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
 
-    samples = simulate_stateless(sim,random_pol,1,20);
+    samples = simulate(sim,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
-    samples = simulate_stateless(sim2,random_pol,1,20);
+    samples = simulate(sim2,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
 }
-
-BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
-
-    CounterTerminal sim(0.9,0,10,1);
-
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
-
-    SampleDiscretizerSD<CounterTerminal> sd;
-    sd.add_samples(samples);
-
-    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
-
-    SampledMDP smdp;
-    smdp.add_samples(*sd.get_discrete());
-
-    shared_ptr<const MDP> mdp = smdp.get_mdp();
-
-    // check that the number of actions is correct (2)
-    for(auto i : range((size_t)0, mdp->state_count())){
-        if(mdp->get_state(i).action_count() > 0)
-            BOOST_CHECK_LE(mdp->get_state(i).action_count(), 2);
-    }
-
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
-
-    BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 47.6799, 1e-3);
-}
-
 
 BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
 
     CounterTerminal sim(0.9,0,10,1);
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+    RandomPolicy<CounterTerminal> random_pol(sim,1);
 
     Samples<CounterTerminal> samples;
-    simulate_stateless(sim,samples,random_pol,50,50);
-    simulate_stateless(sim,samples,[](int){return 1;},10,20);
-    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+    simulate(sim,samples,random_pol,50,50);
+    simulate(sim,samples,[](int){return 1;},10,20);
+    simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSI<CounterTerminal> sd;
+    SampleDiscretizerSD<CounterTerminal> sd;
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());

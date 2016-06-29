@@ -8,12 +8,13 @@ cimport numpy as np
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.utility cimport pair
-from libcpp.memory cimport unique_ptr, shared_ptr
+from libcpp.memory cimport unique_ptr, shared_ptr, make_shared
 from libcpp cimport bool
 import statistics
 from collections import namedtuple 
 from math import sqrt
 import warnings 
+from cython.operator import dereference
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam':
                                             
@@ -121,6 +122,8 @@ class UncertainSet(Enum):
     Optimistic = 1
     Average = 2
 
+DEFAULT_ITERS = 500
+
 cdef class SMDP:
     """
     Contains the definition of a standard MDP and related optimization algorithms.
@@ -139,21 +142,22 @@ cdef class SMDP:
         The discount factor
     """
     
-    cdef MDP *thisptr
+    cdef shared_ptr[MDP] thisptr
     cdef public double discount
 
     def __cinit__(self, int statecount, double discount):
-        self.thisptr = new MDP(statecount)
+        self.thisptr = make_shared[MDP](statecount)
 
     def __init__(self, int statecount, double discount):
         self.discount = discount
         
     def __dealloc__(self):
-        del self.thisptr
+        pass
+        #del self.thisptr
                 
     cdef _check_value(self,valuefunction):
         if valuefunction.shape[0] > 0:
-            if valuefunction.shape[0] != self.thisptr.state_count():
+            if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
 
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
@@ -174,10 +178,10 @@ cdef class SMDP:
         reward : float
             Reward associated with the transition
         """        
-        add_transition[MDP](self.thisptr[0],fromid, actionid, 0, toid, probability, reward)
+        add_transition[MDP](dereference(self.thisptr),fromid, actionid, 0, toid, probability, reward)
 
         
-    cpdef vi_gs(self, int iterations, valuefunction = np.empty(0), \
+    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -213,13 +217,13 @@ cdef class SMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = Average
  
-        cdef SolutionDscDsc sol = self.thisptr.vi_gs(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
                     valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations
 
-    cpdef vi_jac(self, int iterations,valuefunction = np.empty(0), \
+    cpdef vi_jac(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -253,14 +257,14 @@ cdef class SMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = Average
 
-        cdef SolutionDscDsc sol = self.thisptr.vi_jac(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations
 
 
-    cpdef mpi_jac(self, long iterations, valuefunction = np.empty(0), \
+    cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual = 0, long valiterations = 1000, int stype=0,
                                     double valresidual=-1):
         """
@@ -303,7 +307,7 @@ cdef class SMDP:
         if valresidual < 0:
             valresidual = maxresidual / 2
 
-        cdef SolutionDscDsc sol = self.thisptr.mpi_jac(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual,valiterations,\
                         valresidual)
 
@@ -431,7 +435,7 @@ cdef class RMDP:
         add_transition[RMDP_D](self.thisptr[0],fromid, actionid, outcomeid, toid, probability, reward)
 
         
-    cpdef vi_gs(self, int iterations, valuefunction = np.empty(0), \
+    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0, int stype=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -478,7 +482,7 @@ cdef class RMDP:
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.outcomes
 
-    cpdef vi_jac(self, int iterations,valuefunction = np.empty(0), \
+    cpdef vi_jac(self, int iterations=DEFAULT_ITERS,valuefunction = np.empty(0), \
                                     double maxresidual=0, int stype=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -524,7 +528,7 @@ cdef class RMDP:
                 sol.iterations, sol.outcomes
 
 
-    cpdef mpi_jac(self, long iterations, valuefunction = np.empty(0), \
+    cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual = 0, long valiterations = 1000, int stype=0,
                                     double valresidual=-1):
         """

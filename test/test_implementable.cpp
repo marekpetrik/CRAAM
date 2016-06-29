@@ -293,23 +293,24 @@ public:
         return initstate;
     }
 
-    pair<double,int> transition(int pos, int act) {
+    pair<double,int> transition(State pos, Action act) {
 
         int nextpos = d(gen) ? pos + act : pos;
         return make_pair((double) pos, nextpos);
     }
 
-    bool end_condition(const int state){
+    bool end_condition(const State& state){
         return false;
     }
 
-    vector<int> actions(int) const{
-        return actions_list;
+    size_t action_count(State) const{
+        return actions_list.size();
     }
 
-    vector<int> actions() const{
-        return actions_list;
+    Action action(State,long index) const{
+        return actions_list[index];
     }
+
 };
 
 /** A counter that terminates at either end as defined by the end state */
@@ -348,12 +349,12 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
 
     CounterTerminal sim(0.9,0,terminal_state,1);
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+    RandomPolicy<CounterTerminal> random_pol(sim,1);
 
     Samples<CounterTerminal> samples;
-    simulate_stateless(sim,samples,random_pol,50,50);
-    simulate_stateless(sim,samples,[](int){return 1;},10,20);
-    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+    simulate(sim,samples,random_pol,50,50);
+    simulate(sim,samples,[](int){return 1;},10,20);
+    simulate(sim,samples,[](int){return -1;},10,20);
 
     SampleDiscretizerSI<CounterTerminal> sd;
     // initialize action values
