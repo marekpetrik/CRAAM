@@ -53,7 +53,9 @@ public:
     /// Checks whether the decision state is terminal
     bool end_condition(State) const;
 
-    /// ** The following functions are not necessary for the simulation
+    /// ** The following functions are not necessary for simulation
+    /// ** but are used to generate policies (random(ized) )
+
     /// State dependent actions, with discrete number of actions (long id each action)
     /// use -1 if actions are not discrete
     long action_count(State) const;
@@ -141,6 +143,9 @@ SampleType simulate(
 /**
 A random policy with state-dependent action sets which are discrete.
 
+Important: Retains the reference to the simulator from which it comes. If the
+simulator is destroyed in the meantime, the behavior is not defined.
+
 \tparam Sim Simulator class for which the policy is to be constructed.
             Must implement an instance method actions(State).
  */
@@ -151,21 +156,86 @@ public:
     using State = typename Sim::State;
     using Action = typename Sim::Action;
 
-
     RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
     {};
 
     /** Returns a random action */
     Action operator() (State state){
-        uniform_int_distribution<> dst(0,sim.action_count(state)-1);
+        uniform_int_distribution<long> dst(0,sim.action_count(state)-1);
         return sim.action(state,dst(gen));
     };
 
 private:
+    /// Internal reference to the originating simulator
     const Sim& sim;
+    /// Random number engine
     default_random_engine gen;
 };
 
+/**
+A randomized policy that chooses actions according to the provided
+vector of probabilities. This policy only works with a simulator 
+
+Transition probabilities must sum to one for each state. 
+
+State must be convertible to a long index
+*/
+template<typename Sim>
+class RandomizedPolicy{
+
+public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
+
+    /**
+    Initializes randomized polices, transition probabilities
+    for each state. The policy is applicable only to MDPs that
+    have:
+
+      1) At most as many states as probabilities.size()
+      2) At least as many actions are max(probabilities[i].size() | i) 
+
+    \param sim Simulator used with the policy. The reference is retained,
+                the object should not be deleted
+    \param probabilities List of action probabilities for each state
+    */
+    RandomizedPolicy(const Sim& sim, const vector<numvec>& probabilities):
+        distributions(probabilities.size()), sim(sim){
+
+        for(auto pi : indices(probabilities)){
+            
+            // check that this distribution is correct
+            const numvec& prob = probabilities[pi];
+            prec_t sum = accumulate(prob.begin(), prob.end(), 0.0);
+            
+            if(abs(sum - 1) > SOLPREC){
+                throw invalid_argument("Action probabilities must sum to 1 in state " + to_string(pi));
+            } 
+            distributions[pi] = discrete_distribution<long>(prob.begin(), prob.end());
+        }
+    };
+
+    /** Returns a random action */
+    Action operator() (State state){
+        // check that the state is valid for this policy
+        assert(state >= 0 && size_t(state) < distributions.size());
+
+        auto& dst = distributions[state];
+        // existence of the action is check by the simulator
+        return sim.action(state,dst(gen));
+    };
+
+protected:
+
+    /// List of discrete distributions for all states
+    vector<discrete_distribution<long>> distributions;
+
+    /// Random number engine
+    default_random_engine gen;
+
+    /// simulator reference
+    const Sim& sim;
+};
 
 
 /// ************************************************************************************
@@ -219,6 +289,7 @@ protected:
     /** Initial distribution */
     Transition initial;
 };
+
 
 
 } // end namespace msen

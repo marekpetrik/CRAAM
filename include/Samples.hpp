@@ -12,7 +12,7 @@
 #include "cpp11-range-master/range.hpp"
 
 namespace craam{
-namespace msen {
+namespace msen{
 
 using namespace util::lang;
 using namespace std;
@@ -189,7 +189,10 @@ protected:
     vector<State> initial;
 };
 
-/// -----------------------------------------------------------------------------------------
+
+/// **********************************************************************
+/// ****** Discrete simulation specialization ******************
+/// **********************************************************************
 
 
 /** Class used to define discrete samples */
@@ -203,7 +206,6 @@ public:
 using DiscreteSamples = Samples<DiscreteSimulator>;
 /** Integral expectation sample */
 using DiscreteSample = Sample<DiscreteSimulator>;
-
 
 /**
 Turns arbitrary samples to discrete ones assuming that actions are
