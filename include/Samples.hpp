@@ -24,15 +24,12 @@ Represents the transition between two states.
 
 The footprint of the class could be reduced by removing the number of step and the run.
 
-\tparam Sim Simulator class used to generate the sample. Only the members
-            defining the types of State and Action are necessary.
+\tparam State Type defining states
+\tparam Action Type defining actions
  */
-template <class Sim>
+template <class State, class Action>
 class Sample {
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
-
     Sample(const State& state_from, const Action& action, const State& state_to,
            prec_t reward, prec_t weight, long step, long run):
         _state_from(state_from), _action(action),
@@ -75,14 +72,12 @@ protected:
 /**
 General representation of samples.
 
-\tparam Sim Simulator class used to generate the samples. Only the members
-            defining the types of State and Action are necessary.
+\tparam State Type defining states
+\tparam Action Type defining actions
  */
-template <typename Sim>
+template <class State, class Action>
 class Samples {
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
 
     /** Adds an initial state */
     void add_initial(const State& decstate){
@@ -95,7 +90,7 @@ public:
     };
 
     /** Adds a sample starting in a decision state */
-    void add_sample(const Sample<Sim>& sample){
+    void add_sample(const Sample<State,Action>& sample){
         states_from.push_back(sample.state_from());
         actions.push_back(sample.action());
         states_to.push_back(sample.state_to());
@@ -156,12 +151,12 @@ public:
     size_t size() const {return states_from.size();};
 
     /** Access to samples */
-    Sample<Sim> get_sample(long i) const{
+    Sample<State,Action> get_sample(long i) const{
         assert(i >=0 && size_t(i) < size());
-        return Sample<Sim>(states_from[i],actions[i],states_to[i],rewards[i],weights[i],steps[i],runs[i]);};
+        return Sample<State,Action>(states_from[i],actions[i],states_to[i],rewards[i],weights[i],steps[i],runs[i]);};
 
     /** Access to samples */
-    Sample<Sim> operator[](long i) const{
+    Sample<State,Action> operator[](long i) const{
         return get_sample(i);
     };
 
@@ -189,23 +184,24 @@ protected:
     vector<State> initial;
 };
 
+/**
+A helper function that constructs a samples object based on the simulator 
+that is provided to it
+*/
+template<Sim sim, class... U>
+Samples<typename Sim::State, typename Sim::Action> create_samples(U&&... u){
+    return Samples<typename Sim::State, typename Sim::Action>(u);
+};
 
 /// **********************************************************************
 /// ****** Discrete simulation specialization ******************
 /// **********************************************************************
 
 
-/** Class used to define discrete samples */
-class DiscreteSimulator {
-public:
-    typedef long State;
-    typedef long Action;
-};
-
 /** Samples in which the states and actions are identified by integers. */
-using DiscreteSamples = Samples<DiscreteSimulator>;
+using DiscreteSamples = Samples<long,long>;
 /** Integral expectation sample */
-using DiscreteSample = Sample<DiscreteSimulator>;
+using DiscreteSample = Sample<long,long>;
 
 /**
 Turns arbitrary samples to discrete ones assuming that actions are
@@ -231,24 +227,25 @@ namespace std{
 };
 
 
-\tparam Simulator definition for which samples to use
+\tparam State Type of state in the source samples
+\tparam Action Type of action in the source samples
 \tparam Shash Hash function for states
 \tparam Ahash Hash function for actions
 
 A hash function hash<type> for each sample type must exists.
 */
-template<   typename Sim,
-            typename SHash = std::hash<typename Sim::State>,
-            typename AHash = std::hash<typename Sim::Action>>
+template<   typename State,
+            typename Action,
+            typename SHash = std::hash<State>,
+            typename AHash = std::hash<Action>>
 class SampleDiscretizerSI{
 public:
-    using State = typename Sim::State;
 
     /** Constructs new internal discrete samples*/
     SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()){};
 
     /** Adds samples to the discrete samples */
-    void add_samples(const Samples<Sim>& samples){
+    void add_samples(const Samples<State,Action>& samples){
 
         // initial states
         for(const State& ins : samples.get_initial()){
@@ -283,7 +280,7 @@ public:
     }
 
     /** Returns a action index, and creates a new one if it does not exists */
-    long add_action(const typename Sim::Action& action){
+    long add_action(const Action& action){
         auto iter = action_map.find(action);
         long index;
         if(iter == action_map.end()){
@@ -302,8 +299,8 @@ public:
 protected:
     shared_ptr<DiscreteSamples> discretesamples;
 
-    unordered_map<typename Sim::Action,long,AHash> action_map;
-    unordered_map<typename Sim::State,long,SHash> state_map;
+    unordered_map<Action,long,AHash> action_map;
+    unordered_map<State,long,SHash> state_map;
 };
 
 /// -----------------------------------------------------------------------------------------
@@ -329,27 +326,27 @@ namespace std{
     }
 };
 
-\tparam Simulator definition for which samples to use
+\tparam State Type of state in the source samples
+\tparam Action Type of action in the source samples
 \tparam SAhash Hash function for pair<State, Action>
 \tparam Shash Hash function for decision states
 
 A hash function hash<type> for each sample type must exists.
 */
 template<
-    typename Sim,
-    typename SAHash = std::hash<pair<typename Sim::State,
-                                     typename Sim::Action>>,
-    typename SHash = std::hash<typename Sim::State> >
+    typename State,
+    typename Action,
+    typename SAHash = std::hash<pair<State,
+                                     Action>>,
+    typename SHash = std::hash<State> >
 class SampleDiscretizerSD{
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
 
     /** Constructs new internal discrete samples*/
     SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()){};
 
     /** Adds samples to the discrete samples */
-    void add_samples(const Samples<Sim>& samples){
+    void add_samples(const Samples<State,Action>& samples){
 
         // initial states
         for(const auto& ins : samples.get_initial()){
@@ -370,7 +367,7 @@ public:
     }
 
     /** Returns a state index, and creates a new one if it does not exists */
-    long add_state(const typename Sim::State& dstate){
+    long add_state(const State& dstate){
         auto iter = state_map.find(dstate);
         long index;
         if(iter == state_map.end()){

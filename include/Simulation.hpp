@@ -75,7 +75,7 @@ public:
 \param horizon Number of steps
 \param prob_term The probability of termination in each step
  */
-template<class Sim, class SampleType=Samples<Sim>>
+template<class Sim, class SampleType=Samples<typename Sim::State, typename Sim::Action>>
 void simulate(
             Sim& sim, SampleType& samples,
             const function<typename Sim::Action(typename Sim::State&)>& policy,
@@ -124,7 +124,7 @@ Runs the simulator and generates samples.
 See the other version of the method for more details. This variant
 constructs and returns the samples object.
 */
-template<class Sim, class SampleType=Samples<Sim>>
+template<class Sim, class SampleType=Samples<typename Sim::State, typename Sim::Action>>
 SampleType simulate(
             Sim& sim,
             const function<typename Sim::Action(typename Sim::State&)>& policy,
