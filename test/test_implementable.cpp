@@ -351,12 +351,13 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     CounterTerminal sim(0.9,0,terminal_state,1);
     RandomPolicy<CounterTerminal> random_pol(sim,1);
 
-    Samples<CounterTerminal> samples;
+    auto samples = make_samples<CounterTerminal>();
     simulate(sim,samples,random_pol,50,50);
     simulate(sim,samples,[](int){return 1;},10,20);
     simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSI<CounterTerminal> sd;
+    SampleDiscretizerSI<typename CounterTerminal::State, 
+                        typename CounterTerminal::Action> sd;
     // initialize action values
     sd.add_action(-1); sd.add_action(+1);
     //initialize state values

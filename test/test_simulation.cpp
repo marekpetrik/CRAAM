@@ -172,12 +172,13 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     CounterTerminal sim(0.9,0,10,1);
     RandomPolicy<CounterTerminal> random_pol(sim,1);
 
-    Samples<CounterTerminal> samples;
+    auto samples = make_samples<CounterTerminal>();
     simulate(sim,samples,random_pol,50,50);
     simulate(sim,samples,[](int){return 1;},10,20);
     simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSD<CounterTerminal> sd;
+    SampleDiscretizerSD<typename CounterTerminal::State,
+                        typename CounterTerminal::Action> sd;
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());

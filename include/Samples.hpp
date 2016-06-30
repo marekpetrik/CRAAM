@@ -188,10 +188,10 @@ protected:
 A helper function that constructs a samples object based on the simulator 
 that is provided to it
 */
-template<Sim sim, class... U>
-Samples<typename Sim::State, typename Sim::Action> create_samples(U&&... u){
-    return Samples<typename Sim::State, typename Sim::Action>(u);
-};
+template<class Sim, class... U>
+Samples<typename Sim::State, typename Sim::Action> make_samples(U&&... u){
+    return Samples<typename Sim::State, typename Sim::Action>(forward<U>(u)...);
+}
 
 /// **********************************************************************
 /// ****** Discrete simulation specialization ******************
