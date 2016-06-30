@@ -307,7 +307,8 @@ public:
     typedef long Action;
 
     /** Build a model simulator and share and MDP */
-    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial,random_device::result_type seed = random_device{}()):
+    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial, 
+                        random_device::result_type seed = random_device{}()):
         gen(seed), mdp(mdp), initial(initial){};
 
     /** Build a model simulator and share and MDP */
@@ -342,6 +343,16 @@ protected:
     /** Initial distribution */
     Transition initial;
 };
+
+/// Random (uniformly) policy to be used with the model simulator
+using ModelRandomPolicy = RandomPolicy<ModelSimulator>;
+
+/// Randomized policy to be used with MDP model simulator
+using ModelRandomizedPolicy = RandomizedPolicy<ModelSimulator>;
+
+/// Deterministic policy to be used with MDP model simulator
+using ModelDeterministicPolicy = DeterministicPolicy<ModelSimulator>;
+
 
 } // end namespace msen
 } // end namespace craam
