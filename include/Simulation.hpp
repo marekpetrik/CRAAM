@@ -57,7 +57,7 @@ public:
     /// ** but are used to generate policies (random(ized) )
 
     /// State dependent actions, with discrete number of actions (long id each action)
-    /// use -1 if actions are not discrete
+    /// use -1 if infinite number of actions are available
     long action_count(State) const;
 
     /// State dependent action with the given index 
@@ -156,8 +156,8 @@ public:
     using State = typename Sim::State;
     using Action = typename Sim::Action;
 
-    RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : sim(sim), gen(seed)
-    {};
+    RandomPolicy(const Sim& sim, random_device::result_type seed = random_device{}()) : 
+                sim(sim), gen(seed){};
 
     /** Returns a random action */
     Action operator() (State state){
@@ -174,11 +174,13 @@ private:
 
 /**
 A randomized policy that chooses actions according to the provided
-vector of probabilities. This policy only works with a simulator 
+vector of probabilities. 
 
-Transition probabilities must sum to one for each state. 
+Action probabilities must sum to one for each state. 
 
-State must be convertible to a long index
+State must be convertible to a long index; that is must support
+    (explicit) operator long
+Actions also have to be indexed. See the definition of simulate.
 */
 template<typename Sim>
 class RandomizedPolicy{
@@ -199,8 +201,8 @@ public:
                 the object should not be deleted
     \param probabilities List of action probabilities for each state
     */
-    RandomizedPolicy(const Sim& sim, const vector<numvec>& probabilities):
-        distributions(probabilities.size()), sim(sim){
+    RandomizedPolicy(const Sim& sim, const vector<numvec>& probabilities,random_device::result_type seed = random_device{}()):
+        gen(seed), distributions(probabilities.size()), sim(sim){
 
         for(auto pi : indices(probabilities)){
             
@@ -218,24 +220,71 @@ public:
     /** Returns a random action */
     Action operator() (State state){
         // check that the state is valid for this policy
-        assert(state >= 0 && size_t(state) < distributions.size());
+        long sl = static_cast<long>(state);
+        assert(sl >= 0 && size_t(sl) < distributions.size());
 
-        auto& dst = distributions[state];
+        auto& dst = distributions[sl];
         // existence of the action is check by the simulator
         return sim.action(state,dst(gen));
     };
 
 protected:
 
-    /// List of discrete distributions for all states
-    vector<discrete_distribution<long>> distributions;
-
     /// Random number engine
     default_random_engine gen;
+
+    /// List of discrete distributions for all states
+    vector<discrete_distribution<long>> distributions;
 
     /// simulator reference
     const Sim& sim;
 };
+
+
+/**
+A deterministic policy that chooses actions according to the provided action index. 
+
+State must be convertible to a long index; that is must support
+    (explicit) operator long
+Actions also have to be indexed. See the definition of simulate.
+
+*/
+template<typename Sim>
+class DeterministicPolicy{
+
+public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
+
+    /**
+    Initializes randomized polices, transition probabilities
+    for each state. 
+
+    \param sim Simulator used with the policy. The reference is retained,
+                the object should not be deleted
+    \param probabilities List of action probabilities for each state
+    */
+    DeterministicPolicy(const Sim& sim, const indvec& actions):
+        actions(actions), sim(sim) {};
+
+    /** Returns a random action */
+    Action operator() (State state){
+        // check that the state is valid for this policy
+        long sl = static_cast<long>(state);
+        assert(sl >= 0 && size_t(sl) < actions.size());
+
+        // existence of the action is check by the simulator
+        return sim.action(state,actions[sl]);
+    };
+
+protected:
+    /// List of which action to take in which state
+    indvec actions;
+
+    /// simulator reference
+    const Sim& sim;
+};
+
 
 
 /// ************************************************************************************
@@ -258,11 +307,11 @@ public:
     typedef long Action;
 
     /** Build a model simulator and share and MDP */
-    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial):
-        mdp(mdp), initial(initial){};
+    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial,random_device::result_type seed = random_device{}()):
+        gen(seed), mdp(mdp), initial(initial){};
 
     /** Build a model simulator and share and MDP */
-    ModelSimulator(shared_ptr<MDP> mdp, const Transition& initial) : 
+    ModelSimulator(shared_ptr<MDP> mdp, const Transition& initial,random_device::result_type seed = random_device{}()) : 
         ModelSimulator(const_pointer_cast<const MDP>(mdp), initial) {};
 
     /// Returns a sample from the initial states.
@@ -284,13 +333,15 @@ public:
         {return index;};
 
 protected:
+    /// Random number engine
+    default_random_engine gen;
+
     /** MDP used for the simulation */
     shared_ptr<const MDP> mdp;
+    
     /** Initial distribution */
     Transition initial;
 };
-
-
 
 } // end namespace msen
 } // end namespace craam
