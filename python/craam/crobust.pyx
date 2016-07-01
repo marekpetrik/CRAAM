@@ -118,35 +118,6 @@ cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
 
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
 
-cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
-    
-    cdef cppclass DiscreteSamples:
-        pass
-
-    DiscreteSamples simulate[Model,Pol](Model& sim, Pol pol, long horizon, long runs, long tran_limit, double prob_term, long seed );
-    
-
-cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
-
-    cdef cppclass ModelSimulator:
-        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial, long seed);
-
-    cdef cppclass ModelRandomPolicy:
-        
-        ModelRandomPolicy(const ModelSimulator& sim, long seed);        
-
-    cdef cppclass ModelDeterministicPolicy:
-        
-        ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
-
-    cdef cppclass SampledMDP:
-        
-        SampledMDP();
-
-        void add_samples(const DiscreteSamples& samples);
-        
-        shared_ptr[MDP] get_mdp_mod()
-
 
 from enum import Enum 
 
@@ -398,6 +369,116 @@ cdef class SMDP:
                         continue
                     rewardval = rewards[fromid,aoindex]
                     self.add_transition(fromid,actionid,toid,transitionprob,rewardval)
+
+cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
+    
+    cdef cppclass DiscreteSamples:
+
+        DiscreteSamples();
+
+        void add_initial(const long& decstate);
+        void add_sample(const long& state_from, const long& action, const long& state_to, double reward, double weight, long step, long run);
+        double mean_return(double discount);
+
+        const vector[long]& get_states_from() const;
+        const vector[long]& get_actions() const;
+        const vector[long]& get_states_to() const;
+        const vector[double]& get_rewards() const;
+        const vector[double]& get_weights() const;
+        const vector[long]& get_runs() const;
+        const vector[long]& get_steps() const;
+        const vector[long]& get_initial() const;
+
+
+cdef class DiscreteMemSamples:
+    """
+    Represent samples in which decision and expectation states, actions, 
+    are described by integers. It is a wrapper around the C++ representation of samples.
+
+    Each state, action, and expectation state must have an integral value.
+
+    Class ``features.DiscreteSampleView`` can be used as a convenient method for assigning
+    state identifiers based on the equality between states.
+    """
+    cdef DiscreteSamples *_thisptr
+
+    def __cinit__(self):
+        self._thisptr = new DiscreteSamples() 
+        
+    def __dealloc__(self):
+        del self._thisptr        
+        
+    def __init__(self):
+        """ 
+        Creates empty sample dictionary and returns it.
+        Can take arguments that describe the content of the samples.
+        """
+        pass
+        
+    def initialsamples(self):
+        """
+        Returns samples of initial decision states.
+        """
+        return dereference(self._thisptr).get_initial();
+        
+
+cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
+
+    DiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
+    DiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs);
+
+    cdef cppclass ModelSimulator:
+        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial, long seed);
+        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial);
+
+    cdef cppclass ModelRandomPolicy:
+        
+        ModelRandomPolicy(const ModelSimulator& sim, long seed);        
+        ModelRandomPolicy(const ModelSimulator& sim);        
+
+    cdef cppclass ModelDeterministicPolicy:
+        
+        ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
+
+    cdef cppclass SampledMDP:
+        
+        SampledMDP();
+
+        void add_samples(const DiscreteSamples& samples);
+        
+        shared_ptr[MDP] get_mdp_mod()
+
+
+cdef class Simulation:
+    """
+    Simulates an MDP
+
+    constructs from and MDP object
+    """
+    cdef ModelSimulator *_thisptr
+
+    def __cinit__(self, SMDP mdp):
+        #TODO needs to take care of the transition here
+        cdef shared_ptr[MDP] cmdp = mdp.thisptr
+        self._thisptr = new ModelSimulator(cmdp, Transition()) 
+                
+    def __dealloc__(self):
+        del self._thisptr        
+
+    def simulate_random(self):
+
+        cdef ModelRandomPolicy * rp =  new ModelRandomPolicy(dereference(self._thisptr))
+
+        cdef DiscreteSamples samples = simulate(dereference(self._thisptr), dereference(rp), 10, 10);
+
+        # TODO add a finally statement here
+        del rp
+
+        newsamples = DiscreteMemSamples()
+        # TODO: add move here
+        newsamples._thisptr[0] = samples
+
+        return newsamples
 
 cdef class RMDP:
     """
