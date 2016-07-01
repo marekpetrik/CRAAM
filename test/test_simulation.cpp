@@ -1,3 +1,6 @@
+#include "Simulation.hpp"
+#include "modeltools.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <random>
@@ -7,7 +10,6 @@
 #include <boost/functional/hash.hpp>
 #include "cpp11-range-master/range.hpp"
 
-#include "Simulation.hpp"
 
 using namespace std;
 using namespace craam;
@@ -199,4 +201,38 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
+}
+
+
+template<class Model>
+Model create_test_mdp_sim(){
+    Model rmdp(3);
+
+    // nonrobust
+    // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
+    add_transition<Model>(rmdp,0,1,1,1.0,0.0);
+    add_transition<Model>(rmdp,1,1,2,1.0,0.0);
+    add_transition<Model>(rmdp,2,1,2,1.0,1.1);
+
+    add_transition<Model>(rmdp,0,0,0,1.0,0.0);
+    add_transition<Model>(rmdp,1,0,0,1.0,1.0);
+    add_transition<Model>(rmdp,2,0,1,1.0,1.0);
+
+    return rmdp;
+}
+
+BOOST_AUTO_TEST_CASE(simulate_mdp){
+
+    shared_ptr<MDP> m = make_shared<MDP>();
+    *m = create_test_mdp_sim<MDP>();
+    
+    Transition initial({0},{1.0});
+    
+    ModelSimulator ms(m, initial);
+    ModelRandomPolicy rp(ms);
+
+    auto samples = simulate(ms, rp, 10000, 1000);
+    
+    cout << "Number of samples " << samples.size() << endl;
+    
 }

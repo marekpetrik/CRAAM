@@ -4,6 +4,7 @@
 #include <vector>
 #include <limits>
 #include <cassert>
+#include <string>
 
 
 #include "definitions.hpp"

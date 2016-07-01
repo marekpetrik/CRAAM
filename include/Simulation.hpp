@@ -296,7 +296,9 @@ A simulator that behaves as the provided MDP. A state of MDP.size() is
 considered to be the terminal state.
 
 If the sum of all transitions is less than 1, then the remainder is assumed to 
-be the probability of transitioning to the terminal state.
+be the probability of transitioning to the terminal state. 
+
+Any state with an index higher or equal to the number of states is considered to be terminal.
 */
 class ModelSimulator{
 
@@ -306,13 +308,27 @@ public:
     /// Type of actions
     typedef long Action;
 
-    /** Build a model simulator and share and MDP */
-    ModelSimulator(shared_ptr<const MDP> mdp, const Transition& initial, 
+    /** 
+    Build a model simulator and share and MDP 
+    
+    The initial transition is copied internally to the object,
+    while the MDP object is stored internally.
+    */
+    ModelSimulator(const shared_ptr<const MDP>& mdp, const Transition& initial, 
                         random_device::result_type seed = random_device{}()):
-        gen(seed), mdp(mdp), initial(initial){};
+                gen(seed), mdp(mdp), initial(initial){
 
-    /** Build a model simulator and share and MDP */
-    ModelSimulator(shared_ptr<MDP> mdp, const Transition& initial,random_device::result_type seed = random_device{}()) : 
+        if(abs(initial.sum_probabilities() - 1) > SOLPREC)
+            throw invalid_argument("Initial transition probabilities must sum to 1");
+    };
+
+    /** 
+    Build a model simulator and share and MDP 
+    
+    The initial transition is copied internally to the object,
+    while the MDP object is stored internally.
+    */
+    ModelSimulator(const shared_ptr<MDP>& mdp, const Transition& initial,random_device::result_type seed = random_device{}()) : 
         ModelSimulator(const_pointer_cast<const MDP>(mdp), initial) {};
 
     /// Returns a sample from the initial states.
@@ -321,7 +337,10 @@ public:
     /// Returns a sample of the reward and a decision state following an expectation state
     pair<double,State> transition(State, Action);
 
-    /// Checks whether the decision state is terminal
+    /**
+    Checks whether the decision state is terminal
+    any state with index equal or greater than the number
+    of states is considered to be terminal */
     bool end_condition(State s) const 
         {return size_t(s) >= mdp->size();};
 

@@ -44,7 +44,7 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_ADVANCED "Build advandced functionality beyond pure RMDPs" ON)
+option (BUILD_ADVANCED "Build advandced functionality beyond pure RMDPs (requires Boost)" ON)
 
 # **** CONFIGURATION ****
 
