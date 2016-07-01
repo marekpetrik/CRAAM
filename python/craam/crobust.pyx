@@ -1,7 +1,7 @@
 # distutils: language = c++
 # distutils: libraries = craam
 # distutils: library_dirs = ../lib 
-# distutils: include_dirs = ../include ../ext_include
+# distutils: include_dirs = ../include 
 
 import numpy as np 
 cimport numpy as np
@@ -77,8 +77,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
                     prec_t maxresidual_vi) const;
 
         SolutionDscDsc vi_jac_fix(prec_t discount,
-                        const ActionPolicy& policy,
-                        const OutcomePolicy& natpolicy,
+                        const indvec& policy,
+                        const indvec& natpolicy,
                         const numvec& valuefunction,
                         unsigned long iterations,
                         prec_t maxresidual=SOLPREC) const;
