@@ -22,3 +22,7 @@ actions = np.array([0,1])
 m.from_matrices(transitions, rewards, actions)
 
 v = m.mpi_jac()[0]
+
+sim = craam.Simulation(m)
+
+samples = sim.simulate_random();
