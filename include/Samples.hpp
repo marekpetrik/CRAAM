@@ -418,7 +418,9 @@ protected:
 /// -----------------------------------------------------------------------------------------
 
 /**
-Constructs MDP from integer samples. In integer samples, each
+Constructs an DP from integer samples. 
+
+In integer samples, each
 decision state, expectation state, and action are identified
 by an integer.
 
@@ -449,6 +451,10 @@ public:
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
+
+    /** \returns A modifiable pointer to the internal MDP.
+    Care when changing. */
+    shared_ptr<MDP> get_mdp_mod() {return mdp;}
 
     /** Initial distribution */
     Transition get_initial() const {return initial;}

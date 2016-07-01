@@ -16,7 +16,7 @@ from math import sqrt
 import warnings 
 from cython.operator import dereference
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam':
+cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                                             
     ctypedef double prec_t
     ctypedef vector[double] numvec
@@ -32,6 +32,9 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
         indvec outcomes
         prec_t residual
         long iterations
+
+    cdef cppclass SolutionDscProb:
+        pass
 
     cdef cppclass Transition:
 
@@ -49,8 +52,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
     
         size_t size() 
 
-    cdef cppclass SolutionDscProb:
-        pass
 
     cdef cppclass MDP:
         MDP(long)
@@ -83,7 +84,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
                         unsigned long iterations,
                         prec_t maxresidual=SOLPREC) const;
 
-
     cdef cppclass RMDP_D:
         RMDP_D(long)
         RMDP_D()
@@ -109,14 +109,44 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
                     unsigned long iterations_vi,
                     prec_t maxresidual_vi)
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty':
+cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
     cdef Uncertainty Robust
     cdef Uncertainty Optimistic
     cdef Uncertainty Average 
     
-cdef extern from "../include/modeltools.hpp" namespace 'craam':
+cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
 
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
+
+cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
+    
+    cdef cppclass DiscreteSamples:
+        pass
+
+    DiscreteSamples simulate[Model,Pol](Model& sim, Pol pol, long horizon, long runs, long tran_limit, double prob_term, long seed );
+    
+
+cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
+
+    cdef cppclass ModelSimulator:
+        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial, long seed);
+
+    cdef cppclass ModelRandomPolicy:
+        
+        ModelRandomPolicy(const ModelSimulator& sim, long seed);        
+
+    cdef cppclass ModelDeterministicPolicy:
+        
+        ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
+
+    cdef cppclass SampledMDP:
+        
+        SampledMDP();
+
+        void add_samples(const DiscreteSamples& samples);
+        
+        shared_ptr[MDP] get_mdp_mod()
+
 
 from enum import Enum 
 
