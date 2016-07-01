@@ -10,6 +10,8 @@
 using namespace std;
 
 namespace craam{
+
+/// A namespace with tools for implementable, interpretable, and aggregated MDPs
 namespace impl{
 
 /**

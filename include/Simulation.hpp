@@ -136,9 +136,9 @@ SampleType simulate(
     return samples;
 }
 
-/// ************************************************************************************
-/// **** Random(ized) policies ****
-/// ************************************************************************************
+// ************************************************************************************
+// **** Random(ized) policies ****
+// ************************************************************************************
 
 /**
 A random policy with state-dependent action sets which are discrete.
@@ -287,9 +287,9 @@ protected:
 
 
 
-/// ************************************************************************************
-/// **** MDP simulation ****
-/// ************************************************************************************
+// ************************************************************************************
+// **** MDP simulation ****
+// ************************************************************************************
 
 /**
 A simulator that behaves as the provided MDP. A state of MDP.size() is
@@ -361,7 +361,12 @@ protected:
 /// Random (uniformly) policy to be used with the model simulator
 using ModelRandomPolicy = RandomPolicy<ModelSimulator>;
 
-/// Randomized policy to be used with MDP model simulator
+/**
+Randomized policy to be used with MDP model simulator.
+
+In order to have a determinstic outcome of a simulation, one
+needs to set also the seed of simulate and ModelSimulator.
+*/ 
 using ModelRandomizedPolicy = RandomizedPolicy<ModelSimulator>;
 
 /// Deterministic policy to be used with MDP model simulator

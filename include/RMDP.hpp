@@ -11,7 +11,7 @@
 #include "State.hpp"
 #include <boost/numeric/ublas/matrix.hpp>
 
-
+/// Main namespace which includes modeling a solving functionality
 namespace craam {
 
 using namespace std;
@@ -23,14 +23,17 @@ worst-case behavior of nature, optimistic corresponds the best case, and average
 represents a weighted mean of the returns.
 */
 enum class Uncertainty {
+    /// Treat uncertainty as a worst case
     Robust = 0,
+    /// Treat uncertainty as a best case
     Optimistic = 1,
+    /// Average over uncertain outcomes (type of average depends on the type)
     Average = 2
 };
 
-/// **************************************************************************************
-///  Generic MDP Class
-/// **************************************************************************************
+// **************************************************************************************
+//  Generic MDP Class
+// **************************************************************************************
 
 /** A solution to a robust MDP.  */
 template<typename ActionId, typename OutcomeId>
@@ -346,9 +349,9 @@ public:
     string to_string() const;
 };
 
-/// **********************************************************************
-/// *********************    TEMPLATE DECLARATIONS    ********************
-/// **********************************************************************
+// **********************************************************************
+// *********************    TEMPLATE DECLARATIONS    ********************
+// **********************************************************************
 
 /**
 Regular MDP with discrete actions and one outcome per action
@@ -359,10 +362,18 @@ Regular MDP with discrete actions and one outcome per action
     ActionPolicy = vector<ActionId>
     OutcomePolicy = vector<OutcomeId>
 
-Uncertainty type is ignored in these methods
+Uncertainty type is ignored in these methods. 
 */
 typedef GRMDP<RegularState> MDP;
+
+/** 
+An uncertain MDP with discrete robustness. See craam::DiscreteRobustState
+*/
 typedef GRMDP<DiscreteRobustState> RMDP_D;
+
+/**
+An uncertain MDP with L1 constrained robustness. See craam::L1RobustState.
+*/
 typedef GRMDP<L1RobustState> RMDP_L1;
 
 typedef GSolution<long, long> SolutionDscDsc;

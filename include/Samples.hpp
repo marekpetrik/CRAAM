@@ -12,12 +12,14 @@
 #include "cpp11-range-master/range.hpp"
 
 namespace craam{
+
+/// A namespace for handling sampling and simulation
 namespace msen{
 
 using namespace util::lang;
 using namespace std;
 
-/// -----------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------
 
 /**
 Represents the transition between two states.
@@ -193,9 +195,9 @@ Samples<typename Sim::State, typename Sim::Action> make_samples(U&&... u){
     return Samples<typename Sim::State, typename Sim::Action>(forward<U>(u)...);
 }
 
-/// **********************************************************************
-/// ****** Discrete simulation specialization ******************
-/// **********************************************************************
+// **********************************************************************
+// ****** Discrete simulation specialization ******************
+// **********************************************************************
 
 
 /** Samples in which the states and actions are identified by integers. */
@@ -205,7 +207,7 @@ using DiscreteSample = Sample<long,long>;
 
 /**
 Turns arbitrary samples to discrete ones assuming that actions are
-*state independent*. That is the actions must have consistent names
+\b state \b independent. That is the actions must have consistent names
 across states. This assumption can cause problems
 when some samples are missing.
 
@@ -217,6 +219,7 @@ See SampleDiscretizerSD for a version in which action names are
 dependent on states.
 
 A new hash function can be defined as follows:
+\code 
 namespace std{
     template<> struct hash<pair<int,int>>{
         size_t operator()(pair<int,int> const& s) const{
@@ -226,6 +229,7 @@ namespace std{
     }
 };
 
+\endcode
 
 \tparam State Type of state in the source samples
 \tparam Action Type of action in the source samples
@@ -307,7 +311,7 @@ protected:
 
 /**
 Turns arbitrary samples to discrete ones (with continuous numbers assigned to states)
-assuming that actions are *state dependent*.
+assuming that actions are \b state \b dependent.
 
 The internally-held discrete samples can be accessed and modified
 from the outside. Also, adding more samples will modify the discrete
@@ -317,6 +321,7 @@ See SampleDiscretizerSI for a version in which action names are
 independent of states.
 
 A new hash function can be defined as follows:
+\code
 namespace std{
     template<> struct hash<pair<int,int>>{
         size_t operator()(pair<int,int> const& s) const{
@@ -325,6 +330,7 @@ namespace std{
         };
     }
 };
+\endcode
 
 \tparam State Type of state in the source samples
 \tparam Action Type of action in the source samples
