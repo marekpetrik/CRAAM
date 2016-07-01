@@ -406,6 +406,8 @@ auto GRMDP<SType>::vi_jac_fix(prec_t discount,
     return SolType(*targetvalue,policy,natpolicy,residual,j);
 }
 
+
+
 template<class SType>
 numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
                        const ActionPolicy& policy, const OutcomePolicy& nature) const{

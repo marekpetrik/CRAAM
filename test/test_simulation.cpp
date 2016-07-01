@@ -43,7 +43,6 @@ struct TestState{
     };
 };
 
-
 class TestSim {
 
 public:
@@ -218,6 +217,8 @@ Model create_test_mdp_sim(){
     add_transition<Model>(rmdp,1,0,0,1.0,1.0);
     add_transition<Model>(rmdp,2,0,1,1.0,1.0);
 
+    add_transition<Model>(rmdp,1,2,1,0.5,0.5);
+
     return rmdp;
 }
 
@@ -231,8 +232,29 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     ModelSimulator ms(m, initial);
     ModelRandomPolicy rp(ms);
 
-    auto samples = simulate(ms, rp, 10000, 1000);
+    auto samples = simulate(ms, rp, 1000, 1);
     
     cout << "Number of samples " << samples.size() << endl;
+    
+    SampledMDP smdp;
+    
+    smdp.add_samples(samples); 
+
+    auto newmdp = smdp.get_mdp();
+
+    auto solution1 = m->mpi_jac(Uncertainty::Robust, 0.9);
+    auto solution2 = newmdp->mpi_jac(Uncertainty::Robust, 0.9);
+
+    cout << "Return in original MDP " << solution1.total_return(initial) << endl;
+    cout << "Return in sampled MDP " << solution2.total_return(initial) << endl;
+
+    // need to remove the terminal state from the samples
+    indvec policy = solution2.policy;
+    policy.pop_back();    
+
+    auto solution3 = m->vi_jac_fix(0.9, policy, indvec(m->size(),0));
+
+    cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
+
     
 }

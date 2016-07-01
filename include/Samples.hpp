@@ -419,10 +419,9 @@ by an integer.
 There is some extra memory penalty in this class since it stores
 the number of samples observed for each state and action.
 
-Important: There must be at least one observed sample for each state and action.
-Otherwise, the MDP solution will not be defined and the
-solver will throw an invalid_argument exception. This can happen when
-we have a sample for action 2 but no sample for action 0.
+Important: Actions that are not sampled (no samples per that state 
+and action pair) are labeled as invalid and are not included in the computation
+of value function or the solution.
 */
 class SampledMDP{
 public:

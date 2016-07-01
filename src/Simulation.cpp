@@ -7,8 +7,13 @@
 namespace craam{
 namespace msen {
 
-//ModelSimulator::ModelSimulator(){
-//}
+ModelSimulator::ModelSimulator(const shared_ptr<const MDP>& mdp, const Transition& initial, 
+                                random_device::result_type seed):
+                gen(seed), mdp(mdp), initial(initial){
+
+    if(abs(initial.sum_probabilities() - 1) > SOLPREC)
+        throw invalid_argument("Initial transition probabilities must sum to 1");
+}
 
 auto ModelSimulator::init_state() -> State{
     
@@ -27,6 +32,10 @@ auto  ModelSimulator::transition(State state, Action action) -> pair<double,Stat
 
     assert(action >= 0 && size_t(action) < mdpstate.size());
     const auto& mdpaction = mdpstate[action];
+
+    if(!mdpaction.is_valid())
+        throw invalid_argument("Cannot transition using an invalid action");
+
     const auto& tran = mdpaction.get_outcome();
 
     const numvec& probs = tran.get_probabilities();
@@ -55,7 +64,7 @@ auto  ModelSimulator::transition(State state, Action action) -> pair<double,Stat
     const State nextstate = nextindex < inds.size() ? 
                             inds[nextindex] : mdp->size();
 
-    // reward is zero when transitioning to the terminal state
+    // reward is zero when transitioning to a terminal state
     const prec_t reward = nextindex < inds.size() ? 
                             rews[nextindex] : 0.0;
 

@@ -54,6 +54,9 @@ public:
     /**
     Computes the total return of the solution given the initial
     distribution.
+    
+    Computes it based on the value function.
+
     \param initial The initial distribution
      */
     prec_t total_return(const Transition& initial) const{
@@ -75,6 +78,8 @@ Some general assumptions (may depend on the state and action classes):
     - Action with no outcomes: Terminates with an error for uncertain models, but
                                assumes 0 return for regular models.
     - Outcome with no target states: Terminates with an error
+    - Invalid actions are ignored
+    - Behavior for a state with all invalid actions is not defined
 
 \tparam SType Type of state, determines s-rectangularity or s,a-rectangularity and
         also the type of the outcome and action constraints
@@ -277,12 +282,13 @@ public:
             the residual drops below this threshold.
     \return Computed (approximate) solution (value function)
      */
-    SolType vi_jac_fix(Uncertainty uncert,
-                       prec_t discount,
-                       const ActionPolicy& policy,
-                       const numvec& valuefunction=numvec(0),
-                       unsigned long iterations=MAXITER,
-                       prec_t maxresidual=SOLPREC) const;
+    // TODO: a function like this could be useful
+    //SolType vi_jac_fix(Uncertainty uncert,
+    //                   prec_t discount,
+    //                   const ActionPolicy& policy,
+    //                   const numvec& valuefunction=numvec(0),
+    //                   unsigned long iterations=MAXITER,
+    //                   prec_t maxresidual=SOLPREC) const;
 
     /**
     Constructs the transition matrix for the policy.
@@ -352,6 +358,8 @@ Regular MDP with discrete actions and one outcome per action
 
     ActionPolicy = vector<ActionId>
     OutcomePolicy = vector<OutcomeId>
+
+Uncertainty type is ignored in these methods
 */
 typedef GRMDP<RegularState> MDP;
 typedef GRMDP<DiscreteRobustState> RMDP_D;

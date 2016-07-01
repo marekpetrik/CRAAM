@@ -19,12 +19,18 @@ namespace craam {
 /// **************************************************************************************
 
 /**
- * Action in a regular MDP. There is no uncertainty and
- * the action contains only a single outcome.
- */
+Action in a regular MDP. There is no uncertainty and
+the action contains only a single outcome.
+
+Actions are constructed as valid by default.
+*/
 class RegularAction{
 protected:
+    /// Transition probabilities
     Transition outcome;
+
+    /// Invalid actions are skipped during computation 
+    bool valid = true;
 
 public:
     /** Type of an identifier for an outcome. It is ignored for the simple action. */
@@ -102,6 +108,18 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;};
 
+    /** 
+    Returns whether this is a valid action (or only a placeholder).
+    Invalid actions cannot be taken and may result from incomplete
+    sampling of a domain. They are skipped in the computation of value function.
+
+    The action is considered valid when there are some transitions
+    */
+    bool is_valid() const{return valid;};
+
+    /// Sets whether the action is valid (see is_valid)
+    void set_validity(bool newvalidity){valid = newvalidity;};
+
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
         result.append("1(reg)");
@@ -131,6 +149,8 @@ protected:
     /** List of possible outcomes */
     vector<Transition> outcomes;
 
+    /// Invalid actions are skipped during computation 
+    bool valid = true;
 public:
     /** Empty list of outcomes */
     OutcomeManagement() {};
@@ -181,6 +201,17 @@ public:
         result.append(std::to_string(get_outcomes().size()));
     }
 
+    /** 
+    Returns whether this is a valid action (or only a placeholder).
+    Invalid actions cannot be taken and may result from incomplete
+    sampling of a domain. They are skipped in the computation of value function.
+
+    The action is considered valid when there are some transitions
+    */
+    bool is_valid() const{return valid;};
+
+    /// Sets whether the action is valid (see is_valid)
+    void set_validity(bool newvalidity){valid = newvalidity;};
 };
 
 /// **************************************************************************************

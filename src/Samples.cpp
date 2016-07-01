@@ -78,12 +78,19 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
                         s.reward());
     }
 
-    // make sure that there are no actions with no samples
+    // make sure to set action validity based on whether there have been
+    // samples observed for the action
     for(size_t si : indices(*mdp)){
-        const auto& state = mdp->get_state(si);
+        auto& state = mdp->get_state(si);
+
         for(size_t ai : indices(state)){
-            if(state.get_action(ai).get_outcome().empty())
-                throw invalid_argument("No sample for state " + to_string(si) + " and action " + to_string(ai) + ".");
+            auto& action = state[ai];
+            
+            assert(si < state_action_counts.size());
+            assert(ai < state_action_counts[si].size());
+
+            // valid only if there are some samples for the action
+            action.set_validity(state_action_counts[si][ai] > 0);
         }
     }
 

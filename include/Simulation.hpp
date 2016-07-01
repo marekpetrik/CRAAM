@@ -315,12 +315,7 @@ public:
     while the MDP object is stored internally.
     */
     ModelSimulator(const shared_ptr<const MDP>& mdp, const Transition& initial, 
-                        random_device::result_type seed = random_device{}()):
-                gen(seed), mdp(mdp), initial(initial){
-
-        if(abs(initial.sum_probabilities() - 1) > SOLPREC)
-            throw invalid_argument("Initial transition probabilities must sum to 1");
-    };
+                        random_device::result_type seed = random_device{}());
 
     /** 
     Build a model simulator and share and MDP 
@@ -329,7 +324,7 @@ public:
     while the MDP object is stored internally.
     */
     ModelSimulator(const shared_ptr<MDP>& mdp, const Transition& initial,random_device::result_type seed = random_device{}()) : 
-        ModelSimulator(const_pointer_cast<const MDP>(mdp), initial) {};
+        ModelSimulator(const_pointer_cast<const MDP>(mdp), initial, seed) {};
 
     /// Returns a sample from the initial states.
     State init_state();
