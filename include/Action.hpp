@@ -22,6 +22,8 @@ namespace craam {
 Action in a regular MDP. There is no uncertainty and
 the action contains only a single outcome.
 
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid. 
 Actions are constructed as valid by default.
 */
 class RegularAction{
@@ -142,6 +144,10 @@ public:
 
 /**
 A class that manages creation and access to outcomes to be used by actions.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid. 
+Actions are constructed as valid by default.
 */
 class OutcomeManagement{
 
@@ -220,6 +226,10 @@ public:
 
 /**
 An action in the robust MDP with discrete outcomes.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid. 
+Actions are constructed as valid by default.
 */
 class DiscreteOutcomeAction : public OutcomeManagement {
 
@@ -303,6 +313,10 @@ The function that determines the uncertainty set is defined by NatureConstr temp
 
 The distribution is initialized to be uniform over the provided elements;
 when a new outcome is added, then its weight in the distribution is 0.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid. 
+Actions are constructed as valid by default.
 */
 template<NatureConstr nature>
 class WeightedOutcomeAction : public OutcomeManagement{

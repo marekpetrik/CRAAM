@@ -38,9 +38,9 @@ Getting Started
 
 The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The avialable specializations are:
 
-    - MDP: plain MDP with no definition of uncertainty
-    - RMDP_D: a robust/uncertain with discrete outcomes with the best/worst one chosen
-    - RMDP_L1: a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
+- craam::MDP : plain MDP with no definition of uncertainty
+- craam::RMDP_D : a robust/uncertain with discrete outcomes with the best/worst one chosen
+- craam::RMDP_L1 : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
 
 
 States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
