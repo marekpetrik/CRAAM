@@ -506,4 +506,7 @@ template class GRMDP<DiscreteRobustState>;
 template class GRMDP<L1RobustState>;
 
 
+template class GSolution<long, long>;
+template class GSolution<long, numvec>;
+
 }
