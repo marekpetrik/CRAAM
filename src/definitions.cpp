@@ -26,52 +26,87 @@ In summary, the MDP problem being solved is:
 
 Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes.
 
-The included algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution (see methods of RMDP that end with _l1).
+The included algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
 
 Installation and Build Instruction
 ----------------------------------
 
-See the github/bitbucket README file
+See the README.rst
 
 Getting Started
 ---------------
 
-The main interface to the library is through the class RMDP. The class supports simple construction of an MDP and several methods for solving them.
+The main interface to the library is through the templated class GRMDP. The class supports simple construction and can be specialized to number of specific methods.
 
 States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
 
-Transitions are added through functions RMDP::add_transition and RMDP::add_transition_d. The object is automatically resized according to the new transitions added. The actual algorithms are solved using:
+Transitions are added through function add_transition. New states, actions, or outcomes are automatically added based on the new transition. The actual algorithms are solved using:
 
 | Method                  |  Algorithm     |
 | ----------------------- | ----------------
-| RMDP::vi_gs_*           |  Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action. |
-| RMDP::vi_jac_*          |  Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. |
-| RMDP::vi_gs_l1_*        |  The same as vi_gs except the worst case is bounded with respect to an L1 norm. |
-| RMDP::vi_jac_l1_*       |    The same as vi_jac except the worst case is bounded with respect to an L1 norm. |
+| GRMDP::vi_gs            | Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
+| GRMDP::vi_jac           | Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
+| GRMDP::mpi_jac          | Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
+| GRMDP::vi_jac_fix       | Jacobi value iteration for policy evaluation; parallelized with OpenMP. Computes the worst-case outcome for each action.
 
-The star in the above can be one of {rob, opt, ave} which represents the actions of nature. The values represent respective the worst case (robust), the best case (optimistic), and average.
+
+For uncertain MDPs, each method supports 
 
 The following is a simple example of formulating and solving a small MDP.
 
 \code
+
+#include "RMDP.hpp"
+#include "modeltools.hpp"
+
+#include <iostream>
+#include <vector>
+
+using namespace craam;
+
+int main(){
+    MDP mdp(3);
+
+    // transitions for action 0
+    add_transition(mdp,0,0,0,1,0);
+    add_transition(mdp,1,0,0,1,1);
+    add_transition(mdp,2,0,1,1,1);
+
+    // transitions for action 1
+    add_transition(mdp,0,1,1,1,0);
+    add_transition(mdp,1,1,2,1,0);
+    add_transition(mdp,2,1,2,1,1.1);
+
+    // solve using Jacobi value iteration
+    auto&& re = mdp.mpi_jac(Uncertainty::Average,0.9);
+
+    for(auto v : re.valuefunction){
+        cout << v << " ";
+    }
+
+    return 0;
+}
+
+
+    #include "RMDP.hpp"
+
     #include <iostream>
     #include <vector>
-    #include "RMDP.h"
 
     use namespace craam;
 
     int main(){
-        RMDP rmdp(3);
+        MDP rmdp(3);
 
         // transitions for action 0
-        rmdp.add_transition_d(0,0,0,1,0);
-        rmdp.add_transition_d(1,0,0,1,1);
-        rmdp.add_transition_d(2,0,1,1,1);
+        add_transition(mdp,0,0,0,1,0);
+        mdp.add_transition_d(1,0,0,1,1);
+        mdp.add_transition_d(2,0,1,1,1);
 
         // transitions for action 1
-        rmdp.add_transition_d(0,1,1,1,0);
-        rmdp.add_transition_d(1,1,2,1,0);
-        rmdp.add_transition_d(2,1,2,1,1.1);
+        mdp.add_transition_d(0,1,1,1,0);
+        mdp.add_transition_d(1,1,2,1,0);
+        mdp.add_transition_d(2,1,2,1,1.1);
 
         // prec_t is the numeric precision type used throughout the library (double)
         vector<prec_t> initial{0,0,0};

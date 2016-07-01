@@ -81,7 +81,7 @@ configure_file (
  
 
 # **** SOURCE FILES ****
-include_directories (include ext_include)
+include_directories (include)
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/include/Action.hpp  

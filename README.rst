@@ -108,12 +108,11 @@ Method                  Algorithm
 ======================  ====================================
 :cpp:`RMDP::vi_gs_*`      Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
 :cpp:`RMDP::vi_jac_*`     Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
-:cpp:`RMDP::vi_gs_l1_*`   The same as ``vi_gs`` except the worst case is bounded with respect to an :math:`L_1` norm.
-:cpp:`RMDP::vi_jac_l1_*`  The same as ``vi_jac`` except the worst case is bounded with respect to an :math:`L_1` norm.
 :cpp:`RMDP::mpi_jac_*`    Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
+:cpp:`GRMDP::vi_jac_fix`     Jacobi value iteration for policy evaluation; parallelized with OpenMP. Computes the worst-case outcome for each action.
+
 ======================  ====================================
 
-The star in the above can be one of {:cpp:`rob`, :cpp:`opt`, :cpp:`ave`} which represents the actions of nature. The values represent respective the worst case (robust), the best case (optimistic), and average.
 
 The following is a simple example of formulating and solving a small MDP. 
 

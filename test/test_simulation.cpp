@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     ModelSimulator ms(m, initial);
     ModelRandomPolicy rp(ms);
 
-    auto samples = simulate(ms, rp, 1000, 1);
+    auto samples = simulate(ms, rp, 1000, 5);
     
     cout << "Number of samples " << samples.size() << endl;
     
@@ -250,11 +250,21 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
 
     // need to remove the terminal state from the samples
     indvec policy = solution2.policy;
-    policy.pop_back();    
+    policy.pop_back();
 
+    cout << "Computed policy " << policy << endl;
     auto solution3 = m->vi_jac_fix(0.9, policy, indvec(m->size(),0));
 
     cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
-
     
+    ModelDeterministicPolicy dp(ms, policy);
+    auto samples_policy = simulate(ms, dp, 1000, 5);
+
+    cout << "Return of sampled " << samples_policy.mean_return(0.9) << endl;
+
+    ModelRandomizedPolicy rizedp(ms, {{0.5,0.5},{0.5,0.4,0.1},{0.5,0.5}});
+    
+    auto randomized_samples = simulate(ms, rizedp, 1000, 5);
+
+    cout << "Return of randomized samples " << randomized_samples.mean_return(0.9) << endl;
 }

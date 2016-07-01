@@ -61,12 +61,12 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
         SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
                         const numvec& valuefunction,
                         unsigned long iterations,
-                        prec_t maxresidual)
+                        prec_t maxresidual) const;
 
         SolutionDscDsc vi_gs(Uncertainty uncert, prec_t discount,
                         const numvec& valuefunction,
                         unsigned long iterations,
-                        prec_t maxresidual) 
+                        prec_t maxresidual) const;
 
         SolutionDscDsc mpi_jac(Uncertainty uncert,
                     prec_t discount,
@@ -74,8 +74,14 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam':
                     unsigned long iterations_pi,
                     prec_t maxresidual_pi,
                     unsigned long iterations_vi,
-                    prec_t maxresidual_vi)
+                    prec_t maxresidual_vi) const;
 
+        SolutionDscDsc vi_jac_fix(prec_t discount,
+                        const ActionPolicy& policy,
+                        const OutcomePolicy& natpolicy,
+                        const numvec& valuefunction,
+                        unsigned long iterations,
+                        prec_t maxresidual=SOLPREC) const;
 
 
     cdef cppclass RMDP_D:
