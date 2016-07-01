@@ -229,12 +229,13 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     
     Transition initial({0},{1.0});
     
-    ModelSimulator ms(m, initial);
-    ModelRandomPolicy rp(ms);
+    ModelSimulator ms(m, initial,13);
+    ModelRandomPolicy rp(ms,10);
 
-    auto samples = simulate(ms, rp, 1000, 5);
+    auto samples = simulate(ms, rp, 1000, 5, -1, 0.0, 10);
     
-    cout << "Number of samples " << samples.size() << endl;
+    BOOST_CHECK_EQUAL(samples.size(), 49);
+    //cout << "Number of samples " << samples.size() << endl;
     
     SampledMDP smdp;
     
@@ -245,26 +246,34 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     auto solution1 = m->mpi_jac(Uncertainty::Robust, 0.9);
     auto solution2 = newmdp->mpi_jac(Uncertainty::Robust, 0.9);
 
-    cout << "Return in original MDP " << solution1.total_return(initial) << endl;
-    cout << "Return in sampled MDP " << solution2.total_return(initial) << endl;
+    BOOST_CHECK_CLOSE(solution1.total_return(initial),8.90971,1e-3);
+    //cout << "Return in original MDP " << solution1.total_return(initial) << endl;
+
+    BOOST_CHECK_CLOSE(solution2.total_return(initial),8.90971,1e-3);
+    //cout << "Return in sampled MDP " << solution2.total_return(initial) << endl;
 
     // need to remove the terminal state from the samples
     indvec policy = solution2.policy;
     policy.pop_back();
 
-    cout << "Computed policy " << policy << endl;
+    //cout << "Computed policy " << policy << endl;
+    indvec policytarget{1,1,1};
+    BOOST_CHECK_EQUAL_COLLECTIONS(policy.begin(), policy.end(), policytarget.begin(), policytarget.end());
     auto solution3 = m->vi_jac_fix(0.9, policy, indvec(m->size(),0));
 
-    cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
+    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-3);
+    //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
     
     ModelDeterministicPolicy dp(ms, policy);
     auto samples_policy = simulate(ms, dp, 1000, 5);
 
-    cout << "Return of sampled " << samples_policy.mean_return(0.9) << endl;
+    BOOST_CHECK_CLOSE(samples_policy.mean_return(0.9), 8.91, 1e-3);
+    //cout << "Return of sampled " << samples_policy.mean_return(0.9) << endl;
 
-    ModelRandomizedPolicy rizedp(ms, {{0.5,0.5},{0.5,0.4,0.1},{0.5,0.5}});
+    ModelRandomizedPolicy rizedp(ms, {{0.5,0.5},{0.5,0.4,0.1},{0.5,0.5}},0);
     
-    auto randomized_samples = simulate(ms, rizedp, 1000, 5);
+    auto randomized_samples = simulate(ms, rizedp, 1000, 5, -1, 0.0, 10);
 
-    cout << "Return of randomized samples " << randomized_samples.mean_return(0.9) << endl;
+    BOOST_CHECK_CLOSE(randomized_samples.mean_return(0.9), 4.01147, 1e-3);
+    //cout << "Return of randomized samples " << randomized_samples.mean_return(0.9) << endl;
 }
