@@ -111,7 +111,9 @@ public:
     /**
     Constructs the RMDP with a pre-allocated number of states. All
     states are initially terminal.
-    \param state_count The number of states.
+    \param state_count The initial number of states, which dynamically
+                        increases as more transitions are added. All initial
+                        states are terminal.
     */
     GRMDP(long state_count) : states(state_count){};
 
@@ -133,6 +135,7 @@ public:
 
     /** Number of states */
     size_t state_count() const {return states.size();};
+
     /** Number of states */
     size_t size() const {return state_count();};
 

@@ -40,6 +40,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
         CTransition() 
         CTransition(const vector[long]& indices, const vector[double]& probabilities, const vector[double]& rewards);
+        CTransition(const vector[double]& probabilities)
 
         void set_reward(long sampleid, double reward) except +
         double get_reward(long sampleid) except +
@@ -84,30 +85,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         unsigned long iterations,
                         prec_t maxresidual=SOLPREC) const;
 
-    cdef cppclass RMDP_D:
-        RMDP_D(long)
-        RMDP_D()
-
-        size_t state_count() 
-
-        SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-
-        SolutionDscDsc vi_gs(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-        SolutionDscDsc mpi_jac(Uncertainty uncert,
-                    prec_t discount,
-                    const numvec& valuefunction,
-                    unsigned long iterations_pi,
-                    prec_t maxresidual_pi,
-                    unsigned long iterations_vi,
-                    prec_t maxresidual_vi)
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
     cdef Uncertainty Robust
@@ -141,30 +118,34 @@ cdef class MDP:
     
     Parameters
     ----------
-    statecount : int
+    statecount : int, optional (0)
         An estimate of the numeber of states (for pre-allocation). When more states
         are added, the estimate is readjusted.
-    discount : double
+    discount : double, optional (1.0)
         The discount factor
     """
     
     cdef shared_ptr[CMDP] thisptr
     cdef public double discount
 
-    def __cinit__(self, int statecount, double discount):
+    def __cinit__(self, int statecount = 0, double discount = 1.0):
         self.thisptr = make_shared[CMDP](statecount)
 
     def __init__(self, int statecount, double discount):
         self.discount = discount
         
     def __dealloc__(self):
-        pass
-        #del self.thisptr
+        # this is probably not necessary
+        self.thisptr.reset()
                 
     cdef _check_value(self,valuefunction):
         if valuefunction.shape[0] > 0:
             if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
+
+    cpdef state_count(self):
+        """ Current number of states """
+        return dereference(self.thisptr).state_count()
 
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
         """
@@ -371,9 +352,9 @@ cdef class MDP:
 
 cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
     
-    cdef cppclass DiscreteSamples:
+    cdef cppclass CDiscreteSamples "craam::msen::DiscreteSamples":
 
-        DiscreteSamples();
+        CDiscreteSamples();
 
         void add_initial(const long& decstate);
         void add_sample(const long& state_from, const long& action, const long& state_to, double reward, double weight, long step, long run);
@@ -389,7 +370,7 @@ cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
         const vector[long]& get_initial() const;
 
 
-cdef class DiscreteMemSamples:
+cdef class DiscreteSamples:
     """
     Represent samples in which decision and expectation states, actions, 
     are described by integers. It is a wrapper around the C++ representation of samples.
@@ -399,10 +380,10 @@ cdef class DiscreteMemSamples:
     Class ``features.DiscreteSampleView`` can be used as a convenient method for assigning
     state identifiers based on the equality between states.
     """
-    cdef DiscreteSamples *_thisptr
+    cdef CDiscreteSamples *_thisptr
 
     def __cinit__(self):
-        self._thisptr = new DiscreteSamples() 
+        self._thisptr = new CDiscreteSamples() 
         
     def __dealloc__(self):
         del self._thisptr        
@@ -423,8 +404,8 @@ cdef class DiscreteMemSamples:
 
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
-    DiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
-    DiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs);
+    CDiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
+    CDiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs);
 
     cdef cppclass ModelSimulator:
         ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial, long seed);
@@ -443,7 +424,7 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
         
         SampledMDP();
 
-        void add_samples(const DiscreteSamples& samples);
+        void add_samples(const CDiscreteSamples& samples);
         
         shared_ptr[CMDP] get_mdp_mod()
 
@@ -457,14 +438,21 @@ cdef class Simulation:
     Parameters
     ----------
     mdp : MDP
-    initial : Transition
+        Markov decision process source
+    initial : np.ndarray
+        Initial transition. The lentgth of the vector should correspond to the
+        number of states.
     """
     cdef ModelSimulator *_thisptr
 
-    def __cinit__(self, MDP mdp):
-        #TODO needs to take care of the transition here
+    def __cinit__(self, MDP mdp, np.ndarray[double] initial):
+
+        if len(initial) != mdp.state_count():
+            raise ValueError("Initial distribution must be as long as the number of MDP states " + str(mdp.state_count()))
+
         cdef shared_ptr[CMDP] cmdp = mdp.thisptr
-        self._thisptr = new ModelSimulator(cmdp, CTransition()) 
+
+        self._thisptr = new ModelSimulator(cmdp, CTransition(initial)) 
                 
     def __dealloc__(self):
         del self._thisptr        
@@ -474,12 +462,13 @@ cdef class Simulation:
         Simulates a uniformly random policy
         """
 
+        # create a random policy
         cdef ModelRandomPolicy * rp =  new ModelRandomPolicy(dereference(self._thisptr))
         
         try:
-            newsamples = DiscreteMemSamples()
+            newsamples = DiscreteSamples()
 
-            # TODO: make sure that this is moved through rvalue
+            # TODO: make sure that this is moved through an rvalue
             newsamples._thisptr[0] = simulate(dereference(self._thisptr), dereference(rp), 10, 10);
 
             return newsamples
@@ -487,6 +476,31 @@ cdef class Simulation:
         finally:
             del rp
 
+cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
+    cdef cppclass RMDP_D:
+        RMDP_D(long)
+        RMDP_D()
+
+        size_t state_count() 
+
+        SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
+                        const numvec& valuefunction,
+                        unsigned long iterations,
+                        prec_t maxresidual) 
+
+
+        SolutionDscDsc vi_gs(Uncertainty uncert, prec_t discount,
+                        const numvec& valuefunction,
+                        unsigned long iterations,
+                        prec_t maxresidual) 
+
+        SolutionDscDsc mpi_jac(Uncertainty uncert,
+                    prec_t discount,
+                    const numvec& valuefunction,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi)
 cdef class RMDP:
     """
     Contains the definition of the robust MDP and related optimization algorithms.
