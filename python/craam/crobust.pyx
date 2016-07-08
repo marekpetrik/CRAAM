@@ -36,10 +36,10 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
     cdef cppclass SolutionDscProb:
         pass
 
-    cdef cppclass Transition:
+    cdef cppclass CTransition "craam::Transition":
 
-        Transition() 
-        Transition(const vector[long]& indices, const vector[double]& probabilities, const vector[double]& rewards);
+        CTransition() 
+        CTransition(const vector[long]& indices, const vector[double]& probabilities, const vector[double]& rewards);
 
         void set_reward(long sampleid, double reward) except +
         double get_reward(long sampleid) except +
@@ -53,9 +53,9 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         size_t size() 
 
 
-    cdef cppclass MDP:
-        MDP(long)
-        MDP()
+    cdef cppclass CMDP "craam::MDP":
+        CMDP(long)
+        CMDP()
 
         size_t state_count() 
 
@@ -118,7 +118,6 @@ cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
 
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
 
-
 from enum import Enum 
 
 class UncertainSet(Enum):
@@ -131,7 +130,7 @@ class UncertainSet(Enum):
 
 DEFAULT_ITERS = 500
 
-cdef class SMDP:
+cdef class MDP:
     """
     Contains the definition of a standard MDP and related optimization algorithms.
     
@@ -149,11 +148,11 @@ cdef class SMDP:
         The discount factor
     """
     
-    cdef shared_ptr[MDP] thisptr
+    cdef shared_ptr[CMDP] thisptr
     cdef public double discount
 
     def __cinit__(self, int statecount, double discount):
-        self.thisptr = make_shared[MDP](statecount)
+        self.thisptr = make_shared[CMDP](statecount)
 
     def __init__(self, int statecount, double discount):
         self.discount = discount
@@ -185,7 +184,7 @@ cdef class SMDP:
         reward : float
             Reward associated with the transition
         """        
-        add_transition[MDP](dereference(self.thisptr),fromid, actionid, 0, toid, probability, reward)
+        add_transition[CMDP](dereference(self.thisptr),fromid, actionid, 0, toid, probability, reward)
 
         
     cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
@@ -428,8 +427,8 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     DiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs);
 
     cdef cppclass ModelSimulator:
-        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial, long seed);
-        ModelSimulator(const shared_ptr[MDP] mdp, const Transition& initial);
+        ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial, long seed);
+        ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial);
 
     cdef cppclass ModelRandomPolicy:
         
@@ -446,39 +445,47 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
         void add_samples(const DiscreteSamples& samples);
         
-        shared_ptr[MDP] get_mdp_mod()
+        shared_ptr[CMDP] get_mdp_mod()
 
 
 cdef class Simulation:
     """
-    Simulates an MDP
+    Simulates an MDP.
 
-    constructs from and MDP object
+    Constructs from and MDP object and an initial transition.
+
+    Parameters
+    ----------
+    mdp : MDP
+    initial : Transition
     """
     cdef ModelSimulator *_thisptr
 
-    def __cinit__(self, SMDP mdp):
+    def __cinit__(self, MDP mdp):
         #TODO needs to take care of the transition here
-        cdef shared_ptr[MDP] cmdp = mdp.thisptr
-        self._thisptr = new ModelSimulator(cmdp, Transition()) 
+        cdef shared_ptr[CMDP] cmdp = mdp.thisptr
+        self._thisptr = new ModelSimulator(cmdp, CTransition()) 
                 
     def __dealloc__(self):
         del self._thisptr        
 
     def simulate_random(self):
+        """
+        Simulates a uniformly random policy
+        """
 
         cdef ModelRandomPolicy * rp =  new ModelRandomPolicy(dereference(self._thisptr))
+        
+        try:
+            newsamples = DiscreteMemSamples()
 
-        cdef DiscreteSamples samples = simulate(dereference(self._thisptr), dereference(rp), 10, 10);
+            # TODO: make sure that this is moved through rvalue
+            newsamples._thisptr[0] = simulate(dereference(self._thisptr), dereference(rp), 10, 10);
 
-        # TODO add a finally statement here
-        del rp
+            return newsamples
 
-        newsamples = DiscreteMemSamples()
-        # TODO: add move here
-        newsamples._thisptr[0] = samples
-
-        return newsamples
+        finally:
+            del rp
 
 cdef class RMDP:
     """

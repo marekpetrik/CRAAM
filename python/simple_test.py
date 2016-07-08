@@ -2,7 +2,7 @@
 import craam
 import numpy as np
 
-m = craam.SMDP(0,0.9)
+m = craam.MDP(0,0.9)
 
 transitions1 = np.array(\
             [[0,1,0.0], \
