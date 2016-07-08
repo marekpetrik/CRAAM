@@ -17,11 +17,10 @@ namespace craam {
 using namespace util::lang;
 
 /**
-Adds a transition probability for a model with no outcomes.
+Adds a transition probability and reward for a particular outcome.
 \param mdp model to add the transition to
 \param fromid Starting state ID
 \param actionid Action ID
-\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
 \param toid Destination ID
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
@@ -39,10 +38,11 @@ void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long
 }
 
 /**
-Adds a transition probability for a particular outcome.
+Adds a transition probability and reward for a model with no outcomes.
 \param mdp model to add the transition to
 \param fromid Starting state ID
 \param actionid Action ID
+\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
 \param toid Destination ID
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
@@ -52,8 +52,9 @@ void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t pr
     add_transition<Model>(mdp, fromid, actionid, 0l, toid, probability, reward);
 }
 
+
 /**
-Loads an RMDP definition from a simple csv file.States, actions, and
+Loads an GRMDP definition from a simple csv file. States, actions, and
 outcomes are identified by 0-based ids. The columns are separated by
 commas, and rows by new lines.
 

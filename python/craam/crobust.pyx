@@ -126,6 +126,8 @@ cdef class MDP:
     """
     
     cdef shared_ptr[CMDP] thisptr
+   
+    """ Dicount factor """
     cdef public double discount
 
     def __cinit__(self, int statecount = 0, double discount = 1.0):
@@ -304,12 +306,10 @@ cdef class MDP:
     cpdef from_matrices(self, np.ndarray[double,ndim=3] transitions, np.ndarray[double,ndim=2] rewards, \
         np.ndarray[long] actions, double ignorethreshold = 1e-10):
         """
-        Constructs an MDP from transition matrices. The function is meant to be
-        called only once and cannot be used to re-initialize the transition 
-        probabilities.
+        Constructs an MDP from transition matrices, with uniform
+        number of actions for each state. 
         
-        Number of states is ``n = |states|``. The number of available action-outcome
-        pairs is ``m``.
+        The function replaces the current value of the object.
         
         Parameters
         ----------
@@ -320,21 +320,20 @@ cdef class MDP:
             the target state.
         rewards : np.ndarray[double, double] (n x m)
             The rewards for each state and action
-        actions : np.ndarray[long] (m)
-            The id of the action for the state
         ignorethreshold : double, optional
             Any transition probability less than the threshold is ignored leading to 
             sparse representations. If not provided, no transitions are ignored
         """
-        cdef int actioncount = len(actions) # really the number of action
+        cdef int actioncount = transitions.shape[2]
         cdef int statecount = transitions.shape[0]
 
-        if actioncount != transitions.shape[2] or actioncount != rewards.shape[1]:
-            raise ValueError('The number of actions must match the 3rd dimension of transitions and the 2nd dimension of rewards.')
+        # erase the current MDP object
+        self.thisptr = make_shared[CMDP](statecount)
+
+        if actioncount != rewards.shape[1]:
+            raise ValueError('The number of actions must match 2nd dimension of rewards.')
         if statecount != transitions.shape[1] or statecount != rewards.shape[0]:
             raise ValueError('The number of states in transitions and rewards is inconsistent.')
-        if len(set(actions)) != actioncount:
-            raise ValueError('The actions must be unique.')
 
         cdef int aoindex, fromid, toid
         cdef int actionid 
@@ -343,12 +342,37 @@ cdef class MDP:
         for aoindex in range(actioncount):    
             for fromid in range(statecount):
                 for toid in range(statecount):
-                    actionid = actions[aoindex]
+                    actionid = aoindex
                     transitionprob = transitions[fromid,toid,aoindex]
                     if transitionprob <= ignorethreshold:
                         continue
                     rewardval = rewards[fromid,aoindex]
                     self.add_transition(fromid,actionid,toid,transitionprob,rewardval)
+
+    cpdef to_matrices(self):
+        """
+        Build transitions matrices from the MDP.
+        
+        Number of states is ``n = |states|``. The number of available action-outcome
+        pairs is ``m``.
+        
+        Returns
+        ----------
+        transitions : np.ndarray[double,double,double] (n x n x m)
+            The last dimension represents the actions as defined by
+            the parameter `action`. The first dimension represents
+            the originating state in a transition and the second dimension represents
+            the target state.
+        rewards : np.ndarray[double, double] (n x m)
+            The rewards for each state and action
+        actions : np.ndarray[long] (m)
+            The id of the action for the state
+        """
+        
+        # compute the maximal number of actions
+
+        cdef np.ndarray[double,ndim=3] transitions
+        cdef np.ndarray[double,ndim=2] rewards
 
 cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
     
@@ -372,14 +396,20 @@ cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
 
 cdef class DiscreteSamples:
     """
-    Represent samples in which decision and expectation states, actions, 
-    are described by integers. It is a wrapper around the C++ representation of samples.
+    Collection of state to state transitions as well as samples of initial states. 
+    All states and actions are identified by integers. 
 
-    Each state, action, and expectation state must have an integral value.
+    Sample weights are used to give proportional importance to samples when
+    estimating transitions.
 
-    Class ``features.DiscreteSampleView`` can be used as a convenient method for assigning
-    state identifiers based on the equality between states.
+    Run references to the which execution of the simulator was used to get
+    the particular sample and step references to the number of the step within the
+    execution.
     """
+    #TODO: When the functionality is added, just add the following doc
+    # Class ``features.DiscreteSampleView`` can be used as a convenient method for assigning
+    # state identifiers based on the equality between states.
+
     cdef CDiscreteSamples *_thisptr
 
     def __cinit__(self):
@@ -398,9 +428,39 @@ cdef class DiscreteSamples:
     def initialsamples(self):
         """
         Returns samples of initial decision states.
+        This is separate from the transition samples.
         """
         return dereference(self._thisptr).get_initial();
         
+    def get_states_from(self):
+        """ Returns a list of all originating states (one for every sample)"""
+        return dereference(self._thisptr).get_states_from()
+
+    def get_actions(self):
+        """ Returns a list of all actions (one for every sample)"""
+        return dereference(self._thisptr).get_actions()
+
+    def get_states_to(self):
+        """ Returns a list of all destination states (one for every sample)"""
+        return dereference(self._thisptr).get_states_to()
+
+    def get_rewards(self):
+        """ Returns a list of all rewards (one for every sample)"""
+        return dereference(self._thisptr).get_rewards()
+
+    def get_weights(self):
+        """ Returns a list of all sample weights (one for every sample)"""
+        return dereference(self._thisptr).get_weights()
+
+    def get_runs(self):
+        """ Returns a list of all run numbers (one for every sample)"""
+        return dereference(self._thisptr).get_runs()
+
+    def get_steps(self):
+        """ Returns a list of all step numbers (one for every sample)"""
+        return dereference(self._thisptr).get_steps()
+
+
 
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
@@ -420,13 +480,6 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
         
         ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
 
-    cdef cppclass SampledMDP:
-        
-        SampledMDP();
-
-        void add_samples(const CDiscreteSamples& samples);
-        
-        shared_ptr[CMDP] get_mdp_mod()
 
 
 cdef class Simulation:
@@ -448,7 +501,7 @@ cdef class Simulation:
     def __cinit__(self, MDP mdp, np.ndarray[double] initial):
 
         if len(initial) != mdp.state_count():
-            raise ValueError("Initial distribution must be as long as the number of MDP states " + str(mdp.state_count()))
+            raise ValueError("Initial distribution must be as long as the number of MDP states, which is " + str(mdp.state_count()))
 
         cdef shared_ptr[CMDP] cmdp = mdp.thisptr
 
@@ -501,6 +554,48 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                     prec_t maxresidual_pi,
                     unsigned long iterations_vi,
                     prec_t maxresidual_vi)
+
+
+cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
+    cdef cppclass CSampledMDP "craam::msen::SampledMDP":
+        
+        CSampledMDP();
+
+        void add_samples(const CDiscreteSamples& samples);
+        
+        shared_ptr[CMDP] get_mdp_mod()
+
+
+cdef class SampledMDP:
+    """
+    Constructs an MDP from provided samples
+    """
+
+    cdef CSampledMDP * _thisptr
+    
+    def __cinit__(self):
+        self._thisptr = new CSampledMDP()
+
+    cpdef add_samples(self, DiscreteSamples samples):
+        """
+        Adds samples to the MDP
+        """
+        dereference(self._thisptr).add_samples(dereference(samples._thisptr))
+
+    cpdef get_mdp(self, discount):
+        """
+        Returns the MDP that was constructed from the samples.
+
+        If there are more samples added, this MDP will be automatically modified
+        """
+
+        cdef MDP m = MDP(0, discount = discount)
+
+        m.thisptr = dereference(self._thisptr).get_mdp_mod()
+
+        return m
+
+
 cdef class RMDP:
     """
     Contains the definition of the robust MDP and related optimization algorithms.
