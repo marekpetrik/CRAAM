@@ -135,11 +135,29 @@ This function only applies to models that have thresholds, such as ones using
 \param threshold New thresholds value
 */
 template<class Model>
-void set_thresholds(Model& mdp, prec_t threshold){
-    for(auto si : indices(mdp)){
+void set_outcome_thresholds(Model& mdp, prec_t threshold){
+    for(const auto si : indices(mdp)){
         auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
+        for(auto ai : indices(state))
             state.get_action(ai).set_threshold(threshold);
+    }
+}
+
+/**
+Sets the distribution for outcomes for each state and
+action to be uniform. 
+*/
+template<class Model>
+void set_uniform_outcome_dst(Model& mdp){
+
+    for(const auto si : indices(mdp)){
+        auto& s = mdp[si];
+        for(const auto ai : indices(s)){
+            auto& a = s[ai];
+            numvec distribution(a.size(), 
+                    1.0 / static_cast<prec_t>(a.size()));
+
+            a.set_distribution(distribution);
         }
     }
 }
@@ -152,11 +170,11 @@ This function only applies to models that have thresholds, such as ones using
 
 */
 template<class Model>
-bool is_outcomes_normalized(const Model& mdp){
+bool is_outcomes_dst_normalized(const Model& mdp){
     for(auto si : indices(mdp)){
         auto& state = mdp.get_state(si);
         for(auto ai : indices(state)){
-            if(!state.get_action(ai).is_distribution_normalized())
+            if(!state[ai].is_distribution_normalized())
                 return false;
         }
     }
@@ -170,12 +188,11 @@ This function only applies to models that have thresholds, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 */
 template<class Model>
-void normalize_outcomes(Model& mdp){
+void normalize_outcome_dst(Model& mdp){
     for(auto si : indices(mdp)){
         auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
+        for(auto ai : indices(state))
             state.get_action(ai).normalize_distribution();
-        }
     }
 }
 

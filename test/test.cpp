@@ -488,7 +488,7 @@ void test_value_function_thr() {
 
 
     // *** 2.0 ***
-    set_thresholds(rmdp, 2.0);
+    set_outcome_thresholds(rmdp, 2.0);
     BOOST_CHECK_CLOSE(rmdp.get_state(0).get_action(0).get_threshold(), 2.0, 1e-6);
     // gauss-seidel
     auto&& result1 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,1000, 0);
@@ -511,7 +511,7 @@ void test_value_function_thr() {
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 
     // *** 1.0 ***
-    set_thresholds(rmdp, 1.0);
+    set_outcome_thresholds(rmdp, 1.0);
     BOOST_CHECK_CLOSE(rmdp.get_state(0).get_action(0).get_threshold(), 1.0, 1e-6);
     // gauss-seidel
     result1 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,1000, 0);
@@ -524,7 +524,7 @@ void test_value_function_thr() {
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 
     // *** 0.5 ***
-    set_thresholds(rmdp, 0.5);
+    set_outcome_thresholds(rmdp, 0.5);
     BOOST_CHECK_CLOSE(rmdp.get_state(0).get_action(0).get_threshold(), 0.5, 1e-6);
     // gauss-seidel
     result1 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,1000, 0);
@@ -537,7 +537,7 @@ void test_value_function_thr() {
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 
     // *** 0.0 ***
-    set_thresholds(rmdp, 0.0);
+    set_outcome_thresholds(rmdp, 0.0);
     BOOST_CHECK_CLOSE(rmdp.get_state(0).get_action(0).get_threshold(), 0.0, 1e-6);
     // gauss-seidel
     result1 = rmdp.vi_gs(Uncertainty::Robust,0.9,initial,1000, 0);
@@ -592,13 +592,16 @@ BOOST_AUTO_TEST_CASE(test_string_rmdpl1){
 
     add_transition(rmdp,0,0,0,0,1,1);
     add_transition(rmdp,0,0,1,0,1,2);
-    rmdp.get_state(0).get_action(0).set_distribution(dist);
-    rmdp.get_state(0).get_action(0).set_threshold(2);
+    //rmdp.get_state(0).get_action(0).set_distribution(dist);
+    //rmdp.get_state(0).get_action(0).set_threshold(2);
 
     add_transition(rmdp,1,0,0,0,1,1);
     add_transition(rmdp,1,0,1,0,1,2);
-    rmdp.get_state(1).get_action(0).set_distribution(dist);
-    rmdp.get_state(1).get_action(0).set_threshold(2);
+    //rmdp.get_state(1).get_action(0).set_distribution(dist);
+    //rmdp.get_state(1).get_action(0).set_threshold(2);
+
+    set_outcome_thresholds(rmdp, 2);
+    set_uniform_outcome_dst(rmdp);
 
     auto s = rmdp.to_string();
     BOOST_CHECK_EQUAL(s.length(), 40);
@@ -617,15 +620,15 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
     add_transition(rmdp,0,0,1,1.0,0.5);
 
     // the freshly constructed one should be normalized
-    BOOST_CHECK(is_outcomes_normalized(rmdp));
+    BOOST_CHECK(is_outcomes_dst_normalized(rmdp));
 
     // denormalize and make sure it works
     rmdp.get_state(0).get_action(0).set_distribution(0, 0.8);
-    BOOST_CHECK(!is_outcomes_normalized(rmdp));
+    BOOST_CHECK(!is_outcomes_dst_normalized(rmdp));
 
     // make sure that the normalization works
-    normalize_outcomes(rmdp);
-    BOOST_CHECK(is_outcomes_normalized(rmdp));
+    normalize_outcome_dst(rmdp);
+    BOOST_CHECK(is_outcomes_dst_normalized(rmdp));
 
     // check and normalize transition probabilities
     BOOST_CHECK(!rmdp.is_normalized());
@@ -633,7 +636,7 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
     BOOST_CHECK(rmdp.is_normalized());
 
     // solve and check value function
-    set_thresholds(rmdp, 2.0);
+    set_outcome_thresholds(rmdp, 2.0);
     numvec initial{0,0};
     auto&& re = rmdp.vi_jac(Uncertainty::Robust,0.9,initial,2000,0);
 
@@ -689,7 +692,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // *** ROBUST ******************
 
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol1 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol1.valuefunction, robust_2_0, 0.001);
     auto&& sol2 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -698,7 +701,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     CHECK_CLOSE_COLLECTION(sol3.valuefunction, robust_2_0, 0.001);
 
     // should be the same without the l1 bound
-    //set_thresholds(rmdp,2.0);
+    //set_outcome_thresholds(rmdp,2.0);
     //auto&& sol4 = rmdp.vi_jac_rob(value,gamma,1000,1e-5);
     //CHECK_CLOSE_COLLECTION(sol4.valuefunction, robust_2_0, 0.001);
     //auto&& sol5 = rmdp.vi_gs_rob(value,gamma,1000,1e-5);
@@ -706,7 +709,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     //auto&& sol6 = rmdp.mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
     //CHECK_CLOSE_COLLECTION(sol6.valuefunction, robust_2_0, 0.001);
 
-    set_thresholds(rmdp,1.0);
+    set_outcome_thresholds(rmdp,1.0);
     auto&& sol7 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol7.valuefunction, robust_1_0, 0.001);
     auto&& sol8 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -714,7 +717,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     auto&& sol9 = rmdp.mpi_jac(Uncertainty::Robust,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol9.valuefunction, robust_1_0, 0.001);
 
-    set_thresholds(rmdp,0.5);
+    set_outcome_thresholds(rmdp,0.5);
     auto&& sol10 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol10.valuefunction, robust_0_5, 0.001);
     auto&& sol11 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -722,7 +725,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     auto&& sol12 = rmdp.mpi_jac(Uncertainty::Robust,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol12.valuefunction, robust_0_5, 0.001);
 
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol13 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol13.valuefunction, robust_0_0, 0.001);
     auto&& sol14 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -731,7 +734,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     CHECK_CLOSE_COLLECTION(sol15.valuefunction, robust_0_0, 0.001);
 
     // should be the same for the average
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol16 = rmdp.vi_jac(Uncertainty::Average,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol16.valuefunction, robust_0_0, 0.001);
     auto&& sol17 = rmdp.vi_gs(Uncertainty::Average,gamma,value,1000,1e-5);
@@ -742,7 +745,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // *** OPTIMISTIC ******************
 
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol19 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol19.valuefunction, optimistic_2_0, 0.001);
     auto&& sol20 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -751,7 +754,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     CHECK_CLOSE_COLLECTION(sol21.valuefunction, optimistic_2_0, 0.001);
 
     // should be the same without the l1 bound
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol22 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol22.valuefunction, optimistic_2_0, 0.001);
     auto&& sol23 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -759,7 +762,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     auto&& sol24 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol24.valuefunction, optimistic_2_0, 0.001);
 
-    set_thresholds(rmdp,1.0);
+    set_outcome_thresholds(rmdp,1.0);
     auto&& sol25 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol25.valuefunction, optimistic_1_0, 0.001);
     auto&& sol26 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -767,7 +770,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     auto&& sol27 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol27.valuefunction, optimistic_1_0, 0.001);
 
-    set_thresholds(rmdp,0.5);
+    set_outcome_thresholds(rmdp,0.5);
     auto&& sol28 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol28.valuefunction, optimistic_0_5, 0.001);
     auto&& sol29 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -775,7 +778,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
     auto&& sol30 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol30.valuefunction, optimistic_0_5, 0.001);
 
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol31 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol31.valuefunction, optimistic_0_0, 0.001);
     auto&& sol32 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -833,7 +836,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // *** ROBUST ******************
 
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol1 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol1.valuefunction, robust_2_0, 0.001);
     auto&& sol2 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -842,7 +845,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     CHECK_CLOSE_COLLECTION(sol3.valuefunction, robust_2_0, 0.001);
 
     // should be the same without the l1 bound
-    //set_thresholds(rmdp,2.0);
+    //set_outcome_thresholds(rmdp,2.0);
     //auto&& sol4 = rmdp.vi_jac_rob(value,gamma,1000,1e-5);
     //CHECK_CLOSE_COLLECTION(sol4.valuefunction, robust_2_0, 0.001);
     //auto&& sol5 = rmdp.vi_gs_rob(value,gamma,1000,1e-5);
@@ -850,7 +853,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     //auto&& sol6 = rmdp.mpi_jac_rob(value,gamma,1000,1e-5,1000,1e-5);
     //CHECK_CLOSE_COLLECTION(sol6.valuefunction, robust_2_0, 0.001);
 
-    set_thresholds(rmdp,1.0);
+    set_outcome_thresholds(rmdp,1.0);
     auto&& sol7 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol7.valuefunction, robust_1_0, 0.001);
     auto&& sol8 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -858,7 +861,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     auto&& sol9 = rmdp.mpi_jac(Uncertainty::Robust,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol9.valuefunction, robust_1_0, 0.001);
 
-    set_thresholds(rmdp,0.5);
+    set_outcome_thresholds(rmdp,0.5);
     auto&& sol10 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol10.valuefunction, robust_0_5, 0.001);
     auto&& sol11 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -866,7 +869,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     auto&& sol12 = rmdp.mpi_jac(Uncertainty::Robust,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol12.valuefunction, robust_0_5, 0.001);
 
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol13 = rmdp.vi_jac(Uncertainty::Robust,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol13.valuefunction, robust_0_0, 0.001);
     auto&& sol14 = rmdp.vi_gs(Uncertainty::Robust,gamma,value,1000,1e-5);
@@ -875,7 +878,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     CHECK_CLOSE_COLLECTION(sol15.valuefunction, robust_0_0, 0.001);
 
     // should be the same for the average
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol16 = rmdp.vi_jac(Uncertainty::Average,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol16.valuefunction, robust_0_0, 0.001);
     auto&& sol17 = rmdp.vi_gs(Uncertainty::Average,gamma,value,1000,1e-5);
@@ -886,7 +889,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // *** OPTIMISTIC ******************
 
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol19 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol19.valuefunction, optimistic_2_0, 0.001);
     auto&& sol20 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -895,7 +898,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     CHECK_CLOSE_COLLECTION(sol21.valuefunction, optimistic_2_0, 0.001);
 
     // should be the same without the l1 bound
-    set_thresholds(rmdp,2.0);
+    set_outcome_thresholds(rmdp,2.0);
     auto&& sol22 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol22.valuefunction, optimistic_2_0, 0.001);
     auto&& sol23 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -903,7 +906,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     auto&& sol24 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol24.valuefunction, optimistic_2_0, 0.001);
 
-    set_thresholds(rmdp,1.0);
+    set_outcome_thresholds(rmdp,1.0);
     auto&& sol25 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol25.valuefunction, optimistic_1_0, 0.001);
     auto&& sol26 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -911,7 +914,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     auto&& sol27 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol27.valuefunction, optimistic_1_0, 0.001);
 
-    set_thresholds(rmdp,0.5);
+    set_outcome_thresholds(rmdp,0.5);
     auto&& sol28 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol28.valuefunction, optimistic_0_5, 0.001);
     auto&& sol29 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);
@@ -919,7 +922,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
     auto&& sol30 = rmdp.mpi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol30.valuefunction, optimistic_0_5, 0.001);
 
-    set_thresholds(rmdp,0.0);
+    set_outcome_thresholds(rmdp,0.0);
     auto&& sol31 = rmdp.vi_jac(Uncertainty::Optimistic,gamma,value,1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol31.valuefunction, optimistic_0_0, 0.001);
     auto&& sol32 = rmdp.vi_gs(Uncertainty::Optimistic,gamma,value,1000,1e-5);

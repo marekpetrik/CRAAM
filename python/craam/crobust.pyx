@@ -33,9 +33,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         prec_t residual
         long iterations
 
-    cdef cppclass SolutionDscProb:
-        pass
-
     cdef cppclass CTransition "craam::Transition":
 
         CTransition() 
@@ -92,7 +89,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
     cdef Uncertainty Average 
     
 cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
-
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
 
 from enum import Enum 
@@ -127,7 +123,7 @@ cdef class MDP:
     
     cdef shared_ptr[CMDP] thisptr
    
-    """ Dicount factor """
+    """ Discount factor """
     cdef public double discount
 
     def __cinit__(self, int statecount = 0, double discount = 1.0):
@@ -148,6 +144,12 @@ cdef class MDP:
     cpdef state_count(self):
         """ Current number of states """
         return dereference(self.thisptr).state_count()
+
+    cpdef copy(self):
+        """ Makes a copy of the object """
+        r = MDP(0, self.discount)
+        dereference(r.thisptr) = dereference(self.thisptr)
+        return r
 
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
         """
@@ -304,7 +306,7 @@ cdef class MDP:
                 sol.iterations
 
     cpdef from_matrices(self, np.ndarray[double,ndim=3] transitions, np.ndarray[double,ndim=2] rewards, \
-        np.ndarray[long] actions, double ignorethreshold = 1e-10):
+        double ignorethreshold = 1e-10):
         """
         Constructs an MDP from transition matrices, with uniform
         number of actions for each state. 
@@ -529,40 +531,12 @@ cdef class Simulation:
         finally:
             del rp
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
-    cdef cppclass RMDP_D:
-        RMDP_D(long)
-        RMDP_D()
-
-        size_t state_count() 
-
-        SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-
-        SolutionDscDsc vi_gs(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-        SolutionDscDsc mpi_jac(Uncertainty uncert,
-                    prec_t discount,
-                    const numvec& valuefunction,
-                    unsigned long iterations_pi,
-                    prec_t maxresidual_pi,
-                    unsigned long iterations_vi,
-                    prec_t maxresidual_vi)
 
 
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
-        
         CSampledMDP();
-
         void add_samples(const CDiscreteSamples& samples);
-        
         shared_ptr[CMDP] get_mdp_mod()
 
 
@@ -571,10 +545,10 @@ cdef class SampledMDP:
     Constructs an MDP from provided samples
     """
 
-    cdef CSampledMDP * _thisptr
+    cdef shared_ptr[CSampledMDP] _thisptr
     
     def __cinit__(self):
-        self._thisptr = new CSampledMDP()
+        self._thisptr = make_shared[CSampledMDP]()
 
     cpdef add_samples(self, DiscreteSamples samples):
         """
@@ -584,17 +558,85 @@ cdef class SampledMDP:
 
     cpdef get_mdp(self, discount):
         """
-        Returns the MDP that was constructed from the samples.
-
-        If there are more samples added, this MDP will be automatically modified
+        Returns the MDP that was constructed from the samples.  If there 
+        are more samples added, this MDP will be automatically modified
         """
-
         cdef MDP m = MDP(0, discount = discount)
-
         m.thisptr = dereference(self._thisptr).get_mdp_mod()
-
         return m
 
+cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
+    pair[vector[double],double] worstcase_l1(const vector[double] & z, \
+                        const vector[double] & q, double t)
+
+
+cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
+    """
+    o = cworstcase_l1(z,q,t)
+    
+    Computes the solution of:
+    min_p   p^T * z
+    s.t.    ||p - q|| <= t
+            1^T p = 1
+            p >= 0
+            
+    where o is the objective value
+          
+    Notes
+    -----
+    This implementation works in O(n log n) time because of the sort. Using
+    quickselect to choose the right quantile would work in O(n) time.
+    
+    The parameter z may be a masked array. In that case, the distribution values 
+    are normalized to the unmasked entries.
+    """
+    return worstcase_l1(z,q,t).second
+
+cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
+
+    cdef cppclass SolutionDscProb:
+        numvec valuefunction
+        indvec policy
+        vector[numvec] outcomes
+        prec_t residual
+        long iterations
+
+    cdef cppclass RMDP_L1:
+        RMDP_L1(long)
+        RMDP_L1()
+
+        size_t state_count() 
+
+        void set_uniform_distribution(double threshold)
+        void set_uniform_thresholds(double threshold) except +
+
+        State& get_state(long stateid) 
+
+        void normalize()
+
+        SolutionDscProb vi_jac(Uncertainty uncert, prec_t discount,
+                        const numvec& valuefunction,
+                        unsigned long iterations,
+                        prec_t maxresidual) 
+
+
+        SolutionDscProb vi_gs(Uncertainty uncert, prec_t discount,
+                        const numvec& valuefunction,
+                        unsigned long iterations,
+                        prec_t maxresidual) 
+
+        SolutionDscProb mpi_jac(Uncertainty uncert,
+                    prec_t discount,
+                    const numvec& valuefunction,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi)
+
+cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
+    void set_thresholds[Model](Model& mdp, prec_t threshold)
+    bool is_outcomes_normalized[Model](const Model& mdp)
+    void normalize_outcomes[Model](Model& mdp)`
 
 cdef class RMDP:
     """
@@ -615,21 +657,22 @@ cdef class RMDP:
         The discount factor
     """
     
-    cdef RMDP_D *thisptr
+    cdef shared_ptr[RMDP_L1] thisptr
     cdef public double discount
 
     def __cinit__(self, int statecount, double discount):
-        self.thisptr = new RMDP_D(statecount)
+        self.thisptr = new RMDP_L1(statecount)
 
     def __init__(self, int statecount, double discount):
         self.discount = discount
         
     def __dealloc__(self):
-        del self.thisptr
+        # this is probably not necessary
+        self.thisptr.reset()
                 
     cdef _check_value(self,valuefunction):
         if valuefunction.shape[0] > 0:
-            if valuefunction.shape[0] != self.thisptr.state_count():
+            if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
 
     cdef Uncertainty _convert_uncertainty(self,stype):
@@ -665,7 +708,8 @@ cdef class RMDP:
         reward : float
             Reward associated with the transition
         """        
-        add_transition[RMDP_D](self.thisptr[0],fromid, actionid, outcomeid, toid, probability, reward)
+        add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,\
+                                toid, probability, reward)
 
         
     cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
@@ -709,11 +753,74 @@ cdef class RMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = self._convert_uncertainty(stype)
  
-        cdef SolutionDscDsc sol = self.thisptr.vi_gs(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
                     valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.outcomes
+
+
+    cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution, double threshold):
+        """
+        Sets the base distribution over the states and the threshold
+        
+        Parameters
+        ----------
+        fromid : int
+            Number of the originating state
+        actionid : int
+            Number of the actions
+        distribution : np.ndarray
+            Distributions over the outcomes (should be a correct distribution)
+        threshold : double
+            The difference threshold used when choosing the outcomes
+        """
+        #TODO
+        if abs(np.sum(distribution) - 1) > 0.001:
+            raise ValueError('incorrect distribution (does not sum to one)', distribution)
+        if np.min(distribution) < 0:
+            raise ValueError('incorrect distribution (negative)', distribution)    
+
+        self.thisptr.get_state(fromid).get_action(actionid).set_distribution(distribution)
+        self.thisptr.get_state(fromid).get_action(actionid).set_threshold(threshold)
+        
+    cpdef set_uniform_distributions(self, double threshold):
+        """
+        Sets all the outcome distributions to be uniform.
+        
+        Parameters
+        ----------
+        threshold : double
+            The default threshold for the uncertain sets
+        """
+        #TODO
+        set_uniform_outcome_dst(dereference(self.thisptr),threshold)
+
+    cpdef set_uniform_thresholds(self, double threshold):
+        """
+        Sets the same threshold for all states.
+        
+        Can use ``self.set_distribution`` to set the thresholds individually for 
+        each states and action.
+        
+        See Also
+        --------
+        self.set_distribution
+        """
+        set_thresholds(dereference(self.thisptr), threshold)
+
+    cpdef copy(self):
+        """ Makes a copy of the object """
+        r = RMDP(0, self.discount)
+        dereference(r.thisptr) = dereference(self.thisptr)
+        return r
+
+    cpdef long state_count(self):
+        """
+        Returns the number of states
+        """
+        return self.thisptr.state_count()
+        
 
     cpdef vi_jac(self, int iterations=DEFAULT_ITERS,valuefunction = np.empty(0), \
                                     double maxresidual=0, int stype=0):
@@ -754,7 +861,7 @@ cdef class RMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = self._convert_uncertainty(stype)
 
-        cdef SolutionDscDsc sol = self.thisptr.vi_jac(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -809,7 +916,7 @@ cdef class RMDP:
         if valresidual < 0:
             valresidual = maxresidual / 2
 
-        cdef SolutionDscDsc sol = self.thisptr.mpi_jac(unc,self.discount,\
+        cdef SolutionDscDsc sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual,valiterations,\
                         valresidual)
 

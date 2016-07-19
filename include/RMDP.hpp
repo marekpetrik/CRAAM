@@ -145,6 +145,7 @@ public:
 
     /** Retrieves an existing state */
     const SType& operator[](long stateid) const {return get_state(stateid);};
+
     
     /** Retrieves an existing state */
     SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
@@ -276,7 +277,8 @@ public:
                         unsigned long iterations=MAXITER,
                         prec_t maxresidual=SOLPREC) const;
 
-    /**
+    // TODO: a function like this could be useful
+    /*
     Value function evaluation using Jacobi iteration for a fixed policy
     and uncertainty realization type.
     \param uncert Type of realization of the uncertainty
@@ -288,7 +290,6 @@ public:
             the residual drops below this threshold.
     \return Computed (approximate) solution (value function)
      */
-    // TODO: a function like this could be useful
     //SolType vi_jac_fix(Uncertainty uncert,
     //                   prec_t discount,
     //                   const ActionPolicy& policy,
