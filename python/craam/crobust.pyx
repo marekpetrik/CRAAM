@@ -53,6 +53,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
     cdef cppclass CMDP "craam::MDP":
         CMDP(long)
+        CMDP(const CMDP&)
         CMDP()
 
         size_t state_count() 
@@ -148,7 +149,7 @@ cdef class MDP:
     cpdef copy(self):
         """ Makes a copy of the object """
         r = MDP(0, self.discount)
-        dereference(r.thisptr) = dereference(self.thisptr)
+        r.thisptr.reset(new CMDP(dereference(self.thisptr)))
         return r
 
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
@@ -603,14 +604,10 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
     cdef cppclass RMDP_L1:
         RMDP_L1(long)
+        RMDP_L1(const RMDP_L1&)
         RMDP_L1()
 
         size_t state_count() 
-
-        void set_uniform_distribution(double threshold)
-        void set_uniform_thresholds(double threshold) except +
-
-        State& get_state(long stateid) 
 
         void normalize()
 
@@ -634,9 +631,11 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                     prec_t maxresidual_vi)
 
 cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
-    void set_thresholds[Model](Model& mdp, prec_t threshold)
-    bool is_outcomes_normalized[Model](const Model& mdp)
-    void normalize_outcomes[Model](Model& mdp)`
+    void set_outcome_thresholds[Model](Model& mdp, prec_t threshold)
+    void set_uniform_outcome_dst[Model](Model& mdp)
+    bool is_outcome_dst_normalized[Model](const Model& mdp)
+    void normalize_outcome_dst[Model](Model& mdp)
+    void set_outcome_dst[Model](Model& mdp, size_t stateid, size_t actionid, const numvec& dist)
 
 cdef class RMDP:
     """
@@ -661,7 +660,7 @@ cdef class RMDP:
     cdef public double discount
 
     def __cinit__(self, int statecount, double discount):
-        self.thisptr = new RMDP_L1(statecount)
+        self.thisptr = make_shared[RMDP_L1](statecount)
 
     def __init__(self, int statecount, double discount):
         self.discount = discount
@@ -753,14 +752,14 @@ cdef class RMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = self._convert_uncertainty(stype)
  
-        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
+        cdef SolutionDscProb sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
                     valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.outcomes
 
 
-    cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution, double threshold):
+    cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution):
         """
         Sets the base distribution over the states and the threshold
         
@@ -772,29 +771,17 @@ cdef class RMDP:
             Number of the actions
         distribution : np.ndarray
             Distributions over the outcomes (should be a correct distribution)
-        threshold : double
-            The difference threshold used when choosing the outcomes
         """
-        #TODO
         if abs(np.sum(distribution) - 1) > 0.001:
             raise ValueError('incorrect distribution (does not sum to one)', distribution)
         if np.min(distribution) < 0:
             raise ValueError('incorrect distribution (negative)', distribution)    
 
-        self.thisptr.get_state(fromid).get_action(actionid).set_distribution(distribution)
-        self.thisptr.get_state(fromid).get_action(actionid).set_threshold(threshold)
+        set_outcome_dst[RMDP_L1](dereference(self.thisptr), fromid, actionid, distribution)
         
-    cpdef set_uniform_distributions(self, double threshold):
-        """
-        Sets all the outcome distributions to be uniform.
-        
-        Parameters
-        ----------
-        threshold : double
-            The default threshold for the uncertain sets
-        """
-        #TODO
-        set_uniform_outcome_dst(dereference(self.thisptr),threshold)
+    cpdef set_uniform_distributions(self):
+        """ Sets all the outcome distributions to be uniform. """
+        set_uniform_outcome_dst[RMDP_L1](dereference(self.thisptr))
 
     cpdef set_uniform_thresholds(self, double threshold):
         """
@@ -807,19 +794,20 @@ cdef class RMDP:
         --------
         self.set_distribution
         """
-        set_thresholds(dereference(self.thisptr), threshold)
+        set_outcome_thresholds[RMDP_L1](dereference(self.thisptr), \
+                                        threshold)
 
     cpdef copy(self):
         """ Makes a copy of the object """
         r = RMDP(0, self.discount)
-        dereference(r.thisptr) = dereference(self.thisptr)
+        r.thisptr.reset(new RMDP_L1(dereference(self.thisptr)))
         return r
 
     cpdef long state_count(self):
         """
         Returns the number of states
         """
-        return self.thisptr.state_count()
+        return dereference(self.thisptr).state_count()
         
 
     cpdef vi_jac(self, int iterations=DEFAULT_ITERS,valuefunction = np.empty(0), \
@@ -861,7 +849,7 @@ cdef class RMDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = self._convert_uncertainty(stype)
 
-        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
+        cdef SolutionDscProb sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -916,7 +904,7 @@ cdef class RMDP:
         if valresidual < 0:
             valresidual = maxresidual / 2
 
-        cdef SolutionDscDsc sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
+        cdef SolutionDscProb sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual,valiterations,\
                         valresidual)
 

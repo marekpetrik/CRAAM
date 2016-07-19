@@ -162,6 +162,20 @@ void set_uniform_outcome_dst(Model& mdp){
     }
 }
 
+
+
+/**
+Sets the distribution of outcomes for the given state and action.
+*/
+template<class Model>
+void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& dist){
+    assert(stateid >= 0 && stateid < mdp.size());
+    assert(actionid >= 0 && actionid < mdp[stateid].size());
+
+    mdp[stateid][actionid].set_distribution(dist);
+}
+
+
 /**
 Checks whether outcome distributions sum to 1 for all states and actions.
 
@@ -170,7 +184,7 @@ This function only applies to models that have thresholds, such as ones using
 
 */
 template<class Model>
-bool is_outcomes_dst_normalized(const Model& mdp){
+bool is_outcome_dst_normalized(const Model& mdp){
     for(auto si : indices(mdp)){
         auto& state = mdp.get_state(si);
         for(auto ai : indices(state)){

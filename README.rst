@@ -37,6 +37,14 @@ Minimal Requirements
     - Tested with Linux Clang 3.6.2 (and maybe 3.2+).
 - `Boost <http://boost.org>`__ to enable unit tests and for some simple numerical algebra
 
+Python Interface Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Python 3.3+ (Python 2 is NOT supported)
+- Setuptools 7.0
+- Numpy 1.8+
+- Cython 0.21+ 
+
 Optional Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
 

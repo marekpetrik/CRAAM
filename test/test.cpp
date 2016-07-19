@@ -620,15 +620,15 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
     add_transition(rmdp,0,0,1,1.0,0.5);
 
     // the freshly constructed one should be normalized
-    BOOST_CHECK(is_outcomes_dst_normalized(rmdp));
+    BOOST_CHECK(is_outcome_dst_normalized(rmdp));
 
     // denormalize and make sure it works
     rmdp.get_state(0).get_action(0).set_distribution(0, 0.8);
-    BOOST_CHECK(!is_outcomes_dst_normalized(rmdp));
+    BOOST_CHECK(!is_outcome_dst_normalized(rmdp));
 
     // make sure that the normalization works
     normalize_outcome_dst(rmdp);
-    BOOST_CHECK(is_outcomes_dst_normalized(rmdp));
+    BOOST_CHECK(is_outcome_dst_normalized(rmdp));
 
     // check and normalize transition probabilities
     BOOST_CHECK(!rmdp.is_normalized());
