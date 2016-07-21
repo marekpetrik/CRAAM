@@ -162,23 +162,29 @@ void Transition::probabilities_addto(prec_t scale, Transition& transition) const
         transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
 }
 
-string Transition::to_json() const{
-    string result{"{\"stateids\" : ["};
+string Transition::to_json(long outcomeid) const{
+    string result{"{"};
+    result += "\"outcomeid\" : ";
+    result += std::to_string(outcomeid);
+    result += ",\"stateids\" : [";
     for(auto i : indices){
-        result.append(std::to_string(i));
-        result.append(",");
+        result += std::to_string(i);
+        result += ",";
     }
-    result.append("],\n\"probabilities\" : [");
+    if(!indices.empty()) result.pop_back();// remove last comma
+    result += "],\"probabilities\" : [";
     for(auto p : probabilities){
-        result.append(std::to_string(p));
-        result.append(",");
+        result += std::to_string(p);
+        result += ",";
     }
-    result.append("],\n\"rewards\" : [");
+    if(!probabilities.empty()) result.pop_back();// remove last comma
+    result += "],\"rewards\" : [" ;
     for(auto r : rewards){
-        result.append(std::to_string(r));
-        result.append(",");
+        result += std::to_string(r);
+        result += ",";
     }
-    result.append("]}");
+    if(!rewards.empty()) result.pop_back();// remove last comma
+    result += "]}";
     return result;
 }
 

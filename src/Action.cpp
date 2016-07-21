@@ -6,6 +6,10 @@
 #include<stdexcept>
 #include<cmath>
 
+#include "cpp11-range-master/range.hpp"
+
+using namespace util::lang;
+
 namespace craam {
 
 using namespace std;
@@ -14,12 +18,15 @@ using namespace std;
 //  Regular action
 // **************************************************************************************
 
-string RegularAction::to_json() const{
-    string result{"{\"valid\" :"};
-    result.append(std::to_string(valid));
-    result.append(",\n\"transition\" : ");
-    result.append(outcome.to_json());
-    result.append("}");
+string RegularAction::to_json(long actionid) const{
+    string result{"{"};
+    result += "\"actionid\" : ";
+    result += std::to_string(actionid);
+    result += ",\"valid\" :";
+    result += std::to_string(valid);
+    result += ",\"transition\" : ";
+    result += outcome.to_json(-1);
+    result += "}";
     return result;
 }
 
@@ -106,15 +113,20 @@ prec_t DiscreteOutcomeAction::average(const numvec& valuefunction, prec_t discou
 }
 
 
-string DiscreteOutcomeAction::to_json() const{
-    string result{"{\"valid\" :"};
-    result.append(std::to_string(valid));
-    result.append(",\n\"outcomes\" : [");
-    for(const auto& o : outcomes){
-        result.append(o.to_json());
-        result.append(",\n");
+string DiscreteOutcomeAction::to_json(long actionid) const{
+    string result{"{"};
+    result += "\"actionid\" : ";
+    result += std::to_string(actionid);
+    result += ",\"valid\" :";
+    result += std::to_string(valid);
+    result += ",\"outcomes\" : [";
+    for(auto oi : indices(outcomes)){
+        const auto& o = outcomes[oi];
+        result += o.to_json(oi);
+        result += ",";
     }
-    result.append("]}");
+    if(!outcomes.empty()) result.pop_back(); // remove last comma
+    result += "]}";
     return result;
 }
 
@@ -127,10 +139,18 @@ Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
 
+    // 1: compute the weight for the new outcome and old ones
+
     // new size of the list of outcomes
     size_t newsize = outcomeid + 1;
     // current size of the set
     size_t oldsize = outcomes.size();
+
+    if(newsize <= oldsize){
+        // no need to add anything
+        return outcomes[outcomeid];
+    }
+
     // new uniform weight for each element
     prec_t newweight = 1.0/prec_t(outcomeid+1);
 
@@ -299,22 +319,28 @@ Transition WeightedOutcomeAction<nature>::mean_transition(OutcomeId outcomedist)
 }
 
 template<NatureConstr nature>
-string WeightedOutcomeAction<nature>::to_json() const{
-    string result{"{\"valid\" :"};
-    result.append(std::to_string(valid));
-    result.append(",\n\"threshold\" : ");
-    result.append(std::to_string(threshold));
-    result.append(",\n\"outcomes\" : [");
-    for(const auto& o : outcomes){
-        result.append(o.to_json());
-        result.append(",\n");
+string WeightedOutcomeAction<nature>::to_json(long actionid) const{
+    string result{"{"};
+    result += "\"actionid\" : ";
+    result += std::to_string(actionid);
+    result += ",\"valid\" :";
+    result += std::to_string(valid);
+    result += ",\"threshold\" : ";
+    result += std::to_string(threshold);
+    result += ",\"outcomes\" : [";
+    for(auto oi : indices(outcomes)){
+        const auto& o = outcomes[oi];
+        result +=o.to_json(oi);
+        result +=",";
     }
-    result.append(",\n\"distribution\" : [");
+    if(!outcomes.empty()) result.pop_back(); // remove last comma
+    result += "],\"distribution\" : [";
     for(auto d : distribution){
-        result.append(std::to_string(d));
-        result.append(",");
+        result += std::to_string(d);
+        result += ",";
     }
-    result.append("]}");
+    if(!distribution.empty()) result.pop_back(); // remove last comma
+    result += "]}";
     return result;
 }
 

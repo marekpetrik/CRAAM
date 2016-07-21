@@ -142,8 +142,9 @@ public:
     /** Gets the reward for a transition to a particular state */
     prec_t get_reward(long sampleid) const {return rewards[sampleid];};
 
-    /** Returns a json representation of transition probabilities */
-    string to_json() const;
+    /** Returns a json representation of transition probabilities
+    \param outcomeid Includes also outcome id*/
+    string to_json(long outcomeid = -1) const;
 
 protected:
 

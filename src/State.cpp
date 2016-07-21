@@ -1,7 +1,12 @@
+#include "State.hpp"
+
 #include <limits>
 #include <string>
 
-#include "State.hpp"
+#include "cpp11-range-master/range.hpp"
+
+using namespace util::lang;
+
 
 namespace craam {
 
@@ -151,14 +156,18 @@ bool SAState<AType>::is_action_outcome_correct(ActionId aid, OutcomeId oid) cons
 }
 
 template<class AType>
-string SAState<AType>::to_json() const{
-    string result{"{\"actions\" : [\n"};
-
-    for(const auto& a : actions){
-        result.append(a.to_json());
-        result.append(",\n");
+string SAState<AType>::to_json(long stateid) const{
+    string result{"{"};
+    result += "\"stateid\" : ";
+    result += std::to_string(stateid);
+    result += ",\"actions\" : [";
+    for(auto ai : indices(actions)){
+        const auto& a = actions[ai];
+        result += a.to_json(ai);
+        result += ",";
     }
-    result.append("]}");
+    if(!actions.empty()) result.pop_back(); // remove last comma
+    result += ("]}");
     return result;
 }
 

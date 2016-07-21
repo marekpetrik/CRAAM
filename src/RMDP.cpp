@@ -115,17 +115,17 @@ string GRMDP<SType>::to_string() const {
 
     for(size_t si : indices(states)){
         const auto& s = get_state(si);
-        result.append(std::to_string(si));
-        result.append(" : ");
-        result.append(std::to_string(s.action_count()));
-        result.append("\n");
+        result += (std::to_string(si));
+        result += (" : ");
+        result += (std::to_string(s.action_count()));
+        result += ("\n");
         for(size_t ai : indices(s)){
-            result.append("    ");
-            result.append(std::to_string(ai));
-            result.append(" : ");
+            result += ("    ");
+            result += (std::to_string(ai));
+            result += (" : ");
             const auto& a = s.get_action(ai);
             a.to_string(result);
-            result.append("\n");
+            result += ("\n");
         }
     }
     return result;
@@ -133,12 +133,14 @@ string GRMDP<SType>::to_string() const {
 
 template<class SType>
 string GRMDP<SType>::to_json() const {
-    string result{"{\"states\" : [\n"};
-    for(const auto& s : states){
-        result.append(s.to_json());
-        result.append(",\n");
+    string result{"{\"states\" : ["};
+    for(auto si : indices(states)){
+        const auto& s = states[si];
+        result += s.to_json(si);
+        result += ",";
     }
-    result.append("]}");
+    if(!states.empty()) result.pop_back(); // remove last comma
+    result += "]}";
     return result;
 }
 

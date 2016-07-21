@@ -126,8 +126,9 @@ public:
     prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
                        ActionId actionid, OutcomeId outcomeid) const;
 
-    /** Returns json representation of the state */
-    string to_json() const;
+    /** Returns json representation of the state
+    \param stateid Includes also state id*/
+    string to_json(long stateid = -1) const;
 
 };
 

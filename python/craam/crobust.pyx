@@ -381,9 +381,9 @@ cdef class MDP:
 
     cpdef to_json(self):
         """
-        Returns a json representation of the MDP
+        Returns a json representation of the MDP.  Use json.tool to pretty print.
         """
-        return dereference(self.thisptr).to_json()
+        return dereference(self.thisptr).to_json().decode('UTF-8')
 
 cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
     
@@ -975,6 +975,6 @@ cdef class RMDP:
 
     cpdef to_json(self):
         """
-        Returns a json representation of the MDP
+        Returns a json representation of the RMDP. Use json.tool to pretty print.
         """
-        return dereference(self.thisptr).to_json()
+        return dereference(self.thisptr).to_json().decode('UTF-8')

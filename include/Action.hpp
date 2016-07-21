@@ -135,8 +135,9 @@ public:
     /** Returns the mean transition probabilities. Ignore rewards. */
     Transition mean_transition(OutcomeId) const {return outcome;};
 
-    /** Returns a json representation of the action */
-    string to_json() const;
+    /** Returns a json representation of the action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
 };
 
 
@@ -297,8 +298,9 @@ public:
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId oid) const {return outcomes[oid];};
 
-    /** Returns a json representation of action */
-    string to_json() const;
+    /** Returns a json representation of action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
 
 };
 
@@ -309,16 +311,16 @@ public:
 
 /**
 An action in a robust MDP in which the outcomes are defined by a weighted function
-and a threshold. The uncertain behavior is parameterized by a base distribution
+and a threshold. The uncertain behavior is parametrized by a base distribution
 and a threshold value. An example may be a worst case computation:
-    min { u^T v | || u - d ||_1 <=  t}
+    \f[ \min \{ u^T v ~:~ \| u - d \|_1 \le  t\} \f]
 where v are the values for individual outcomes, d is the base distribution, and
 t is the threshold. See L1Action for an example of an instance of this template class.
 
-The function that determines the uncertainty set is defined by NatureConstr template parameter.
+The function that determines the uncertainty set is defined by NatureConstr
+template parameter.
 
-The distribution is initialized to be uniform over the provided elements;
-when a new outcome is added, then its weight in the distribution is 0.
+The distribution d over outcomes is uniform by default. See WeightedOutcomeAction::create_outcome.
 
 An action can be invalid, in which case it is skipped during any computations
 and cannot be used during a simulation. See is_valid.
@@ -388,11 +390,20 @@ public:
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This override also handles properly resizing the distribution.
 
+    If the corresponding outcome already exists, then it just returns it.
+
     The baseline distribution value for the new outcome(s) are set to be:
-        1/(new_outcomeid+1)
-    That is, it assumes uniform distribution of the outcomes.
-    Weights for existing outcomes are scaled appropriately to sum to a value
-    that would be equal to a sum of uniformly distributed values.
+        \f[ w_n' = \frac{1}{n+1}, \f]
+    where \f$ n \f$ is the new outcomeid. Weights for existing outcomes (if non-zero) are scaled appropriately to sum to a value
+    that would be equal to a sum of uniformly distributed values:
+    \f[ w_i' = w_i \frac{m \frac{1}{n+1}}{ \sum_{i=0}^{m} w_i }, \; i = 0 \ldots m \f]
+    where \f$ m \f$ is the previously maximal outcomeid; \f$ w_i' \f$ and \f$ w_i \f$ are the new and old weights of the
+    outcome \f$ i \f$ respectively. If the outcomes \f$ i < n\f$ do not exist
+    they are created with uniform weight.
+    This constructs a uniform distribution of the outcomes by default.
+
+    An exception during the computation may leave the distribution in an
+    incorrect state.
     */
     Transition& create_outcome(long outcomeid) override;
 
@@ -415,7 +426,7 @@ public:
      */
     void set_distribution(long outcomeid, prec_t weight);
 
-    /** Returns the baseline distribution. */
+    /** Returns the baseline distribution over outcomes. */
     const numvec& get_distribution() const {return distribution;};
 
     /**
@@ -459,8 +470,9 @@ public:
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId outcomedist) const;
 
-    /** Returns a json representation of action */
-    string to_json() const;
+    /** Returns a json representation of action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
 };
 
 /// **************************************************************************************
