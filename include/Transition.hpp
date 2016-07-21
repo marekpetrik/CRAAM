@@ -1,8 +1,9 @@
 #pragma once
 
-#include<vector>
-
 #include "definitions.hpp"
+
+#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -129,12 +130,20 @@ public:
     */
     void probabilities_addto(prec_t scale, Transition& transition) const;
 
+    /** State indices for each possible transition */
     const indvec& get_indices() const {return indices;};
+    /** Probabilities of possible transitions */
     const numvec& get_probabilities() const {return probabilities;};
+    /** Rewards associated with transitions */
     const numvec& get_rewards() const {return rewards;};
 
+    /** Sets the reward for a transition to a particular state */
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
+    /** Gets the reward for a transition to a particular state */
     prec_t get_reward(long sampleid) const {return rewards[sampleid];};
+
+    /** Returns a json representation of transition probabilities */
+    string to_json() const;
 
 protected:
 

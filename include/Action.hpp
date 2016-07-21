@@ -1,14 +1,13 @@
 #pragma once
 
+#include "definitions.hpp"
+#include "Transition.hpp"
+
 #include <utility>
 #include <vector>
 #include <limits>
 #include <cassert>
 #include <string>
-
-
-#include "definitions.hpp"
-#include "Transition.hpp"
 
 using namespace std;
 
@@ -23,7 +22,7 @@ Action in a regular MDP. There is no uncertainty and
 the action contains only a single outcome.
 
 An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid. 
+and cannot be used during a simulation. See is_valid.
 Actions are constructed as valid by default.
 */
 class RegularAction{
@@ -31,7 +30,7 @@ protected:
     /// Transition probabilities
     Transition outcome;
 
-    /// Invalid actions are skipped during computation 
+    /// Invalid actions are skipped during computation
     bool valid = true;
 
 public:
@@ -110,7 +109,7 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;};
 
-    /** 
+    /**
     Returns whether this is a valid action (or only a placeholder).
     Invalid actions cannot be taken and may result from incomplete
     sampling of a domain. They are skipped in the computation of value function.
@@ -135,6 +134,9 @@ public:
 
     /** Returns the mean transition probabilities. Ignore rewards. */
     Transition mean_transition(OutcomeId) const {return outcome;};
+
+    /** Returns a json representation of the action */
+    string to_json() const;
 };
 
 
@@ -146,7 +148,7 @@ public:
 A class that manages creation and access to outcomes to be used by actions.
 
 An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid. 
+and cannot be used during a simulation. See is_valid.
 Actions are constructed as valid by default.
 */
 class OutcomeManagement{
@@ -155,7 +157,7 @@ protected:
     /** List of possible outcomes */
     vector<Transition> outcomes;
 
-    /// Invalid actions are skipped during computation 
+    /// Invalid actions are skipped during computation
     bool valid = true;
 public:
     /** Empty list of outcomes */
@@ -207,7 +209,7 @@ public:
         result.append(std::to_string(get_outcomes().size()));
     }
 
-    /** 
+    /**
     Returns whether this is a valid action (or only a placeholder).
     Invalid actions cannot be taken and may result from incomplete
     sampling of a domain. They are skipped in the computation of value function.
@@ -228,7 +230,7 @@ public:
 An action in the robust MDP with discrete outcomes.
 
 An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid. 
+and cannot be used during a simulation. See is_valid.
 Actions are constructed as valid by default.
 */
 class DiscreteOutcomeAction : public OutcomeManagement {
@@ -294,6 +296,10 @@ public:
 
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId oid) const {return outcomes[oid];};
+
+    /** Returns a json representation of action */
+    string to_json() const;
+
 };
 
 /// **************************************************************************************
@@ -315,7 +321,7 @@ The distribution is initialized to be uniform over the provided elements;
 when a new outcome is added, then its weight in the distribution is 0.
 
 An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid. 
+and cannot be used during a simulation. See is_valid.
 Actions are constructed as valid by default.
 */
 template<NatureConstr nature>
@@ -452,6 +458,9 @@ public:
 
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId outcomedist) const;
+
+    /** Returns a json representation of action */
+    string to_json() const;
 };
 
 /// **************************************************************************************

@@ -3,10 +3,8 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include <vector>
 #include <numeric>
 #include <cmath>
-#include <assert.h>
 
 #include "cpp11-range-master/range.hpp"
 
@@ -162,6 +160,26 @@ void Transition::probabilities_addto(prec_t scale, Transition& transition) const
 
     for(size_t i : util::lang::indices(*this))
         transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
+}
+
+string Transition::to_json() const{
+    string result{"{\"stateids\" : ["};
+    for(auto i : indices){
+        result.append(std::to_string(i));
+        result.append(",");
+    }
+    result.append("],\n\"probabilities\" : [");
+    for(auto p : probabilities){
+        result.append(std::to_string(p));
+        result.append(",");
+    }
+    result.append("],\n\"rewards\" : [");
+    for(auto r : rewards){
+        result.append(std::to_string(r));
+        result.append(",");
+    }
+    result.append("]}");
+    return result;
 }
 
 }

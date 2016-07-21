@@ -6,14 +6,26 @@
 #include<stdexcept>
 #include<cmath>
 
-using namespace std;
-
 namespace craam {
 
-/// **************************************************************************************
-///  Outcome Management (a helper class)
-/// **************************************************************************************
+using namespace std;
 
+// **************************************************************************************
+//  Regular action
+// **************************************************************************************
+
+string RegularAction::to_json() const{
+    string result{"{\"valid\" :"};
+    result.append(std::to_string(valid));
+    result.append(",\n\"transition\" : ");
+    result.append(outcome.to_json());
+    result.append("}");
+    return result;
+}
+
+// **************************************************************************************
+//  Outcome Management (a helper class)
+// **************************************************************************************
 
 Transition& OutcomeManagement::create_outcome(long outcomeid){
     if(outcomeid < 0)
@@ -35,9 +47,9 @@ void OutcomeManagement::normalize(){
     }
 }
 
-/// **************************************************************************************
-///  Discrete Outcome Action
-/// **************************************************************************************
+// **************************************************************************************
+//  Discrete Outcome Action
+// **************************************************************************************
 
 pair<DiscreteOutcomeAction::OutcomeId,prec_t>
 DiscreteOutcomeAction::maximal(const numvec& valuefunction, prec_t discount) const {
@@ -94,10 +106,21 @@ prec_t DiscreteOutcomeAction::average(const numvec& valuefunction, prec_t discou
 }
 
 
+string DiscreteOutcomeAction::to_json() const{
+    string result{"{\"valid\" :"};
+    result.append(std::to_string(valid));
+    result.append(",\n\"outcomes\" : [");
+    for(const auto& o : outcomes){
+        result.append(o.to_json());
+        result.append(",\n");
+    }
+    result.append("]}");
+    return result;
+}
 
-/// **************************************************************************************
-///  Weighted Outcome Action
-/// **************************************************************************************
+// **************************************************************************************
+//  Weighted Outcome Action
+// **************************************************************************************
 
 template<NatureConstr nature>
 Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
@@ -275,10 +298,30 @@ Transition WeightedOutcomeAction<nature>::mean_transition(OutcomeId outcomedist)
     return result;
 }
 
+template<NatureConstr nature>
+string WeightedOutcomeAction<nature>::to_json() const{
+    string result{"{\"valid\" :"};
+    result.append(std::to_string(valid));
+    result.append(",\n\"threshold\" : ");
+    result.append(std::to_string(threshold));
+    result.append(",\n\"outcomes\" : [");
+    for(const auto& o : outcomes){
+        result.append(o.to_json());
+        result.append(",\n");
+    }
+    result.append(",\n\"distribution\" : [");
+    for(auto d : distribution){
+        result.append(std::to_string(d));
+        result.append(",");
+    }
+    result.append("]}");
+    return result;
+}
 
-/// **************************************************************************************
-///  L1 Outcome Action
-/// **************************************************************************************
+
+// **************************************************************************************
+//  L1 Outcome Action
+// **************************************************************************************
 
 template class WeightedOutcomeAction<worstcase_l1>;
 

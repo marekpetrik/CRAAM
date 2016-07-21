@@ -132,6 +132,17 @@ string GRMDP<SType>::to_string() const {
 }
 
 template<class SType>
+string GRMDP<SType>::to_json() const {
+    string result{"{\"states\" : [\n"};
+    for(const auto& s : states){
+        result.append(s.to_json());
+        result.append(",\n");
+    }
+    result.append("]}");
+    return result;
+}
+
+template<class SType>
 auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction,
                          unsigned long iterations, prec_t maxresidual) const
                             -> SolType {

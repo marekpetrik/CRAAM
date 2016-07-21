@@ -1,5 +1,6 @@
 #pragma once
-#include "definitions.hpp"
+
+#include "State.hpp"
 
 #include <vector>
 #include <istream>
@@ -8,7 +9,6 @@
 #include <tuple>
 #include <cassert>
 
-#include "State.hpp"
 #include <boost/numeric/ublas/matrix.hpp>
 
 /// Main namespace which includes modeling a solving functionality
@@ -57,7 +57,7 @@ public:
     /**
     Computes the total return of the solution given the initial
     distribution.
-    
+
     Computes it based on the value function.
 
     \param initial The initial distribution
@@ -146,7 +146,7 @@ public:
     /** Retrieves an existing state */
     const SType& operator[](long stateid) const {return get_state(stateid);};
 
-    
+
     /** Retrieves an existing state */
     SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
                                     return states[stateid];};
@@ -347,10 +347,16 @@ public:
 
     // string representation
     /**
-    Returns a brief string representation of the MDP.
-    This method is mostly suitable for analyzing small MDPs.
+    Returns a brief string representation of the RMDP.
+    This method is mostly suitable for analyzing small RMDPs.
     */
     string to_string() const;
+
+    /**
+    Returns a json representation of the RMDP.
+    This method is mostly suitable to analyzing small RMDPs.
+    */
+    string to_json() const;
 };
 
 // **********************************************************************
@@ -366,11 +372,11 @@ Regular MDP with discrete actions and one outcome per action
     ActionPolicy = vector<ActionId>
     OutcomePolicy = vector<OutcomeId>
 
-Uncertainty type is ignored in these methods. 
+Uncertainty type is ignored in these methods.
 */
 typedef GRMDP<RegularState> MDP;
 
-/** 
+/**
 An uncertain MDP with discrete robustness. See craam::DiscreteRobustState
 */
 typedef GRMDP<DiscreteRobustState> RMDP_D;

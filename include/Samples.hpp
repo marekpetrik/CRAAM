@@ -187,7 +187,7 @@ protected:
 };
 
 /**
-A helper function that constructs a samples object based on the simulator 
+A helper function that constructs a samples object based on the simulator
 that is provided to it
 */
 template<class Sim, class... U>
@@ -219,7 +219,7 @@ See SampleDiscretizerSD for a version in which action names are
 dependent on states.
 
 A new hash function can be defined as follows:
-\code 
+\code
 namespace std{
     template<> struct hash<pair<int,int>>{
         size_t operator()(pair<int,int> const& s) const{
@@ -361,9 +361,9 @@ public:
 
         // transition samples
         for(auto si : indices(samples)){
-            
+
             const auto es = samples.get_sample(si);
-            
+
             discretesamples->add_sample(add_state(es.state_from()),
                                         add_action(es.state_from(), es.action()),
                                         add_state(es.state_to()),
@@ -418,18 +418,21 @@ protected:
 /// -----------------------------------------------------------------------------------------
 
 /**
-Constructs an DP from integer samples. 
+Constructs an MDP from integer samples.
 
-In integer samples, each
-decision state, expectation state, and action are identified
+Integer samples: Each decision state, expectation state, and action are identified
 by an integer.
 
 There is some extra memory penalty in this class since it stores
 the number of samples observed for each state and action.
 
-Important: Actions that are not sampled (no samples per that state 
+Important: Actions that are not sampled (no samples per that state
 and action pair) are labeled as invalid and are not included in the computation
 of value function or the solution.
+
+See SampledRMDP for a version of this class that constructs RMDP in which
+the transitions are deterministic, but the probability is represented by the weights
+on outcomes.
 */
 class SampledMDP{
 public:
@@ -453,7 +456,7 @@ public:
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
 
     /** \returns A modifiable pointer to the internal MDP.
-    Care when changing. */
+    Take care when changing. */
     shared_ptr<MDP> get_mdp_mod() {return mdp;}
 
     /** Initial distribution */
@@ -470,6 +473,64 @@ protected:
     /** Sample counts */
     vector<vector<size_t>> state_action_counts;
 };
+
+/// -----------------------------------------------------------------------------------------
+
+
+// /**
+//Constructs a robust MDP from integer samples.
+//
+//In integer samples each decision state, expectation state,
+//and action are identified by an integer.
+//
+//There is some extra memory penalty in this class since it stores
+//the number of samples observed for each state and action.
+//
+//Important: Actions that are not sampled (no samples per that state
+//and action pair) are labeled as invalid and are not included in the computation
+//of value function or the solution.
+//*/
+//template<typename Model>
+//class SampledRMDP{
+//public:
+//
+//    /** Constructs an empty MDP from discrete samples */
+//    SampledRMDP();
+//
+//    /**
+//    Constructs or adds states and actions based on the
+//    provided samples.
+//
+//    At this point, the method can be called only once, but
+//    in the future it should be possible to call it multiple times
+//    to add more samples.
+//
+//    \param samples Source of the samples
+//    */
+//    void add_samples(const DiscreteSamples& samples);
+//
+//    /** \returns A constant pointer to the internal MDP */
+//    shared_ptr<const Model> get_rmdp() const {return const_pointer_cast<const Model>(mdp);}
+//
+//    /** \returns A modifiable pointer to the internal MDP.
+//    Take care when changing. */
+//    shared_ptr<Model> get_rmdp_mod() {return mdp;}
+//
+//    /** Initial distribution */
+//    Transition get_initial() const {return initial;}
+//
+//protected:
+//
+//    /** Internal MDP representation */
+//    shared_ptr<Model> mdp;
+//
+//    /** Initial distribution */
+//    Transition initial;
+//
+//    /** Sample counts */
+//    vector<vector<size_t>> state_action_counts;
+//};
+
 
 } // end namespace msen
 } // end namespace craam

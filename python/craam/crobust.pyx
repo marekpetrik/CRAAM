@@ -82,6 +82,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         const numvec& valuefunction,
                         unsigned long iterations,
                         prec_t maxresidual=SOLPREC) const;
+        
+        string to_json() const;
 
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
@@ -377,6 +379,12 @@ cdef class MDP:
         cdef np.ndarray[double,ndim=3] transitions
         cdef np.ndarray[double,ndim=2] rewards
 
+    cpdef to_json(self):
+        """
+        Returns a json representation of the MDP
+        """
+        return dereference(self.thisptr).to_json()
+
 cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
     
     cdef cppclass CDiscreteSamples "craam::msen::DiscreteSamples":
@@ -464,7 +472,6 @@ cdef class DiscreteSamples:
         return dereference(self._thisptr).get_steps()
 
 
-
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
     CDiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
@@ -482,8 +489,6 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass ModelDeterministicPolicy:
         
         ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
-
-
 
 cdef class Simulation:
     """
@@ -533,7 +538,6 @@ cdef class Simulation:
             del rp
 
 
-
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
         CSampledMDP();
@@ -566,10 +570,14 @@ cdef class SampledMDP:
         m.thisptr = dereference(self._thisptr).get_mdp_mod()
         return m
 
+# distutils: language = c++
+# distutils: libraries = craam
+# distutils: library_dirs = ../lib 
+# distutils: include_dirs = ../include 
+
 cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
     pair[vector[double],double] worstcase_l1(const vector[double] & z, \
                         const vector[double] & q, double t)
-
 
 cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
     """
@@ -629,6 +637,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                     prec_t maxresidual_pi,
                     unsigned long iterations_vi,
                     prec_t maxresidual_vi)
+        
+        string to_json() const
 
 cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
     void set_outcome_thresholds[Model](Model& mdp, prec_t threshold)
@@ -707,57 +717,8 @@ cdef class RMDP:
         reward : float
             Reward associated with the transition
         """        
-        add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,\
+        add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,
                                 toid, probability, reward)
-
-        
-    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                            double maxresidual=0, int stype=0):
-        """
-        Runs value iteration using the worst case (simplex) distribution for the 
-        outcomes.
-        
-        This is the "Gauss-Seidel" kind of value iteration in which the state values
-        are updated one at a time and directly used in subsequent iterations.
-        
-        This version is not parallelized (and likely would be hard to).
-        
-        Parameters
-        ----------
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-        stype : int  {0, 1, 2}
-            Robust (0) or optimistic (1) solution or (2) average solution. One
-            can use e.g. UncertainSet.Robust.value.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        outcomes : np.ndarray
-            Outcomes selected
-        """
-        
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = self._convert_uncertainty(stype)
- 
-        cdef SolutionDscProb sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
-                    valuefunction,iterations,maxresidual)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.outcomes
-
 
     cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution):
         """
@@ -809,6 +770,54 @@ cdef class RMDP:
         """
         return dereference(self.thisptr).state_count()
         
+        
+    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
+                            double maxresidual=0, int stype=0):
+        """
+        Runs value iteration using the worst case (simplex) distribution for the 
+        outcomes.
+        
+        This is the "Gauss-Seidel" kind of value iteration in which the state values
+        are updated one at a time and directly used in subsequent iterations.
+        
+        This version is not parallelized (and likely would be hard to).
+        
+        Parameters
+        ----------
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        stype : int  {0, 1, 2}, optional
+            Robust (0) or optimistic (1) solution or (2) average solution. One
+            can use e.g. UncertainSet.Robust.value.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        outcomes : np.ndarray
+            Outcomes selected
+        """
+        
+        self._check_value(valuefunction)
+        cdef Uncertainty unc = self._convert_uncertainty(stype)
+ 
+        cdef SolutionDscProb sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
+                    valuefunction,iterations,maxresidual)
+
+        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations, sol.outcomes
+
 
     cpdef vi_jac(self, int iterations=DEFAULT_ITERS,valuefunction = np.empty(0), \
                                     double maxresidual=0, int stype=0):
@@ -964,3 +973,8 @@ cdef class RMDP:
                     rewardval = rewards[fromid,aoindex]
                     self.add_transition(fromid, actionid, outcomeid, toid, transitionprob, rewardval)
 
+    cpdef to_json(self):
+        """
+        Returns a json representation of the MDP
+        """
+        return dereference(self.thisptr).to_json()

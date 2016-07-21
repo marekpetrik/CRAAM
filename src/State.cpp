@@ -22,10 +22,10 @@ auto SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
-        
+
         // skip invalid actions
         if(!action.is_valid()) continue;
-    
+
         auto value = action.maximal(valuefunction, discount);
         if(value.second > maxvalue){
             maxvalue = value.second;
@@ -49,7 +49,7 @@ auto SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
-        
+
         // skip invalid actions
         if(!action.is_valid()) continue;
 
@@ -75,7 +75,7 @@ auto SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) c
 
     for(size_t i = 0; i < actions.size(); i++){
         auto const& action = actions[i];
-        
+
         // skip invalid actions
         if(!action.is_valid()) continue;
 
@@ -150,6 +150,17 @@ bool SAState<AType>::is_action_outcome_correct(ActionId aid, OutcomeId oid) cons
     return actions[aid].is_outcome_correct(oid);
 }
 
+template<class AType>
+string SAState<AType>::to_json() const{
+    string result{"{\"actions\" : [\n"};
+
+    for(const auto& a : actions){
+        result.append(a.to_json());
+        result.append(",\n");
+    }
+    result.append("]}");
+    return result;
+}
 
 /// **********************************************************************
 /// *********************    TEMPLATE DECLARATIONS    ********************
