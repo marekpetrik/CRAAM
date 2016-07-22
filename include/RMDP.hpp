@@ -100,9 +100,9 @@ public:
     /** Action identifier in a policy. Copies type from state type. */
     typedef typename SType::OutcomeId OutcomeId;
 
-    /** Which action to take in which state. Decision-maker's policy */
+    /** Decision-maker's policy: Which action to take in which state.  */
     typedef vector<ActionId> ActionPolicy;
-    /** Which outcome to take in which state. Nature's policy */
+    /** Nature's policy: Which outcome to take in which state.  */
     typedef vector<OutcomeId> OutcomePolicy;
     /** Solution type */
     typedef GSolution<typename SType::ActionId, typename SType::OutcomeId>
@@ -195,9 +195,9 @@ public:
     long is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const;
 
-    /// ----------------------------------------------
-    /// Solution methods
-    /// ----------------------------------------------
+    // ----------------------------------------------
+    // Solution methods
+    // ----------------------------------------------
 
     /**
     Gauss-Seidel value iteration variant (not parallelized).
@@ -315,9 +315,9 @@ public:
         transition_mat_t(const ActionPolicy& policy,
                          const OutcomePolicy& nature) const;
 
-    /// ----------------------------------------------
-    /// Reading and writing files
-    /// ----------------------------------------------
+    // ----------------------------------------------
+    // Reading and writing files
+    // ----------------------------------------------
 
     /**
     Saves the model to a stream as a simple csv file. States, actions, and outcomes

@@ -942,20 +942,21 @@ BOOST_AUTO_TEST_CASE(test_create_outcome){
     numvec desired(5,0.2);  // this is the correct distribution with 5 outcomes
 
     a.create_outcome(1);
-    cout << a.get_distribution() << endl;
+    //cout << a.get_distribution() << endl;
     a.create_outcome(2);
-    cout << a.get_distribution() << endl;
+    //cout << a.get_distribution() << endl;
     a.create_outcome(0);
-    cout << a.get_distribution() << endl;
+    //cout << a.get_distribution() << endl;
     a.create_outcome(4);
 
     auto d1 = a.get_distribution();
-    cout << d1 << endl;
+    //cout << d1 << endl;
     CHECK_CLOSE_COLLECTION(d1, desired, 0.0001);
     BOOST_CHECK(a.is_distribution_normalized());
 
     a.normalize_distribution();
 
+    // make sure that normalization works too
     auto d2 = a.get_distribution();
     CHECK_CLOSE_COLLECTION(d2, desired, 0.0001);
     BOOST_CHECK(a.is_distribution_normalized());

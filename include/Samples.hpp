@@ -22,12 +22,22 @@ using namespace std;
 // -----------------------------------------------------------------------------------------
 
 /**
-Represents the transition between two states.
+Represents a single transition between two states after taking an action:
+ \f[ (s, a, s', r, w) \f]
+where:
+    - \f$ s \f$ is the originating state
+    - \f$ a \f$ is the action taken
+    - \f$ s' \f$ is the target state
+    - \f$ r \f$ is the reward
+    - \f$ w \f$ is the weight (or importance) of the state. It is
+                like probability, except it does not have to sum to 1.
+                It must be non-negative.
 
-The footprint of the class could be reduced by removing the number of step and the run.
+In addition, the sample also includes step and the run. These are
+used for example to compute the return from samples.
 
-\tparam State Type defining states
-\tparam Action Type defining actions
+\tparam State MDP state: \f$ s, s'\f$
+\tparam Action MDP action: \f$ a \f$
  */
 template <class State, class Action>
 class Sample {
@@ -35,7 +45,8 @@ public:
     Sample(const State& state_from, const Action& action, const State& state_to,
            prec_t reward, prec_t weight, long step, long run):
         _state_from(state_from), _action(action),
-        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){};
+        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){
+        assert(weight >= 0);};
 
     /** Original state */
     State state_from() const {return _state_from;};
@@ -72,7 +83,9 @@ protected:
 /// -----------------------------------------------------------------------------------------
 
 /**
-General representation of samples.
+General representation of samples:
+\f[ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f]
+See Sample for definitions of individual values.
 
 \tparam State Type defining states
 \tparam Action Type defining actions
@@ -426,13 +439,34 @@ by an integer.
 There is some extra memory penalty in this class since it stores
 the number of samples observed for each state and action.
 
-Important: Actions that are not sampled (no samples per that state
+\a Important: Actions that are not sampled (no samples per that state
 and action pair) are labeled as invalid and are not included in the computation
 of value function or the solution.
 
+\a Input: Sample set \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ \n
+\a Output: An MDP such that:
+    - States: \f$ \mathcal{S} = \bigcup_{i=0}^{m-1} \{ s_i \} \cup \bigcup_{i=0}^{m-1} \{ s_i' \} \f$
+    - Actions: \f$ \mathcal{A} = \bigcup_{i=0}^{m-1} \{ a_i \} \f$
+    - Transition probabilities:
+        \f[ P(s,a,s') = \frac{\sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i, s' = s_i' \} }
+            { \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i \} } \f]
+    - Rewards:
+        \f[ r(s,a,s') = \frac{\sum_{i=0}^{m-1} r_i w_i 1\{ s = s_i, a = a_i, s' = s_i' \} }
+            { \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i, s' = s_i' \} } \f]
+
+
+The class also tracks cumulative weights of state-action samples \f$ z \f$:
+\f[ z(s,a) = \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i \}  \f]
+If \f$ z(s,a) = 0 \f$ then the action \f$ a \f$ is marked as invalid.
+
+When sample sets are added by multiple calls of SampledMDP::add_samples, the results is the
+same as if all the individual sample sets were combined and added together. See SampledMDP::add_samples
+for more details.
+
 See SampledRMDP for a version of this class that constructs RMDP in which
 the transitions are deterministic, but the probability is represented by the weights
-on outcomes.
+on outcomes. This allows for varying the degree of uncertainty with respect to
+the empirical sample probabilities.
 */
 class SampledMDP{
 public:
@@ -444,11 +478,27 @@ public:
     Constructs or adds states and actions based on the
     provided samples.
 
-    At this point, the method can be called only once, but
-    in the future it should be possible to call it multiple times
-    to add more samples.
+    Sample sets can be added iteratively. Assume that the current
+    transition probabilities are constructed based on a sample set
+    \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ and add_samples
+    is called with sample set \f$ \Sigma' = (s_j, a_j, s_j', r_j, w_j)_{i=m}^{n-1} \f$.
+    The result is the same as if simultaneously adding samples \f$ 0 \ldots (n-1) \f$.
 
-    \param samples Source of the samples
+    New MDP values are updates as follows:
+        - Cumulative state-action weights \f$ z'\f$:
+            \f[ z'(s,a) =  z(s,a) + \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j \} \f]
+        - Transition probabilities \f$ P \f$:
+            \f[ P'(s,a,s') = \frac{z(s,a) * P(s,a,s') +
+                \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
+                { z'(s,a) } \f]
+        - Rewards \f$ r' \f$:
+            \f[ r'(s,a,s') = \frac{r(s,a,s') z(s,a) P(s,a,s') +
+                                        \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                                    {z'(s,a)P'(s,a,s')} \f]
+
+
+    \param samples New sample set to add to transition probabilities and
+                    rewards
     */
     void add_samples(const DiscreteSamples& samples);
 
@@ -459,9 +509,11 @@ public:
     Take care when changing. */
     shared_ptr<MDP> get_mdp_mod() {return mdp;}
 
-    /** Initial distribution */
+    /** \returns Initial distribution based on empirical sample data */
     Transition get_initial() const {return initial;}
 
+    /** Returns state-action cumulative weights \f$ z \f$. See class description for details. */
+    vector<vector<prec_t>> get_state_action_weights(){return state_action_weights;}
 protected:
 
     /** Internal MDP representation */
@@ -471,25 +523,26 @@ protected:
     Transition initial;
 
     /** Sample counts */
-    vector<vector<size_t>> state_action_counts;
+    vector<vector<prec_t>> state_action_weights;
 };
 
 /// -----------------------------------------------------------------------------------------
 
 
-// /**
-//Constructs a robust MDP from integer samples.
-//
-//In integer samples each decision state, expectation state,
-//and action are identified by an integer.
-//
-//There is some extra memory penalty in this class since it stores
-//the number of samples observed for each state and action.
-//
-//Important: Actions that are not sampled (no samples per that state
-//and action pair) are labeled as invalid and are not included in the computation
-//of value function or the solution.
-//*/
+ /**
+Constructs a robust MDP from integer samples.
+
+In integer samples each decision state, expectation state,
+and action are identified by an integer.
+
+There is some extra memory penalty in this class over a plain MDP since it stores
+the number of samples observed for each state and action.
+
+Important: Actions that are not sampled (no samples per that state
+and action pair) are labeled as invalid and are not included in the computation
+of value function or the solution.
+
+*/
 //template<typename Model>
 //class SampledRMDP{
 //public:
@@ -498,12 +551,8 @@ protected:
 //    SampledRMDP();
 //
 //    /**
-//    Constructs or adds states and actions based on the
-//    provided samples.
-//
-//    At this point, the method can be called only once, but
-//    in the future it should be possible to call it multiple times
-//    to add more samples.
+//    Constructs or adds states and actions based on the provided samples. Transition
+//    probabilities of the existing samples are normalized.
 //
 //    \param samples Source of the samples
 //    */

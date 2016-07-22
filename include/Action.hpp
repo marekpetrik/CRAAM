@@ -167,6 +167,9 @@ public:
     /** Initializes with a list of outcomes */
     OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {};
 
+    /** Empty virtual destructor */
+    virtual ~OutcomeManagement() {};
+
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method is virtual to make overloading safer.
@@ -393,11 +396,11 @@ public:
     If the corresponding outcome already exists, then it just returns it.
 
     The baseline distribution value for the new outcome(s) are set to be:
-        \f[ w_n' = \frac{1}{n+1}, \f]
+        \f[ d_n' = \frac{1}{n+1}, \f]
     where \f$ n \f$ is the new outcomeid. Weights for existing outcomes (if non-zero) are scaled appropriately to sum to a value
     that would be equal to a sum of uniformly distributed values:
-    \f[ w_i' = w_i \frac{m \frac{1}{n+1}}{ \sum_{i=0}^{m} w_i }, \; i = 0 \ldots m \f]
-    where \f$ m \f$ is the previously maximal outcomeid; \f$ w_i' \f$ and \f$ w_i \f$ are the new and old weights of the
+    \f[ d_i' = d_i \frac{m \frac{1}{n+1}}{ \sum_{i=0}^{m} d_i }, \; i = 0 \ldots m \f]
+    where \f$ m \f$ is the previously maximal outcomeid; \f$ d_i' \f$ and \f$ d_i \f$ are the new and old weights of the
     outcome \f$ i \f$ respectively. If the outcomes \f$ i < n\f$ do not exist
     they are created with uniform weight.
     This constructs a uniform distribution of the outcomes by default.
