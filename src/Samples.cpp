@@ -6,52 +6,91 @@
 
 using namespace std;
 
-namespace craam{
-namespace msen {
+using namespace util::lang;
 
-SampledMDP::SampledMDP() : mdp(make_shared<RMDP>()) {}
+namespace craam{namespace msen {
+
+SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 
 void SampledMDP::add_samples(const DiscreteSamples& samples){
 
-    if(initialized)
-        throw invalid_argument("Multiple calls not supported yet.");
+    // copy the state and action counts to be
+    vector<vector<size_t>> old_state_action_counts = state_action_counts;
 
-    // ** For each expectation state index, save the state and action number
-    // maps expectation state numbers to decision state number and action it comes from
-    vector<vector<pair<long,long>>> expstate2da(0);
-    for(const DiscreteDSample& ds : samples.decsamples){
-        auto esid = ds.expstate_to;
-        // resize if necessary
-        if(esid >= (long) expstate2da.size()){
-            expstate2da.resize(esid+1, vector<pair<long,long>>(0));
+    // add transition samples
+    for(const DiscreteSample& s : samples.get_samples()){
+
+        // -----------------
+        // Computes sample weight:
+        // the idea is to normalize new samples by the same
+        // value as the existing samples and then re-normalize
+        // this is linear complexity
+        // -----------------
+        // this needs to be initialized to 1.0
+        prec_t weight = 1.0;
+        bool weight_initialized = false;
+
+        // resize transition counts
+        // the actual values are updated later
+        if((size_t) s.state_from() >= state_action_counts.size()){
+            state_action_counts.resize(s.state_from()+1);
+
+            // we know that the value will not be found in old data
+            weight_initialized = true;
         }
-        expstate2da[esid].push_back(make_pair(ds.decstate_from, ds.action));
+
+        // check if we have something for the action
+        vector<size_t>& actioncount = state_action_counts[s.state_from()];
+        if((size_t)s.action() >= actioncount.size()){
+            actioncount.resize(s.action()+1);
+
+            // we know that the value will not be found in old data
+            weight_initialized = true;
+        }
+
+        // update the new count
+        assert(size_t(s.state_from()) < state_action_counts.size());
+        assert(size_t(s.action()) < state_action_counts[s.state_from()].size());
+
+        state_action_counts[s.state_from()][s.action()]++;
+
+        // get number of existing transitions
+        // this is only run when we do not know that we have no prior
+        // sample
+        if(!weight_initialized &&
+                (size_t(s.state_from()) < old_state_action_counts.size()) &&
+                (size_t(s.action()) < old_state_action_counts[s.state_from()].size())) {
+
+            size_t cnt = old_state_action_counts[s.state_from()][s.action()];
+
+            // adjust the weight of the new sample to be consistent
+            // with the previous normalization (use 1.0 if no previous action)
+            weight = 1.0 / prec_t(cnt);
+        }
+        // -----------------------
+
+        // adds a transition
+        add_transition( *mdp, s.state_from(), s.action(), s.state_to(),
+                        weight*s.weight(),
+                        s.reward());
     }
 
-    // ** Go by expectation states and determine where to add the sample
-    for(const DiscreteESample& es : samples.expsamples){
-
-        for(const auto sa : expstate2da[es.expstate_from]){
-            long decstate = sa.first;
-            long action = sa.second;
-
-            mdp->assure_state_exists(es.decstate_to);
-            Transition& t = mdp->create_transition(decstate, action, 0);
-
-            t.add_sample(es.decstate_to, es.weight, es.reward);
+    // make sure that there are no actions with no samples
+    for(size_t si : indices(*mdp)){
+        const auto& state = mdp->get_state(si);
+        for(size_t ai : indices(state)){
+            if(state.get_action(ai).get_outcome().empty())
+                throw invalid_argument("No sample for state " + to_string(si) + " and action " + to_string(ai) + ".");
         }
     }
 
-    // ** Then normalize the transitions
+    //  Normalize the transition probabilities
     mdp->normalize();
 
     // set initial distribution
-    for(long state : samples.initial){
+    for(long state : samples.get_initial()){
         initial.add_sample(state, 1.0, 0.0);
     }
     initial.normalize();
-
-    initialized = true;
 }
-}
-}
+}}

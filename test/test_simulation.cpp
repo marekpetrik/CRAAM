@@ -33,20 +33,10 @@ using namespace util::lang;
 //#define BOOST_TEST_MODULE MainModule
 #include <boost/test/unit_test.hpp>
 
-
-struct TestDState{
+struct TestState{
     int index;
 
-    TestDState(int i){
-        this->index = i;
-    };
-};
-
-
-struct TestEState{
-    int index;
-
-    TestEState(int i){
+    TestState(int i){
         this->index = i;
     };
 };
@@ -56,42 +46,36 @@ class TestSim {
 
 public:
 
-    typedef TestDState DState;
+    typedef TestState State;
     typedef int Action;
-    typedef TestEState EState;
 
-    TestDState init_state() const{
-        return TestDState(1);
+    TestState init_state() const{
+        return TestState(1);
     }
 
-    TestEState transition_dec(TestDState, int) const{
-        return TestEState(1);
+    pair<double,TestState> transition(TestState, int) const{
+        return pair<double,TestState>(1.0,TestState(1));
     };
 
-    pair<double,TestDState> transition_exp(TestEState) const{
-        return pair<double,TestDState>(1.0,TestDState(1));
-    };
-
-    bool end_condition(TestDState) const{
+    bool end_condition(TestState) const{
         return false;
     };
 
-    vector<int> actions(TestDState) const{
+    vector<int> actions(TestState) const{
         return vector<int>{1};
     };
 
 };
 
-int test_policy(TestDState){
+int test_policy(TestState){
     return 0;
 }
 
-BOOST_AUTO_TEST_CASE( basic_simulation ) {
+BOOST_AUTO_TEST_CASE(basic_simulation) {
     TestSim sim;
 
     auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
-    BOOST_CHECK_EQUAL(samples->decsamples.size(),50);
-    BOOST_CHECK_EQUAL(samples->expsamples.size(),50);
+    BOOST_CHECK_EQUAL(samples.get_samples().size(), 50);
 }
 
 
@@ -113,9 +97,8 @@ private:
     const int initstate;
 
 public:
-    typedef int DState;
-    typedef pair<int,int> EState;
-    typedef int Action;
+    using State = int;
+    using Action = int;
 
     /**
     Define the success of each action
@@ -128,15 +111,8 @@ public:
         return initstate;
     }
 
-    pair<int,int> transition_dec(int state, int action) const{
-        return make_pair(state,action);
-    }
-
-    pair<double,int> transition_exp(const pair<int,int> expstate) {
-        int pos = expstate.first;
-        int act = expstate.second;
-
-        int nextpos = d(gen) ? pos + act : pos;
+    pair<double,int> transition(int pos, int action) {
+        int nextpos = d(gen) ? pos + action : pos;
         return make_pair((double) pos, nextpos);
     }
 
@@ -152,6 +128,7 @@ public:
         return actions_list;
     }
 };
+
 
 /** A counter that terminates at either end as defined by the end state */
 class CounterTerminal : public Counter {
@@ -182,14 +159,14 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_sd ) {
 
     RandomPolicySD<Counter> random_pol(sim,1);
     auto samples = simulate_stateless(sim,random_pol,20,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
 
     samples = simulate_stateless(sim,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
     samples = simulate_stateless(sim2,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
 }
 
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
@@ -197,14 +174,14 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
 
     RandomPolicySI<Counter> random_pol(sim,1);
     auto samples = simulate_stateless(sim,random_pol,20,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), -3.51759102217019, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
 
     samples = simulate_stateless(sim,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 0, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
     samples = simulate_stateless(sim2,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples->mean_return(0.9), 3, 0.0001);
+    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
 }
 
 BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
@@ -215,16 +192,15 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
     auto samples = simulate_stateless(sim,random_pol,20,20);
 
     SampleDiscretizerSD<CounterTerminal> sd;
-    sd.add_samples(*samples);
+    sd.add_samples(samples);
 
-    BOOST_CHECK_EQUAL(samples->initial.size(), sd.get_discrete()->initial.size());
-    BOOST_CHECK_EQUAL(samples->decsamples.size(), sd.get_discrete()->decsamples.size());
-    BOOST_CHECK_EQUAL(samples->expsamples.size(), sd.get_discrete()->expsamples.size());
+    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
+    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());
 
-    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+    shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
     for(auto i : range((size_t)0, mdp->state_count())){
@@ -232,7 +208,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
             BOOST_CHECK_LE(mdp->get_state(i).action_count(), 2);
     }
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 47.6799, 1e-3);
 }
@@ -251,14 +227,14 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     SampleDiscretizerSI<CounterTerminal> sd;
     sd.add_samples(samples);
 
-    BOOST_CHECK_EQUAL(samples.initial.size(), sd.get_discrete()->initial.size());
-    BOOST_CHECK_EQUAL(samples.decsamples.size(), sd.get_discrete()->decsamples.size());
-    BOOST_CHECK_EQUAL(samples.expsamples.size(), sd.get_discrete()->expsamples.size());
+    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
+    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());
 
-    shared_ptr<const RMDP> mdp = smdp.get_mdp();
+    shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
     for(auto i : range((size_t)0, mdp->state_count())){
@@ -266,7 +242,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
             BOOST_CHECK_EQUAL(mdp->get_state(i).action_count(), 2);
     }
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),0.9);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
 }

@@ -6,7 +6,7 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
-set(VERSION "0.4.0")
+set(VERSION "0.5.0")
 project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
@@ -119,8 +119,11 @@ endif (BUILD_ADVANCED)
 add_library (craam STATIC ${SRCS} )
 
 # **** DEVELOPMENT EXECUTABLE ****
-add_executable (develop ${DEV})
-target_link_libraries(develop craam)
+add_executable (develop_exe ${DEV})
+target_link_libraries(develop_exe craam)
+add_custom_target (develop COMMAND develop_exe
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
+                        COMMENT "Running executable")
 
 # **** TEST ****
 if (BUILD_TESTS)

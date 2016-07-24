@@ -152,7 +152,7 @@ template <typename T> vector<size_t> sort_indexes_desc(vector<T> const& v)
     return idx;
 }
 
-pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t> const& q, prec_t t){
+pair<numvec,prec_t> worstcase_l1(numvec const& z, numvec const& q, prec_t t){
     /**
     Computes the solution of:
     min_p   p^T * z
@@ -169,22 +169,14 @@ pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t>
     **/
 
     assert(*min_element(q.begin(), q.end()) >= 0 && *max_element(q.begin(), q.end()) <= 1);
-
-    if(z.size() <= 0){
-        throw invalid_argument("empty arguments");
-    }
-    if(t < 0.0 || t > 2.0){
-        throw invalid_argument("incorrect threshold");
-    }
-    if(z.size() != q.size()){
-        throw invalid_argument("parameter dimensions do not match");
-    }
-
+    assert(z.size() > 0);
+    assert(t >= 0.0 && t <= 2.0);
+    assert(z.size() == q.size());
 
     size_t sz = z.size();
 
     vector<size_t> smallest = sort_indexes<prec_t>(z);
-    vector<prec_t> o(q);
+    numvec o(q);
 
     auto k = smallest[0];
     auto epsilon = min(t/2, 1-q[k]);
@@ -202,7 +194,7 @@ pair<vector<prec_t>,prec_t> worstcase_l1(vector<prec_t> const& z, vector<prec_t>
 
     auto r = inner_product(o.begin(),o.end(),z.begin(), (prec_t) 0.0);
 
-    return make_pair(o,r);
+    return make_pair(move(o),r);
 }
 
 

@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include <random>
 
 using namespace std;
 
@@ -12,42 +13,42 @@ namespace craam{
 namespace impl{
 
 /**
-    Represents an MDP with implementability constraints.
+Represents an MDP with implementability constraints.
 
-    Consists of an MDP and a set of observations.
+Consists of an MDP and a set of observations.
 */
 class MDPI{
 
 public:
     /**
-        Constructs the MDP with implementability constraints. This constructor makes it
-        possible to share the MDP with other data structures.
+    Constructs the MDP with implementability constraints. This constructor makes it
+    possible to share the MDP with other data structures.
 
-        Important: when the underlying MDP changes externally, the object becomes invalid
-        and may result in unpredictable behavior.
+    Important: when the underlying MDP changes externally, the object becomes invalid
+    and may result in unpredictable behavior.
 
-        \param mdp A non-robust base MDP model.
-        \param state2observ Maps each state to the index of the corresponding observation.
-                        A valid policy will take the same action in all states
-                        with a single observation. The index is 0-based.
-        \param initial A representation of the initial distribution. The rewards
-                        in this transition are ignored (and should be 0).
+    \param mdp A non-robust base MDP model.
+    \param state2observ Maps each state to the index of the corresponding observation.
+                    A valid policy will take the same action in all states
+                    with a single observation. The index is 0-based.
+    \param initial A representation of the initial distribution. The rewards
+                    in this transition are ignored (and should be 0).
     */
-    MDPI(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
          const Transition& initial);
 
     /**
-        Constructs the MDP with implementability constraints. The MDP model is
-        copied (using the copy constructor) and stored internally.
-        \param mdp A non-robust base MDP model. It cannot be shared to prevent
-                    direct modification.
-        \param state2observ Maps each state to the index of the corresponding observation.
-                        A valid policy will take the same action in all states
-                        with a single observation. The index is 0-based.
-        \param initial A representation of the initial distribution. The rewards
-                        in this transition are ignored (and should be 0).
+    Constructs the MDP with implementability constraints. The MDP model is
+    copied (using the copy constructor) and stored internally.
+    \param mdp A non-robust base MDP model. It cannot be shared to prevent
+                direct modification.
+    \param state2observ Maps each state to the index of the corresponding observation.
+                    A valid policy will take the same action in all states
+                    with a single observation. The index is 0-based.
+    \param initial A representation of the initial distribution. The rewards
+                    in this transition are ignored (and should be 0).
     */
-    MDPI(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
     size_t obs_count() const { return obscount; };
     size_t state_count() const {return mdp->state_count(); };
@@ -58,16 +59,41 @@ public:
     Converts a policy defined in terms of observations to a policy defined in
     terms of states.
     \param obspol Policy that maps observations to actions to take
-    \param statepol Optional state policy target
+    \return Observation policy
     */
     indvec obspol2statepol(const indvec& obspol) const;
+    /**
+    Converts a policy defined in terms of observations to a policy defined in
+    terms of states.
+    \param obspol Policy that maps observations to actions to take
+    \param statepol State policy target
+    */
     void obspol2statepol(const indvec& obspol, indvec& statepol) const;
 
-    shared_ptr<const RMDP> get_mdp() {return mdp;};
+    /**
+    Converts a transition from states to observations, adding probabilities
+    of individual states. Rewards are a convex combination of the original
+    values.
+    */
+    Transition transition2obs(const Transition& tran);
+
+    /** Internal MDP representation */
+    shared_ptr<const MDP> get_mdp() {return mdp;};
+
+    /** Initial distribution of MDP */
     Transition get_initial() const {return initial;};
 
-    /** Constructs a random policy */
+    /** Constructs a random observation policy */
     indvec random_policy(random_device::result_type seed = random_device{}());
+
+    /**
+    Computes a return of an observation policy.
+
+    \param obspol Policy in terms of observations
+    \param discount Discount factor
+    \return Discounted return of the policy
+    */
+    prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC) const;
 
     // save and load description.
     /**
@@ -113,7 +139,7 @@ public:
 protected:
 
     /** the underlying MDP */
-    shared_ptr<const RMDP> mdp;
+    shared_ptr<const MDP> mdp;
     /** maps index of a state to the index of the observation */
     indvec state2observ;
     /** initial distribution */
@@ -127,13 +153,15 @@ protected:
      Checks whether the parameters are correct. Throws an exception if the parameters
      are wrong.
      */
-    static void check_parameters(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    static void check_parameters(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 };
 
 
 /**
-    An MDP with implementability constraints. The class contains solution
-    methods that rely on robust MDP reformulation of the problem.
+An MDP with implementability constraints. The class contains solution
+methods that rely on robust MDP reformulation of the problem.
+
+Uses L1 version of the robust MDP
  */
 class MDPI_R : public MDPI{
 
@@ -143,16 +171,16 @@ public:
     Calls the base constructor and also constructs the corresponding
     robust MDP
      */
-    MDPI_R(const shared_ptr<const RMDP>& mdp, const indvec& state2observ,
+    MDPI_R(const shared_ptr<const MDP>& mdp, const indvec& state2observ,
             const Transition& initial);
 
     /**
     Calls the base constructor and also constructs the corresponding
     robust MDP.
     */
-    MDPI_R(const RMDP& mdp, const indvec& state2observ, const Transition& initial);
+    MDPI_R(const MDP& mdp, const indvec& state2observ, const Transition& initial);
 
-    const RMDP& get_robust_mdp() const {
+    const RMDP_L1& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
@@ -174,15 +202,31 @@ public:
 
     This method modifies the stored robust MDP.
 
-    \param iterations Maximal number of iterations;
-                also stops if the policy no longer changes
+    \param iterations Maximal number of iterations; terminates when the policy no longer changes
     \param discount Discount factor
-    \param initpol Initial policy (optional). When omitted a policy that takes
-                    the first action is used.
-
+    \param initobspol Initial observation policy (optional). When omitted or has length 0
+        a policy that takes the first action (action 0) is used.
     \returns Policy for observations (an index of each action for each observation)
     */
     indvec solve_reweighted(long iterations, prec_t discount, const indvec& initpol = indvec(0));
+
+    /**
+    Uses a robust MDP formulation to solve the MDPI. States in the observation are treated
+    as outcomes. The baseline distribution is inferred from the provided policy.
+
+    The uncertainty is bounded by using an L1 norm deviation and the provided
+    threshold.
+
+    The method can run for several iterations, like solve_reweighted.
+
+    \param iterations Maximal number of iterations; terminates when the policy no longer changes
+    \param threshold Upper bound on the L1 deviation from the baseline distribution.
+    \param discount Discount factor
+    \param initobspol Initial observation policy (optional). When omitted or has length 0
+        a policy that takes the first action (action 0) is used.
+    \returns Policy for observations (an index of each action for each observation)
+    */
+    indvec solve_robust(long iterations, prec_t threshold, prec_t discount, const indvec& initpol = indvec(0));
 
     static unique_ptr<MDPI_R> from_csv(istream& input_mdp, istream& input_state2obs,
                                      istream& input_initial, bool headers = true){
@@ -199,15 +243,12 @@ public:
     };
 
 protected:
-    /** the robust representation of the MDPI */
-    RMDP robust_mdp;
-    /** maps the index of the mdp state to the index of the observation
-        withing the state corresponding to the observation */
+    /** Robust representation of the MDPI */
+    RMDP_L1 robust_mdp;
+    /** Maps the index of the mdp state to the index of the observation
+    within the state corresponding to the observation (multiple states per observation) */
     indvec state2outcome;
-
-    /**
-    Constructs a robust version of the implementable MDP.
-    */
+    /** Constructs a robust version of the implementable MDP.*/
     void initialize_robustmdp();
 };
 
