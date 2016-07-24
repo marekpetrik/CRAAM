@@ -16,7 +16,7 @@ SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 void SampledMDP::add_samples(const DiscreteSamples& samples){
 
     // copy the state and action counts to be
-    vector<vector<size_t>> old_state_action_weights = state_action_weights;
+    auto old_state_action_weights = state_action_weights;
 
     // add transition samples
     for(size_t si : indices(samples)){
@@ -29,8 +29,11 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         // value as the existing samples and then re-normalize
         // this is linear complexity
         // -----------------
-        // this needs to be initialized to 1.0
-        prec_t weight = 1.0;
+
+
+        // weight used to normalize old data
+        prec_t weight = 1.0; // this needs to be initialized to 1.0
+        // whether the sample weight has been initialized
         bool weight_initialized = false;
 
         // resize transition counts
@@ -43,7 +46,7 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         }
 
         // check if we have something for the action
-        vector<size_t>& actioncount = state_action_weights[s.state_from()];
+        numvec& actioncount = state_action_weights[s.state_from()];
         if((size_t)s.action() >= actioncount.size()){
             actioncount.resize(s.action()+1);
 
@@ -94,7 +97,7 @@ void SampledMDP::add_samples(const DiscreteSamples& samples){
         }
     }
 
-    //  Normalize the transition probabilities
+    //  Normalize the transition probabilities and rewards
     mdp->normalize();
 
     // set initial distribution

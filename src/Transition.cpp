@@ -58,7 +58,8 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
         probabilities.push_back(probability);
         rewards.push_back(reward);
     }
-    else{ // the index is already in the transitions, or belongs in the middle
+    // the index is already in the transitions, or belongs in the middle
+    else{
 
         size_t findex;  // lower bound on the index of the element
         bool present;   // whether the index was found
@@ -75,14 +76,18 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
             present = (*fiter == stateid);
         }
 
-        if(present){    // there is a transition to this element already
+        // there is a transition to this element already
+        if(present){
             auto p_old = probabilities[findex];
-            auto r_old = rewards[findex];
-            auto new_reward = (p_old * r_old + probability * reward) / (p_old + probability);
-
             probabilities[findex] += probability;
+
+            auto r_old = rewards[findex];
+            auto new_reward = (p_old * r_old + probability * reward) / 
+                                (probabilities[findex]);
+
             rewards[findex] = new_reward;
-        }else{          // the transition is not there, the element needs to be inserted
+        // the transition is not there, the element needs to be inserted
+        }else{
             indices.insert(indices.begin()+findex,stateid);
             probabilities.insert(probabilities.begin()+findex,probability);
             rewards.insert(rewards.begin()+findex,reward);

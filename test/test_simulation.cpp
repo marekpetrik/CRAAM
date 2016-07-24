@@ -151,8 +151,6 @@ namespace std{
     };
 }
 
-
-
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
 
@@ -166,6 +164,40 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim2(0.9,3,1);
     samples = simulate(sim2,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
+}
+
+BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
+    // check that the reward is constructed correctly from samples
+    DiscreteSamples samples;
+
+    // relevant samples (transition to 1)
+    samples.add_sample(0,0,1,1.0,3.0,0,0);
+    samples.add_sample(0,0,1,2.0,2.0,0,0);
+    samples.add_sample(0,0,1,3.0,1.0,0,0);
+    // irrelevant samples (do not transition to 1)
+    samples.add_sample(0,0,2,0.0,1.0,0,0);
+    samples.add_sample(0,0,3,0.0,1.0,0,0);
+    samples.add_sample(0,0,0,0.0,1.0,0,0);
+
+    SampledMDP smdp;
+
+    smdp.add_samples(samples);
+    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
+
+    // check that the reward is constructed correctly from samples
+    DiscreteSamples samples2;
+
+    // relevant samples (transition to 1)
+    samples2.add_sample(0,0,1,2.0,9.0,0,0);
+    samples2.add_sample(0,0,1,4.0,6.0,0,0);
+    samples2.add_sample(0,0,1,6.0,3.0,0,0);
+    // irrelevant samples (do not transition to 1)
+    samples2.add_sample(0,0,2,0.0,1.0,0,0);
+    samples2.add_sample(0,0,3,0.0,1.0,0,0);
+    samples2.add_sample(0,0,0,0.0,1.0,0,0);
+
+    smdp.add_samples(samples2);
+    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
 }
 
 BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
@@ -226,20 +258,20 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
 
     shared_ptr<MDP> m = make_shared<MDP>();
     *m = create_test_mdp_sim<MDP>();
-    
+
     Transition initial({0},{1.0});
-    
+
     ModelSimulator ms(m, initial,13);
     ModelRandomPolicy rp(ms,10);
 
     auto samples = simulate(ms, rp, 1000, 5, -1, 0.0, 10);
-    
+
     BOOST_CHECK_EQUAL(samples.size(), 49);
     //cout << "Number of samples " << samples.size() << endl;
-    
+
     SampledMDP smdp;
-    
-    smdp.add_samples(samples); 
+
+    smdp.add_samples(samples);
 
     auto newmdp = smdp.get_mdp();
 
@@ -263,7 +295,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
 
     BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-3);
     //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
-    
+
     ModelDeterministicPolicy dp(ms, policy);
     auto samples_policy = simulate(ms, dp, 1000, 5);
 
@@ -271,7 +303,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     //cout << "Return of sampled " << samples_policy.mean_return(0.9) << endl;
 
     ModelRandomizedPolicy rizedp(ms, {{0.5,0.5},{0.5,0.4,0.1},{0.5,0.5}},0);
-    
+
     auto randomized_samples = simulate(ms, rizedp, 1000, 5, -1, 0.0, 10);
 
     BOOST_CHECK_CLOSE(randomized_samples.mean_return(0.9), 4.01147, 1e-3);

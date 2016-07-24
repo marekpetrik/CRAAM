@@ -436,12 +436,6 @@ Constructs an MDP from integer samples.
 Integer samples: Each decision state, expectation state, and action are identified
 by an integer.
 
-There is some extra memory penalty in this class since it stores
-the number of samples observed for each state and action.
-
-\a Important: Actions that are not sampled (no samples per that state
-and action pair) are labeled as invalid and are not included in the computation
-of value function or the solution.
 
 \a Input: Sample set \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ \n
 \a Output: An MDP such that:
@@ -458,15 +452,15 @@ of value function or the solution.
 The class also tracks cumulative weights of state-action samples \f$ z \f$:
 \f[ z(s,a) = \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i \}  \f]
 If \f$ z(s,a) = 0 \f$ then the action \f$ a \f$ is marked as invalid.
+There is some extra memory penalty due to storing these weights.
+
+\a Important: Actions that are not sampled (no samples per that state
+and action pair) are labeled as invalid and are not included in the computation
+of value function or the solution.
 
 When sample sets are added by multiple calls of SampledMDP::add_samples, the results is the
 same as if all the individual sample sets were combined and added together. See SampledMDP::add_samples
 for more details.
-
-See SampledRMDP for a version of this class that constructs RMDP in which
-the transitions are deterministic, but the probability is represented by the weights
-on outcomes. This allows for varying the degree of uncertainty with respect to
-the empirical sample probabilities.
 */
 class SampledMDP{
 public:
@@ -488,14 +482,39 @@ public:
         - Cumulative state-action weights \f$ z'\f$:
             \f[ z'(s,a) =  z(s,a) + \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j \} \f]
         - Transition probabilities \f$ P \f$:
-            \f[ P'(s,a,s') = \frac{z(s,a) * P(s,a,s') +
-                \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
-                { z'(s,a) } \f]
-        - Rewards \f$ r' \f$:
-            \f[ r'(s,a,s') = \frac{r(s,a,s') z(s,a) P(s,a,s') +
-                                        \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
-                                    {z'(s,a)P'(s,a,s')} \f]
+            \f{align*}{ 
+            P'(s,a,s') &= \frac{z(s,a) * P(s,a,s') +
+                        \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
+                            { z'(s,a) } = \\
+                &= \frac{P(s,a,s') +
+                (1 / z(s,a)) \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
+                { z'(s,a) / z(s,a)  } 
 
+            \f}
+            The denominator is computed implicitly by normalizing transition probabilities.
+        - Rewards \f$ r' \f$:
+            \f{align*} 
+            r'(s,a,s') 
+                &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
+                       \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')} \\
+            r'(s,a,s') 
+                &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
+                       \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')} \\
+                &= \frac{r(s,a,s') P(s,a,s') +
+                     \sum_{j=m}^{n-1}r_j (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')/ z(s,a)} \\
+                &= \frac{r(s,a,s') P(s,a,s') +
+                    \sum_{j=m}^{n-1} r_j (w_j/z(s,a) 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {P(s,a,s') + \sum_{j=m}^{n-1} (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}} 
+            \f}
+            The last line follows from the definition of \f$ P(s,a,s') \f$.
+            This corresponds to the operation of Transition::add_sample 
+            repeatedly for \f$ j = m \ldots (n-1) \f$ with
+            \f{align*} 
+            p &= (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}\\
+            r &= r_j \f}.
 
     \param samples New sample set to add to transition probabilities and
                     rewards

@@ -89,6 +89,15 @@ public:
     const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
 
     /** Returns the single outcome. */
+    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
+
+    /** Returns the outcome */
+    const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
+
+    /** Returns the outcome */
+    Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
+
+    /** Returns the single outcome. */
     const Transition& get_outcome() const {return outcome;};
 
     /** Returns the single outcome. */
@@ -98,10 +107,7 @@ public:
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method does nothing in this action.
     */
-    Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;};
-
-    /** Returns the single outcome. */
-    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
+    Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;}
 
     /** Normalizes transition probabilities */
     void normalize() {outcome.normalize();};
@@ -176,21 +182,27 @@ public:
     */
     virtual Transition& create_outcome(long outcomeid);
 
-    /** Returns a transition for the outcome to the action. The transition must exist. */
+    /** Returns a transition for the outcome. The transition must exist. */
     const Transition& get_outcome(long outcomeid) const {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
 
-    /** Returns a transition for the outcome to the action. The transition must exist. */
+    /** Returns a transition for the outcome. The transition must exist. */
     Transition& get_outcome(long outcomeid) {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
 
+    /** Returns a transition for the outcome. The transition must exist. */
+    const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
+
+    /** Returns a transition for the outcome. The transition must exist. */
+    Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
+
     /** Returns number of outcomes. */
     size_t outcome_count() const {return outcomes.size();};
+
     /** Returns number of outcomes. */
     size_t size() const {return outcome_count();};
-
 
     /** Adds an outcome defined by the transition.
     \param outcomeid Id of the new outcome. Intermediate ids are created empty
@@ -200,7 +212,6 @@ public:
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
     void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);};
-
 
     /** Returns the list of outcomes */
     const vector<Transition>& get_outcomes() const {return outcomes;};
