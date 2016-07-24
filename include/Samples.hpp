@@ -7,32 +7,46 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <cassert>
 
-using namespace std;
+#include "cpp11-range-master/range.hpp"
 
 namespace craam{
-namespace msen {
 
-/// -----------------------------------------------------------------------------------------
+/// A namespace for handling sampling and simulation
+namespace msen{
+
+using namespace util::lang;
+using namespace std;
+
+// -----------------------------------------------------------------------------------------
 
 /**
-Represents the transition between two states.
+Represents a single transition between two states after taking an action:
+ \f[ (s, a, s', r, w) \f]
+where:
+    - \f$ s \f$ is the originating state
+    - \f$ a \f$ is the action taken
+    - \f$ s' \f$ is the target state
+    - \f$ r \f$ is the reward
+    - \f$ w \f$ is the weight (or importance) of the state. It is
+                like probability, except it does not have to sum to 1.
+                It must be non-negative.
 
-The footprint of the class could be reduced by removing the number of step and the run.
+In addition, the sample also includes step and the run. These are
+used for example to compute the return from samples.
 
-\tparam Sim Simulator class used to generate the sample. Only the members
-            defining the types of State and Action are necessary.
+\tparam State MDP state: \f$ s, s'\f$
+\tparam Action MDP action: \f$ a \f$
  */
-template <class Sim>
+template <class State, class Action>
 class Sample {
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
-
     Sample(const State& state_from, const Action& action, const State& state_to,
            prec_t reward, prec_t weight, long step, long run):
         _state_from(state_from), _action(action),
-        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){};
+        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){
+        assert(weight >= 0);};
 
     /** Original state */
     State state_from() const {return _state_from;};
@@ -69,25 +83,36 @@ protected:
 /// -----------------------------------------------------------------------------------------
 
 /**
-General representation of samples.
+General representation of samples:
+\f[ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f]
+See Sample for definitions of individual values.
 
-\tparam Sim Simulator class used to generate the samples. Only the members
-            defining the types of State and Action are necessary.
+\tparam State Type defining states
+\tparam Action Type defining actions
  */
-template <typename Sim>
+template <class State, class Action>
 class Samples {
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
 
     /** Adds an initial state */
     void add_initial(const State& decstate){
         this->initial.push_back(decstate);
     };
 
+    /** Adds an initial state */
+    void add_initial(State&& decstate){
+        this->initial.push_back(decstate);
+    };
+
     /** Adds a sample starting in a decision state */
-    void add_sample(const Sample<Sim>& sample){
-        samples.push_back(sample);
+    void add_sample(const Sample<State,Action>& sample){
+        states_from.push_back(sample.state_from());
+        actions.push_back(sample.action());
+        states_to.push_back(sample.state_to());
+        rewards.push_back(sample.reward());
+        weights.push_back(sample.weight());
+        steps.push_back(sample.step());
+        runs.push_back(sample.run());
     };
 
     /** Adds a sample starting in a decision state */
@@ -95,8 +120,27 @@ public:
                     const State& state_to, prec_t reward, prec_t weight,
                     long step, long run){
 
-        samples.emplace_back(state_from, action, state_to, reward, weight,
-                             step, run);
+        states_from.push_back(state_from);
+        actions.push_back(action);
+        states_to.push_back(state_to);
+        rewards.push_back(reward);
+        weights.push_back(weight);
+        steps.push_back(step);
+        runs.push_back(run);
+    }
+
+    /** Adds a sample starting in a decision state */
+    void add_sample(State&& state_from, Action&& action,
+                    State&& state_to, prec_t reward, prec_t weight,
+                    long step, long run){
+
+        states_from.push_back(state_from);
+        actions.push_back(action);
+        states_to.push_back(state_to);
+        rewards.push_back(reward);
+        weights.push_back(weight);
+        steps.push_back(step);
+        runs.push_back(run);
     }
 
     /**
@@ -107,46 +151,76 @@ public:
         prec_t result = 0;
         set<int> runs;
 
-        for(const auto& es : samples){
-           result += es.reward() * pow(discount,es.step());
-           runs.insert(es.run());
+        for(size_t si : indices(*this)){
+
+            auto es = get_sample(si);
+            result += es.reward() * pow(discount,es.step());
+            runs.insert(es.run());
         }
 
         result /= runs.size();
         return result;
     };
 
-    /** List of all samples */
-    const vector<Sample<Sim>>& get_samples() const{return samples;};
+    /** Number of samples */
+    size_t size() const {return states_from.size();};
+
+    /** Access to samples */
+    Sample<State,Action> get_sample(long i) const{
+        assert(i >=0 && size_t(i) < size());
+        return Sample<State,Action>(states_from[i],actions[i],states_to[i],rewards[i],weights[i],steps[i],runs[i]);};
+
+    /** Access to samples */
+    Sample<State,Action> operator[](long i) const{
+        return get_sample(i);
+    };
+
     /** List of initial states */
     const vector<State>& get_initial() const{return initial;};
 
+    const vector<State>& get_states_from() const{return states_from;};
+    const vector<Action>& get_actions() const{return actions;};
+    const vector<State>& get_states_to() const{return states_to;};
+    const vector<prec_t>& get_rewards() const{return rewards;};
+    const vector<prec_t>& get_weights() const{return weights;};
+    const vector<long>& get_runs() const{return runs;};
+    const vector<long>& get_steps() const{return steps;};
+
 protected:
 
-    vector<Sample<Sim>> samples;
+    vector<State> states_from;
+    vector<Action> actions;
+    vector<State> states_to;
+    vector<prec_t> rewards;
+    vector<prec_t> weights;
+    vector<long> runs;
+    vector<long> steps;
+
     vector<State> initial;
-
 };
 
-/// -----------------------------------------------------------------------------------------
+/**
+A helper function that constructs a samples object based on the simulator
+that is provided to it
+*/
+template<class Sim, class... U>
+Samples<typename Sim::State, typename Sim::Action> make_samples(U&&... u){
+    return Samples<typename Sim::State, typename Sim::Action>(forward<U>(u)...);
+}
 
+// **********************************************************************
+// ****** Discrete simulation specialization ******************
+// **********************************************************************
 
-/** Class used to define discrete samples */
-class DiscreteSimulator {
-public:
-    typedef long State;
-    typedef long Action;
-};
 
 /** Samples in which the states and actions are identified by integers. */
-using DiscreteSamples = Samples<DiscreteSimulator>;
+using DiscreteSamples = Samples<long,long>;
 /** Integral expectation sample */
-using DiscreteSample = Sample<DiscreteSimulator>;
-
+using DiscreteSample = Sample<long,long>;
 
 /**
 Turns arbitrary samples to discrete ones assuming that actions are
-*state independent*. That is the actions must have consistent names
+\b state \b independent. That is the actions must have consistent names
 across states. This assumption can cause problems
 when some samples are missing.
 
@@ -158,6 +232,7 @@ See SampleDiscretizerSD for a version in which action names are
 dependent on states.
 
 A new hash function can be defined as follows:
+\code
 namespace std{
     template<> struct hash<pair<int,int>>{
         size_t operator()(pair<int,int> const& s) const{
@@ -167,25 +242,27 @@ namespace std{
     }
 };
 
+\endcode
 
-\tparam Simulator definition for which samples to use
+\tparam State Type of state in the source samples
+\tparam Action Type of action in the source samples
 \tparam Shash Hash function for states
 \tparam Ahash Hash function for actions
 
 A hash function hash<type> for each sample type must exists.
 */
-template<   typename Sim,
-            typename SHash = std::hash<typename Sim::State>,
-            typename AHash = std::hash<typename Sim::Action>>
+template<   typename State,
+            typename Action,
+            typename SHash = std::hash<State>,
+            typename AHash = std::hash<Action>>
 class SampleDiscretizerSI{
 public:
-    using State = typename Sim::State;
 
     /** Constructs new internal discrete samples*/
     SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()){};
 
     /** Adds samples to the discrete samples */
-    void add_samples(const Samples<Sim>& samples){
+    void add_samples(const Samples<State,Action>& samples){
 
         // initial states
         for(const State& ins : samples.get_initial()){
@@ -193,7 +270,8 @@ public:
         }
 
         // samples
-        for(const auto& ds : samples.get_samples()){
+        for(auto si : indices(samples)){
+            const auto ds = samples.get_sample(si);
             discretesamples->add_sample(
                                      add_state(ds.state_from()),
                                      add_action(ds.action()),
@@ -219,7 +297,7 @@ public:
     }
 
     /** Returns a action index, and creates a new one if it does not exists */
-    long add_action(const typename Sim::Action& action){
+    long add_action(const Action& action){
         auto iter = action_map.find(action);
         long index;
         if(iter == action_map.end()){
@@ -238,15 +316,15 @@ public:
 protected:
     shared_ptr<DiscreteSamples> discretesamples;
 
-    unordered_map<typename Sim::Action,long,AHash> action_map;
-    unordered_map<typename Sim::State,long,SHash> state_map;
+    unordered_map<Action,long,AHash> action_map;
+    unordered_map<State,long,SHash> state_map;
 };
 
 /// -----------------------------------------------------------------------------------------
 
 /**
 Turns arbitrary samples to discrete ones (with continuous numbers assigned to states)
-assuming that actions are *state dependent*.
+assuming that actions are \b state \b dependent.
 
 The internally-held discrete samples can be accessed and modified
 from the outside. Also, adding more samples will modify the discrete
@@ -256,6 +334,7 @@ See SampleDiscretizerSI for a version in which action names are
 independent of states.
 
 A new hash function can be defined as follows:
+\code
 namespace std{
     template<> struct hash<pair<int,int>>{
         size_t operator()(pair<int,int> const& s) const{
@@ -264,28 +343,29 @@ namespace std{
         };
     }
 };
+\endcode
 
-\tparam Simulator definition for which samples to use
+\tparam State Type of state in the source samples
+\tparam Action Type of action in the source samples
 \tparam SAhash Hash function for pair<State, Action>
 \tparam Shash Hash function for decision states
 
 A hash function hash<type> for each sample type must exists.
 */
 template<
-    typename Sim,
-    typename SAHash = std::hash<pair<typename Sim::State,
-                                     typename Sim::Action>>,
-    typename SHash = std::hash<typename Sim::State> >
+    typename State,
+    typename Action,
+    typename SAHash = std::hash<pair<State,
+                                     Action>>,
+    typename SHash = std::hash<State> >
 class SampleDiscretizerSD{
 public:
-    using State = typename Sim::State;
-    using Action = typename Sim::Action;
 
     /** Constructs new internal discrete samples*/
     SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()){};
 
     /** Adds samples to the discrete samples */
-    void add_samples(const Samples<Sim>& samples){
+    void add_samples(const Samples<State,Action>& samples){
 
         // initial states
         for(const auto& ins : samples.get_initial()){
@@ -293,7 +373,10 @@ public:
         }
 
         // transition samples
-        for(const auto& es : samples.get_samples()){
+        for(auto si : indices(samples)){
+
+            const auto es = samples.get_sample(si);
+
             discretesamples->add_sample(add_state(es.state_from()),
                                         add_action(es.state_from(), es.action()),
                                         add_state(es.state_to()),
@@ -303,7 +386,7 @@ public:
     }
 
     /** Returns a state index, and creates a new one if it does not exists */
-    long add_state(const typename Sim::State& dstate){
+    long add_state(const State& dstate){
         auto iter = state_map.find(dstate);
         long index;
         if(iter == state_map.end()){
@@ -348,17 +431,36 @@ protected:
 /// -----------------------------------------------------------------------------------------
 
 /**
-Constructs MDP from integer samples. In integer samples, each
-decision state, expectation state, and action are identified
+Constructs an MDP from integer samples.
+
+Integer samples: Each decision state, expectation state, and action are identified
 by an integer.
 
-There is some extra memory penalty in this class since it stores
-the number of samples observed for each state and action.
 
-Important: There must be at least one observed sample for each state and action.
-Otherwise, the MDP solution will not be defined and the
-solver will throw an invalid_argument exception. This can happen when
-we have a sample for action 2 but no sample for action 0.
+\a Input: Sample set \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ \n
+\a Output: An MDP such that:
+    - States: \f$ \mathcal{S} = \bigcup_{i=0}^{m-1} \{ s_i \} \cup \bigcup_{i=0}^{m-1} \{ s_i' \} \f$
+    - Actions: \f$ \mathcal{A} = \bigcup_{i=0}^{m-1} \{ a_i \} \f$
+    - Transition probabilities:
+        \f[ P(s,a,s') = \frac{\sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i, s' = s_i' \} }
+            { \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i \} } \f]
+    - Rewards:
+        \f[ r(s,a,s') = \frac{\sum_{i=0}^{m-1} r_i w_i 1\{ s = s_i, a = a_i, s' = s_i' \} }
+            { \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i, s' = s_i' \} } \f]
+
+
+The class also tracks cumulative weights of state-action samples \f$ z \f$:
+\f[ z(s,a) = \sum_{i=0}^{m-1} w_i 1\{ s = s_i, a = a_i \}  \f]
+If \f$ z(s,a) = 0 \f$ then the action \f$ a \f$ is marked as invalid.
+There is some extra memory penalty due to storing these weights.
+
+\a Important: Actions that are not sampled (no samples per that state
+and action pair) are labeled as invalid and are not included in the computation
+of value function or the solution.
+
+When sample sets are added by multiple calls of SampledMDP::add_samples, the results is the
+same as if all the individual sample sets were combined and added together. See SampledMDP::add_samples
+for more details.
 */
 class SampledMDP{
 public:
@@ -370,20 +472,67 @@ public:
     Constructs or adds states and actions based on the
     provided samples.
 
-    At this point, the method can be called only once, but
-    in the future it should be possible to call it multiple times
-    to add more samples.
+    Sample sets can be added iteratively. Assume that the current
+    transition probabilities are constructed based on a sample set
+    \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ and add_samples
+    is called with sample set \f$ \Sigma' = (s_j, a_j, s_j', r_j, w_j)_{i=m}^{n-1} \f$.
+    The result is the same as if simultaneously adding samples \f$ 0 \ldots (n-1) \f$.
 
-    \param samples Source of the samples
+    New MDP values are updates as follows:
+        - Cumulative state-action weights \f$ z'\f$:
+            \f[ z'(s,a) =  z(s,a) + \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j \} \f]
+        - Transition probabilities \f$ P \f$:
+            \f{align*}{ 
+            P'(s,a,s') &= \frac{z(s,a) * P(s,a,s') +
+                        \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
+                            { z'(s,a) } = \\
+                &= \frac{P(s,a,s') +
+                (1 / z(s,a)) \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
+                { z'(s,a) / z(s,a)  } 
+
+            \f}
+            The denominator is computed implicitly by normalizing transition probabilities.
+        - Rewards \f$ r' \f$:
+            \f{align*} 
+            r'(s,a,s') 
+                &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
+                       \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')} \\
+            r'(s,a,s') 
+                &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
+                       \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')} \\
+                &= \frac{r(s,a,s') P(s,a,s') +
+                     \sum_{j=m}^{n-1}r_j (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {z'(s,a)P'(s,a,s')/ z(s,a)} \\
+                &= \frac{r(s,a,s') P(s,a,s') +
+                    \sum_{j=m}^{n-1} r_j (w_j/z(s,a) 1\{ s = s_j, a = a_j, s' = s_j' \}}
+                       {P(s,a,s') + \sum_{j=m}^{n-1} (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}} 
+            \f}
+            The last line follows from the definition of \f$ P(s,a,s') \f$.
+            This corresponds to the operation of Transition::add_sample 
+            repeatedly for \f$ j = m \ldots (n-1) \f$ with
+            \f{align*} 
+            p &= (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}\\
+            r &= r_j \f}.
+
+    \param samples New sample set to add to transition probabilities and
+                    rewards
     */
     void add_samples(const DiscreteSamples& samples);
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
 
-    /** Initial distribution */
+    /** \returns A modifiable pointer to the internal MDP.
+    Take care when changing. */
+    shared_ptr<MDP> get_mdp_mod() {return mdp;}
+
+    /** \returns Initial distribution based on empirical sample data */
     Transition get_initial() const {return initial;}
 
+    /** Returns state-action cumulative weights \f$ z \f$. See class description for details. */
+    vector<vector<prec_t>> get_state_action_weights(){return state_action_weights;}
 protected:
 
     /** Internal MDP representation */
@@ -393,8 +542,63 @@ protected:
     Transition initial;
 
     /** Sample counts */
-    vector<vector<size_t>> state_action_counts;
+    vector<vector<prec_t>> state_action_weights;
 };
+
+/// -----------------------------------------------------------------------------------------
+
+
+ /**
+Constructs a robust MDP from integer samples.
+
+In integer samples each decision state, expectation state,
+and action are identified by an integer.
+
+There is some extra memory penalty in this class over a plain MDP since it stores
+the number of samples observed for each state and action.
+
+Important: Actions that are not sampled (no samples per that state
+and action pair) are labeled as invalid and are not included in the computation
+of value function or the solution.
+
+*/
+//template<typename Model>
+//class SampledRMDP{
+//public:
+//
+//    /** Constructs an empty MDP from discrete samples */
+//    SampledRMDP();
+//
+//    /**
+//    Constructs or adds states and actions based on the provided samples. Transition
+//    probabilities of the existing samples are normalized.
+//
+//    \param samples Source of the samples
+//    */
+//    void add_samples(const DiscreteSamples& samples);
+//
+//    /** \returns A constant pointer to the internal MDP */
+//    shared_ptr<const Model> get_rmdp() const {return const_pointer_cast<const Model>(mdp);}
+//
+//    /** \returns A modifiable pointer to the internal MDP.
+//    Take care when changing. */
+//    shared_ptr<Model> get_rmdp_mod() {return mdp;}
+//
+//    /** Initial distribution */
+//    Transition get_initial() const {return initial;}
+//
+//protected:
+//
+//    /** Internal MDP representation */
+//    shared_ptr<Model> mdp;
+//
+//    /** Initial distribution */
+//    Transition initial;
+//
+//    /** Sample counts */
+//    vector<vector<size_t>> state_action_counts;
+//};
+
 
 } // end namespace msen
 } // end namespace craam

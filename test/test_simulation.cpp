@@ -1,3 +1,6 @@
+#include "Simulation.hpp"
+#include "modeltools.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <random>
@@ -7,7 +10,6 @@
 #include <boost/functional/hash.hpp>
 #include "cpp11-range-master/range.hpp"
 
-#include "Simulation.hpp"
 
 using namespace std;
 using namespace craam;
@@ -41,7 +43,6 @@ struct TestState{
     };
 };
 
-
 class TestSim {
 
 public:
@@ -61,9 +62,9 @@ public:
         return false;
     };
 
-    vector<int> actions(TestState) const{
-        return vector<int>{1};
-    };
+    long action_count(TestState) const{return 1;}
+
+    int action(TestState, long) const{return 1;}
 
 };
 
@@ -74,8 +75,8 @@ int test_policy(TestState){
 BOOST_AUTO_TEST_CASE(basic_simulation) {
     TestSim sim;
 
-    auto samples = simulate_stateless<TestSim>(sim, test_policy, 10,5);
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), 50);
+    auto samples = simulate<TestSim>(sim,test_policy,10,5);
+    BOOST_CHECK_EQUAL(samples.size(), 50);
 }
 
 
@@ -120,13 +121,11 @@ public:
         return false;
     }
 
-    vector<int> actions(int) const{
-        return actions_list;
+    int action(State state, long index) const{
+        return actions_list[index];
     }
 
-    vector<int> actions() const{
-        return actions_list;
-    }
+    size_t action_count(State) const{return actions_list.size();};
 };
 
 
@@ -152,83 +151,71 @@ namespace std{
     };
 }
 
-
-
-BOOST_AUTO_TEST_CASE(simulation_multiple_counter_sd ) {
-    Counter sim(0.9,0,1);
-
-    RandomPolicySD<Counter> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
-
-    samples = simulate_stateless(sim,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
-
-    Counter sim2(0.9,3,1);
-    samples = simulate_stateless(sim2,random_pol,1,20);
-    BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
-}
-
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
 
-    RandomPolicySI<Counter> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
+    RandomPolicy<Counter> random_pol(sim,1);
+    auto samples = simulate(sim,random_pol,20,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), -3.51759102217019, 0.0001);
 
-    samples = simulate_stateless(sim,random_pol,1,20);
+    samples = simulate(sim,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 0, 0.0001);
 
     Counter sim2(0.9,3,1);
-    samples = simulate_stateless(sim2,random_pol,1,20);
+    samples = simulate(sim2,random_pol,1,20);
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
 }
 
-BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_sd_pol){
+BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
+    // check that the reward is constructed correctly from samples
+    DiscreteSamples samples;
 
-    CounterTerminal sim(0.9,0,10,1);
-
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
-    auto samples = simulate_stateless(sim,random_pol,20,20);
-
-    SampleDiscretizerSD<CounterTerminal> sd;
-    sd.add_samples(samples);
-
-    BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    // relevant samples (transition to 1)
+    samples.add_sample(0,0,1,1.0,3.0,0,0);
+    samples.add_sample(0,0,1,2.0,2.0,0,0);
+    samples.add_sample(0,0,1,3.0,1.0,0,0);
+    // irrelevant samples (do not transition to 1)
+    samples.add_sample(0,0,2,0.0,1.0,0,0);
+    samples.add_sample(0,0,3,0.0,1.0,0,0);
+    samples.add_sample(0,0,0,0.0,1.0,0,0);
 
     SampledMDP smdp;
-    smdp.add_samples(*sd.get_discrete());
 
-    shared_ptr<const MDP> mdp = smdp.get_mdp();
+    smdp.add_samples(samples);
+    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
 
-    // check that the number of actions is correct (2)
-    for(auto i : range((size_t)0, mdp->state_count())){
-        if(mdp->get_state(i).action_count() > 0)
-            BOOST_CHECK_LE(mdp->get_state(i).action_count(), 2);
-    }
+    // check that the reward is constructed correctly from samples
+    DiscreteSamples samples2;
 
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
+    // relevant samples (transition to 1)
+    samples2.add_sample(0,0,1,2.0,9.0,0,0);
+    samples2.add_sample(0,0,1,4.0,6.0,0,0);
+    samples2.add_sample(0,0,1,6.0,3.0,0,0);
+    // irrelevant samples (do not transition to 1)
+    samples2.add_sample(0,0,2,0.0,1.0,0,0);
+    samples2.add_sample(0,0,3,0.0,1.0,0,0);
+    samples2.add_sample(0,0,0,0.0,1.0,0,0);
 
-    BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 47.6799, 1e-3);
+    smdp.add_samples(samples2);
+    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
 }
-
 
 BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
 
     CounterTerminal sim(0.9,0,10,1);
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+    RandomPolicy<CounterTerminal> random_pol(sim,1);
 
-    Samples<CounterTerminal> samples;
-    simulate_stateless(sim,samples,random_pol,50,50);
-    simulate_stateless(sim,samples,[](int){return 1;},10,20);
-    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+    auto samples = make_samples<CounterTerminal>();
+    simulate(sim,samples,random_pol,50,50);
+    simulate(sim,samples,[](int){return 1;},10,20);
+    simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSI<CounterTerminal> sd;
+    SampleDiscretizerSD<typename CounterTerminal::State,
+                        typename CounterTerminal::Action> sd;
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
 
 
     SampledMDP smdp;
@@ -245,4 +232,80 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
+}
+
+
+template<class Model>
+Model create_test_mdp_sim(){
+    Model rmdp(3);
+
+    // nonrobust
+    // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
+    add_transition<Model>(rmdp,0,1,1,1.0,0.0);
+    add_transition<Model>(rmdp,1,1,2,1.0,0.0);
+    add_transition<Model>(rmdp,2,1,2,1.0,1.1);
+
+    add_transition<Model>(rmdp,0,0,0,1.0,0.0);
+    add_transition<Model>(rmdp,1,0,0,1.0,1.0);
+    add_transition<Model>(rmdp,2,0,1,1.0,1.0);
+
+    add_transition<Model>(rmdp,1,2,1,0.5,0.5);
+
+    return rmdp;
+}
+
+BOOST_AUTO_TEST_CASE(simulate_mdp){
+
+    shared_ptr<MDP> m = make_shared<MDP>();
+    *m = create_test_mdp_sim<MDP>();
+
+    Transition initial({0},{1.0});
+
+    ModelSimulator ms(m, initial,13);
+    ModelRandomPolicy rp(ms,10);
+
+    auto samples = simulate(ms, rp, 1000, 5, -1, 0.0, 10);
+
+    BOOST_CHECK_EQUAL(samples.size(), 49);
+    //cout << "Number of samples " << samples.size() << endl;
+
+    SampledMDP smdp;
+
+    smdp.add_samples(samples);
+
+    auto newmdp = smdp.get_mdp();
+
+    auto solution1 = m->mpi_jac(Uncertainty::Robust, 0.9);
+    auto solution2 = newmdp->mpi_jac(Uncertainty::Robust, 0.9);
+
+    BOOST_CHECK_CLOSE(solution1.total_return(initial),8.90971,1e-3);
+    //cout << "Return in original MDP " << solution1.total_return(initial) << endl;
+
+    BOOST_CHECK_CLOSE(solution2.total_return(initial),8.90971,1e-3);
+    //cout << "Return in sampled MDP " << solution2.total_return(initial) << endl;
+
+    // need to remove the terminal state from the samples
+    indvec policy = solution2.policy;
+    policy.pop_back();
+
+    //cout << "Computed policy " << policy << endl;
+    indvec policytarget{1,1,1};
+    BOOST_CHECK_EQUAL_COLLECTIONS(policy.begin(), policy.end(), policytarget.begin(), policytarget.end());
+    auto solution3 = m->vi_jac_fix(0.9, policy, indvec(m->size(),0));
+
+    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-3);
+    //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
+
+    ModelDeterministicPolicy dp(ms, policy);
+    auto samples_policy = simulate(ms, dp, 1000, 5);
+
+    BOOST_CHECK_CLOSE(samples_policy.mean_return(0.9), 8.91, 1e-3);
+    //cout << "Return of sampled " << samples_policy.mean_return(0.9) << endl;
+
+    ModelRandomizedPolicy rizedp(ms, {{0.5,0.5},{0.5,0.4,0.1},{0.5,0.5}},0);
+
+    auto randomized_samples = simulate(ms, rizedp, 1000, 5, -1, 0.0, 10);
+
+    BOOST_CHECK_CLOSE(randomized_samples.mean_return(0.9), 4.01147, 1e-3);
+    //cout << "Return of randomized samples " << randomized_samples.mean_return(0.9) << endl;
 }

@@ -115,19 +115,32 @@ string GRMDP<SType>::to_string() const {
 
     for(size_t si : indices(states)){
         const auto& s = get_state(si);
-        result.append(std::to_string(si));
-        result.append(" : ");
-        result.append(std::to_string(s.action_count()));
-        result.append("\n");
+        result += (std::to_string(si));
+        result += (" : ");
+        result += (std::to_string(s.action_count()));
+        result += ("\n");
         for(size_t ai : indices(s)){
-            result.append("    ");
-            result.append(std::to_string(ai));
-            result.append(" : ");
+            result += ("    ");
+            result += (std::to_string(ai));
+            result += (" : ");
             const auto& a = s.get_action(ai);
             a.to_string(result);
-            result.append("\n");
+            result += ("\n");
         }
     }
+    return result;
+}
+
+template<class SType>
+string GRMDP<SType>::to_json() const {
+    string result{"{\"states\" : ["};
+    for(auto si : indices(states)){
+        const auto& s = states[si];
+        result += s.to_json(si);
+        result += ",";
+    }
+    if(!states.empty()) result.pop_back(); // remove last comma
+    result += "]}";
     return result;
 }
 
@@ -406,6 +419,8 @@ auto GRMDP<SType>::vi_jac_fix(prec_t discount,
     return SolType(*targetvalue,policy,natpolicy,residual,j);
 }
 
+
+
 template<class SType>
 numvec GRMDP<SType>::ofreq_mat(const Transition& init, prec_t discount,
                        const ActionPolicy& policy, const OutcomePolicy& nature) const{
@@ -503,5 +518,8 @@ template class GRMDP<RegularState>;
 template class GRMDP<DiscreteRobustState>;
 template class GRMDP<L1RobustState>;
 
+
+template class GSolution<long, long>;
+template class GSolution<long, numvec>;
 
 }

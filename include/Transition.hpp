@@ -1,8 +1,9 @@
 #pragma once
 
-#include<vector>
-
 #include "definitions.hpp"
+
+#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -60,8 +61,25 @@ public:
     /**
     Adds a single transitions probability to the existing probabilities.
 
-    If the transition to the desired state already exists, then the transition
+    If the transition to a state does not exist, then it is simply added to the
+    list. If the transition to the desired state already exists, then the transition
     probability is added and the reward is updated as a weighted combination.
+    Let \f$ p(s) \f$ and \f$ r(s) \f$ be the current transition probability
+    and reward respectively. The updated transition probability and reward are:
+        - Probability:
+            \f[ p'(s) = p(s) + p \f]
+        - Reward:
+            \f[ r'(s) = \frac{p(s) \, r(s) + p \, r}{p'(s)} \f]
+    Here, \f$ p \f$ is the argument probability and \f$ r \f$ is the argument 
+    reward.
+
+    When the function is called multiple times with \f$ p_1 \ldots p_n \f$ and 
+    \f$  r_1 \ldots r_n \f$ for a single \f$ s \f$ then:
+        - Probability:
+            \f[ p'(s) = \sum_{i=1}^{n} p_i \f]
+        - Reward:
+            \f[ r'(s) = \frac{  \sum_{i=1}^{n} p_i \, r_i}{p'(s)} \f]
+
 
     Transition probabilities are not checked to sum to one.
 
@@ -72,11 +90,14 @@ public:
     void add_sample(long stateid, prec_t probability, prec_t reward);
 
     prec_t sum_probabilities() const;
+
     /**
-    Normalizes the probabilities to sum to 1. Exception is thrown if the
+    Normalizes the transition probabilities to sum to 1. Exception is thrown if the
     distribution sums to 0.
     */
     void normalize();
+
+    /** \returns Whether the transition probabilities sum to 1. */
     bool is_normalized() const;
 
     /**
@@ -129,12 +150,21 @@ public:
     */
     void probabilities_addto(prec_t scale, Transition& transition) const;
 
+    /** State indices for each possible transition */
     const indvec& get_indices() const {return indices;};
+    /** Probabilities of possible transitions */
     const numvec& get_probabilities() const {return probabilities;};
+    /** Rewards associated with transitions */
     const numvec& get_rewards() const {return rewards;};
 
+    /** Sets the reward for a transition to a particular state */
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
+    /** Gets the reward for a transition to a particular state */
     prec_t get_reward(long sampleid) const {return rewards[sampleid];};
+
+    /** Returns a json representation of transition probabilities
+    \param outcomeid Includes also outcome id*/
+    string to_json(long outcomeid = -1) const;
 
 protected:
 

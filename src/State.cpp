@@ -1,7 +1,12 @@
+#include "State.hpp"
+
 #include <limits>
 #include <string>
 
-#include "State.hpp"
+#include "cpp11-range-master/range.hpp"
+
+using namespace util::lang;
+
 
 namespace craam {
 
@@ -22,6 +27,10 @@ auto SAState<AType>::max_max(numvec const& valuefunction, prec_t discount) const
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
+
+        // skip invalid actions
+        if(!action.is_valid()) continue;
+
         auto value = action.maximal(valuefunction, discount);
         if(value.second > maxvalue){
             maxvalue = value.second;
@@ -45,6 +54,10 @@ auto SAState<AType>::max_min(numvec const& valuefunction, prec_t discount) const
 
     for(size_t i = 0; i < actions.size(); i++){
         const auto& action = actions[i];
+
+        // skip invalid actions
+        if(!action.is_valid()) continue;
+
         auto value = action.minimal(valuefunction, discount);
         if(value.second > maxvalue){
             maxvalue = value.second;
@@ -67,6 +80,10 @@ auto SAState<AType>::max_average(numvec const& valuefunction, prec_t discount) c
 
     for(size_t i = 0; i < actions.size(); i++){
         auto const& action = actions[i];
+
+        // skip invalid actions
+        if(!action.is_valid()) continue;
+
         auto value = action.average(valuefunction, discount);
 
         if(value > maxvalue){
@@ -88,7 +105,12 @@ prec_t SAState<AType>::fixed_average(numvec const& valuefunction, prec_t discoun
     if(actionid < 0 || actionid >= (long) actions.size())
         throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
 
-    return actions[actionid].average(valuefunction, discount);
+    const auto& action = actions[actionid];
+
+    // cannot assume invalid actions
+    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+
+    return action.average(valuefunction, discount);
 }
 
 template<class AType>
@@ -102,7 +124,11 @@ prec_t SAState<AType>::fixed_fixed(numvec const& valuefunction, prec_t discount,
     if(actionid < 0 || actionid >= (long) actions.size())
             throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
 
-    return actions[actionid].fixed(valuefunction, discount, outcomeid);
+    const auto& action = actions[actionid];
+    // cannot assume invalid actions
+    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+
+    return action.fixed(valuefunction, discount, outcomeid);
 }
 
 template<class AType>
@@ -129,6 +155,21 @@ bool SAState<AType>::is_action_outcome_correct(ActionId aid, OutcomeId oid) cons
     return actions[aid].is_outcome_correct(oid);
 }
 
+template<class AType>
+string SAState<AType>::to_json(long stateid) const{
+    string result{"{"};
+    result += "\"stateid\" : ";
+    result += std::to_string(stateid);
+    result += ",\"actions\" : [";
+    for(auto ai : indices(actions)){
+        const auto& a = actions[ai];
+        result += a.to_json(ai);
+        result += ",";
+    }
+    if(!actions.empty()) result.pop_back(); // remove last comma
+    result += ("]}");
+    return result;
+}
 
 /// **********************************************************************
 /// *********************    TEMPLATE DECLARATIONS    ********************

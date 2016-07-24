@@ -14,9 +14,9 @@ namespace craam {
 Introduction
 ------------
 
-A simple and easy to use C++ library to solve Markov decision processes and *robust* Markov decision processes.
+Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods. 
 
-The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. The library assumes *maximization* over actions. The states and actions must be finite.
+The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. Some basic stochazstic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
 
 The robust model extends the regular MDPs [Iyengar2005]. The library allows to model uncertainty in *both* the transitions and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to [Filar1997].
 
@@ -26,58 +26,64 @@ In summary, the MDP problem being solved is:
 
 Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes.
 
-The included algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution (see methods of RMDP that end with _l1).
+Available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
 
 Installation and Build Instruction
 ----------------------------------
 
-See the github/bitbucket README file
+See the README.rst
 
 Getting Started
 ---------------
 
-The main interface to the library is through the class RMDP. The class supports simple construction of an MDP and several methods for solving them.
+The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The avialable specializations are:
+
+- craam::MDP : plain MDP with no definition of uncertainty
+- craam::RMDP_D : a robust/uncertain with discrete outcomes with the best/worst one chosen
+- craam::RMDP_L1 : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
+
 
 States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
 
-Transitions are added through functions RMDP::add_transition and RMDP::add_transition_d. The object is automatically resized according to the new transitions added. The actual algorithms are solved using:
+Transitions are added through function add_transition. New states, actions, or outcomes are automatically added based on the new transition. The actual algorithms are solved using:
 
 | Method                  |  Algorithm     |
 | ----------------------- | ----------------
-| RMDP::vi_gs_*           |  Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action. |
-| RMDP::vi_jac_*          |  Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. |
-| RMDP::vi_gs_l1_*        |  The same as vi_gs except the worst case is bounded with respect to an L1 norm. |
-| RMDP::vi_jac_l1_*       |    The same as vi_jac except the worst case is bounded with respect to an L1 norm. |
+| GRMDP::vi_gs            | Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
+| GRMDP::vi_jac           | Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
+| GRMDP::mpi_jac          | Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
+| GRMDP::vi_jac_fix       | Jacobi value iteration for policy evaluation; parallelized with OpenMP. Computes the worst-case outcome for each action.
 
-The star in the above can be one of {rob, opt, ave} which represents the actions of nature. The values represent respective the worst case (robust), the best case (optimistic), and average.
+
+For uncertain MDPs, each method supports average, robust, and optimistic computation modes.
 
 The following is a simple example of formulating and solving a small MDP.
 
 \code
+
+    #include "RMDP.hpp"
+    #include "modeltools.hpp"
+
     #include <iostream>
     #include <vector>
-    #include "RMDP.h"
 
-    use namespace craam;
+    using namespace craam;
 
     int main(){
-        RMDP rmdp(3);
+        MDP mdp(3);
 
         // transitions for action 0
-        rmdp.add_transition_d(0,0,0,1,0);
-        rmdp.add_transition_d(1,0,0,1,1);
-        rmdp.add_transition_d(2,0,1,1,1);
+        add_transition(mdp,0,0,0,1,0);
+        add_transition(mdp,1,0,0,1,1);
+        add_transition(mdp,2,0,1,1,1);
 
         // transitions for action 1
-        rmdp.add_transition_d(0,1,1,1,0);
-        rmdp.add_transition_d(1,1,2,1,0);
-        rmdp.add_transition_d(2,1,2,1,1.1);
-
-        // prec_t is the numeric precision type used throughout the library (double)
-        vector<prec_t> initial{0,0,0};
+        add_transition(mdp,0,1,1,1,0);
+        add_transition(mdp,1,1,2,1,0);
+        add_transition(mdp,2,1,2,1,1.1);
 
         // solve using Jacobi value iteration
-        auto&& re = rmdp.vi_jac_rob(initial,0.9,20,0);
+        auto&& re = mdp.mpi_jac(Uncertainty::Average,0.9);
 
         for(auto v : re.valuefunction){
             cout << v << " ";
@@ -93,6 +99,18 @@ To compile the file, run:
 \code{.sh}
      $ g++ -std=c++11 -I<path_to_RAAM.h> -L . -lcraam simple.cpp
 \endcode
+
+Common Use Cases
+----------------
+
+1. Formulate an uncertain MDP
+2. Compute a solution to an uncertain MDP
+3. Compute value of a fixed policy
+4. Compute an occupancy frequency
+5. Simulate transitions of an MDP
+6. Construct MDP from samples
+7. Simulate a general domain
+
 
 General Assumptions
 -------------------

@@ -3,10 +3,8 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include <vector>
 #include <numeric>
 #include <cmath>
-#include <assert.h>
 
 #include "cpp11-range-master/range.hpp"
 
@@ -60,7 +58,8 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
         probabilities.push_back(probability);
         rewards.push_back(reward);
     }
-    else{ // the index is already in the transitions, or belongs in the middle
+    // the index is already in the transitions, or belongs in the middle
+    else{
 
         size_t findex;  // lower bound on the index of the element
         bool present;   // whether the index was found
@@ -77,14 +76,18 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
             present = (*fiter == stateid);
         }
 
-        if(present){    // there is a transition to this element already
+        // there is a transition to this element already
+        if(present){
             auto p_old = probabilities[findex];
-            auto r_old = rewards[findex];
-            auto new_reward = (p_old * r_old + probability * reward) / (p_old + probability);
-
             probabilities[findex] += probability;
+
+            auto r_old = rewards[findex];
+            auto new_reward = (p_old * r_old + probability * reward) / 
+                                (probabilities[findex]);
+
             rewards[findex] = new_reward;
-        }else{          // the transition is not there, the element needs to be inserted
+        // the transition is not there, the element needs to be inserted
+        }else{
             indices.insert(indices.begin()+findex,stateid);
             probabilities.insert(probabilities.begin()+findex,probability);
             rewards.insert(rewards.begin()+findex,reward);
@@ -162,6 +165,32 @@ void Transition::probabilities_addto(prec_t scale, Transition& transition) const
 
     for(size_t i : util::lang::indices(*this))
         transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
+}
+
+string Transition::to_json(long outcomeid) const{
+    string result{"{"};
+    result += "\"outcomeid\" : ";
+    result += std::to_string(outcomeid);
+    result += ",\"stateids\" : [";
+    for(auto i : indices){
+        result += std::to_string(i);
+        result += ",";
+    }
+    if(!indices.empty()) result.pop_back();// remove last comma
+    result += "],\"probabilities\" : [";
+    for(auto p : probabilities){
+        result += std::to_string(p);
+        result += ",";
+    }
+    if(!probabilities.empty()) result.pop_back();// remove last comma
+    result += "],\"rewards\" : [" ;
+    for(auto r : rewards){
+        result += std::to_string(r);
+        result += ",";
+    }
+    if(!rewards.empty()) result.pop_back();// remove last comma
+    result += "]}";
+    return result;
 }
 
 }

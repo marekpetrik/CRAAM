@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Action.hpp"
+
 #include <utility>
 #include <tuple>
 #include <vector>
 #include <stdexcept>
 
-#include "Action.hpp"
 
 using namespace std;
 
@@ -50,7 +51,7 @@ public:
     AType& create_action() {return create_action(actions.size());};
 
     /** Returns an existing action */
-    const AType& get_action(long actionid) const 
+    const AType& get_action(long actionid) const
                 {assert(actionid >= 0 && size_t(actionid) < action_count());
                  return actions[actionid];};
 
@@ -58,7 +59,7 @@ public:
     const AType& operator[](long actionid) const {return get_action(actionid);}
 
     /** Returns an existing action */
-    AType& get_action(long actionid) 
+    AType& get_action(long actionid)
                 {assert(actionid >= 0 && size_t(actionid) < action_count());
                  return actions[actionid];};
 
@@ -86,8 +87,6 @@ public:
     Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
         return move(get_action(actionid).mean_transition(outcomeid));
     }
-
-
 
     /**
     Finds the maximal optimistic action.
@@ -127,6 +126,9 @@ public:
     prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
                        ActionId actionid, OutcomeId outcomeid) const;
 
+    /** Returns json representation of the state
+    \param stateid Includes also state id*/
+    string to_json(long stateid = -1) const;
 
 };
 

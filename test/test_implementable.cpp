@@ -3,6 +3,7 @@
 #include "Transition.hpp"
 #include "Simulation.hpp"
 #include "Samples.hpp"
+#include "modeltools.hpp"
 
 #include "cpp11-range-master/range.hpp"
 #include <boost/functional/hash.hpp>
@@ -99,7 +100,7 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-    set_thresholds(rmdp, 2.0);
+    set_outcome_thresholds(rmdp, 2.0);
     auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
@@ -134,7 +135,7 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     // Copy to change threshold
     auto rmdp = imr.get_robust_mdp();
 
-    set_thresholds(rmdp, 2.0);
+    set_outcome_thresholds(rmdp, 2.0);
     BOOST_TEST_CHECKPOINT("Checking MDP properties.");
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 2);
@@ -292,23 +293,24 @@ public:
         return initstate;
     }
 
-    pair<double,int> transition(int pos, int act) {
+    pair<double,int> transition(State pos, Action act) {
 
         int nextpos = d(gen) ? pos + act : pos;
         return make_pair((double) pos, nextpos);
     }
 
-    bool end_condition(const int state){
+    bool end_condition(const State& state){
         return false;
     }
 
-    vector<int> actions(int) const{
-        return actions_list;
+    size_t action_count(State) const{
+        return actions_list.size();
     }
 
-    vector<int> actions() const{
-        return actions_list;
+    Action action(State,long index) const{
+        return actions_list[index];
     }
+
 };
 
 /** A counter that terminates at either end as defined by the end state */
@@ -347,14 +349,15 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
 
     CounterTerminal sim(0.9,0,terminal_state,1);
-    RandomPolicySI<CounterTerminal> random_pol(sim,1);
+    RandomPolicy<CounterTerminal> random_pol(sim,1);
 
-    Samples<CounterTerminal> samples;
-    simulate_stateless(sim,samples,random_pol,50,50);
-    simulate_stateless(sim,samples,[](int){return 1;},10,20);
-    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+    auto samples = make_samples<CounterTerminal>();
+    simulate(sim,samples,random_pol,50,50);
+    simulate(sim,samples,[](int){return 1;},10,20);
+    simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSI<CounterTerminal> sd;
+    SampleDiscretizerSI<typename CounterTerminal::State, 
+                        typename CounterTerminal::Action> sd;
     // initialize action values
     sd.add_action(-1); sd.add_action(+1);
     //initialize state values
@@ -363,7 +366,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     sd.add_samples(samples);
 
     BOOST_CHECK_EQUAL(samples.get_initial().size(), sd.get_discrete()->get_initial().size());
-    BOOST_CHECK_EQUAL(samples.get_samples().size(), sd.get_discrete()->get_samples().size());
+    BOOST_CHECK_EQUAL(samples.size(), sd.get_discrete()->size());
 
     SampledMDP smdp;
     smdp.add_samples(*sd.get_discrete());

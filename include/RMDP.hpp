@@ -1,5 +1,6 @@
 #pragma once
-#include "definitions.hpp"
+
+#include "State.hpp"
 
 #include <vector>
 #include <istream>
@@ -8,32 +9,31 @@
 #include <tuple>
 #include <cassert>
 
-#include "State.hpp"
 #include <boost/numeric/ublas/matrix.hpp>
-#include "cpp11-range-master/range.hpp"
 
-
+/// Main namespace which includes modeling a solving functionality
 namespace craam {
 
 using namespace std;
 using namespace boost::numeric;
-using namespace util::lang;
 
 /**
- Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
- worst-case behavior of nature, optimistic corresponds the best case, and average
- represents a weighted mean of the returns.
- */
+Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
+worst-case behavior of nature, optimistic corresponds the best case, and average
+represents a weighted mean of the returns.
+*/
 enum class Uncertainty {
+    /// Treat uncertainty as a worst case
     Robust = 0,
+    /// Treat uncertainty as a best case
     Optimistic = 1,
+    /// Average over uncertain outcomes (type of average depends on the type)
     Average = 2
 };
 
-
-/// **************************************************************************************
-///  Generic MDP Class
-/// **************************************************************************************
+// **************************************************************************************
+//  Generic MDP Class
+// **************************************************************************************
 
 /** A solution to a robust MDP.  */
 template<typename ActionId, typename OutcomeId>
@@ -57,6 +57,9 @@ public:
     /**
     Computes the total return of the solution given the initial
     distribution.
+
+    Computes it based on the value function.
+
     \param initial The initial distribution
      */
     prec_t total_return(const Transition& initial) const{
@@ -78,6 +81,8 @@ Some general assumptions (may depend on the state and action classes):
     - Action with no outcomes: Terminates with an error for uncertain models, but
                                assumes 0 return for regular models.
     - Outcome with no target states: Terminates with an error
+    - Invalid actions are ignored
+    - Behavior for a state with all invalid actions is not defined
 
 \tparam SType Type of state, determines s-rectangularity or s,a-rectangularity and
         also the type of the outcome and action constraints
@@ -95,9 +100,9 @@ public:
     /** Action identifier in a policy. Copies type from state type. */
     typedef typename SType::OutcomeId OutcomeId;
 
-    /** Which action to take in which state. Decision-maker's policy */
+    /** Decision-maker's policy: Which action to take in which state.  */
     typedef vector<ActionId> ActionPolicy;
-    /** Which outcome to take in which state. Nature's policy */
+    /** Nature's policy: Which outcome to take in which state.  */
     typedef vector<OutcomeId> OutcomePolicy;
     /** Solution type */
     typedef GSolution<typename SType::ActionId, typename SType::OutcomeId>
@@ -106,7 +111,9 @@ public:
     /**
     Constructs the RMDP with a pre-allocated number of states. All
     states are initially terminal.
-    \param state_count The number of states.
+    \param state_count The initial number of states, which dynamically
+                        increases as more transitions are added. All initial
+                        states are terminal.
     */
     GRMDP(long state_count) : states(state_count){};
 
@@ -128,6 +135,7 @@ public:
 
     /** Number of states */
     size_t state_count() const {return states.size();};
+
     /** Number of states */
     size_t size() const {return state_count();};
 
@@ -137,7 +145,8 @@ public:
 
     /** Retrieves an existing state */
     const SType& operator[](long stateid) const {return get_state(stateid);};
-    
+
+
     /** Retrieves an existing state */
     SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
                                     return states[stateid];};
@@ -186,9 +195,9 @@ public:
     long is_policy_correct(const ActionPolicy& policy,
                            const OutcomePolicy& natpolicy) const;
 
-    /// ----------------------------------------------
-    /// Solution methods
-    /// ----------------------------------------------
+    // ----------------------------------------------
+    // Solution methods
+    // ----------------------------------------------
 
     /**
     Gauss-Seidel value iteration variant (not parallelized).
@@ -268,7 +277,8 @@ public:
                         unsigned long iterations=MAXITER,
                         prec_t maxresidual=SOLPREC) const;
 
-    /**
+    // TODO: a function like this could be useful
+    /*
     Value function evaluation using Jacobi iteration for a fixed policy
     and uncertainty realization type.
     \param uncert Type of realization of the uncertainty
@@ -280,12 +290,12 @@ public:
             the residual drops below this threshold.
     \return Computed (approximate) solution (value function)
      */
-    SolType vi_jac_fix(Uncertainty uncert,
-                       prec_t discount,
-                       const ActionPolicy& policy,
-                       const numvec& valuefunction=numvec(0),
-                       unsigned long iterations=MAXITER,
-                       prec_t maxresidual=SOLPREC) const;
+    //SolType vi_jac_fix(Uncertainty uncert,
+    //                   prec_t discount,
+    //                   const ActionPolicy& policy,
+    //                   const numvec& valuefunction=numvec(0),
+    //                   unsigned long iterations=MAXITER,
+    //                   prec_t maxresidual=SOLPREC) const;
 
     /**
     Constructs the transition matrix for the policy.
@@ -305,9 +315,9 @@ public:
         transition_mat_t(const ActionPolicy& policy,
                          const OutcomePolicy& nature) const;
 
-    /// ----------------------------------------------
-    /// Reading and writing files
-    /// ----------------------------------------------
+    // ----------------------------------------------
+    // Reading and writing files
+    // ----------------------------------------------
 
     /**
     Saves the model to a stream as a simple csv file. States, actions, and outcomes
@@ -337,15 +347,21 @@ public:
 
     // string representation
     /**
-    Returns a brief string representation of the MDP.
-    This method is mostly suitable for analyzing small MDPs.
+    Returns a brief string representation of the RMDP.
+    This method is mostly suitable for analyzing small RMDPs.
     */
     string to_string() const;
+
+    /**
+    Returns a json representation of the RMDP.
+    This method is mostly suitable to analyzing small RMDPs.
+    */
+    string to_json() const;
 };
 
-/// **********************************************************************
-/// *********************    TEMPLATE DECLARATIONS    ********************
-/// **********************************************************************
+// **********************************************************************
+// *********************    TEMPLATE DECLARATIONS    ********************
+// **********************************************************************
 
 /**
 Regular MDP with discrete actions and one outcome per action
@@ -355,180 +371,23 @@ Regular MDP with discrete actions and one outcome per action
 
     ActionPolicy = vector<ActionId>
     OutcomePolicy = vector<OutcomeId>
+
+Uncertainty type is ignored in these methods.
 */
 typedef GRMDP<RegularState> MDP;
+
+/**
+An uncertain MDP with discrete robustness. See craam::DiscreteRobustState
+*/
 typedef GRMDP<DiscreteRobustState> RMDP_D;
+
+/**
+An uncertain MDP with L1 constrained robustness. See craam::L1RobustState.
+*/
 typedef GRMDP<L1RobustState> RMDP_L1;
 
+typedef GSolution<long, long> SolutionDscDsc;
+typedef GSolution<long, numvec> SolutionDscProb;
 
-/// **********************************************************************
-/// ***********************    HELPER FUNCTIONS    ***********************
-/// **********************************************************************
-
-/**
-Adds a transition probability for a model with no outcomes.
-\param mdp model to add the transition to
-\param fromid Starting state ID
-\param actionid Action ID
-\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
-\param toid Destination ID
-\param probability Probability of the transition (must be non-negative)
-\param reward The reward associated with the transition.
-*/
-template<class Model>
-void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
-
-    // make sure that the destination state exists
-    mdp.create_state(toid);
-
-    auto& state_from = mdp.create_state(fromid);
-    auto& action = state_from.create_action(actionid);
-    Transition& outcome = action.create_outcome(outcomeid);
-    outcome.add_sample(toid,probability,reward);
-}
-
-/**
-Adds a transition probability for a particular outcome.
-\param mdp model to add the transition to
-\param fromid Starting state ID
-\param actionid Action ID
-\param toid Destination ID
-\param probability Probability of the transition (must be non-negative)
-\param reward The reward associated with the transition.
-*/
-template<class Model>
-void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
-    add_transition<Model>(mdp, fromid, actionid, 0l, toid, probability, reward);
-}
-
-/// **********************************************************************
-/// ***********************    HELPER FUNCTIONS    ***********************
-/// **********************************************************************
-
-/**
-Loads an RMDP definition from a simple csv file.States, actions, and
-outcomes are identified by 0-based ids. The columns are separated by
-commas, and rows by new lines.
-
-The file is formatted with the following columns:
-idstatefrom, idaction, idoutcome, idstateto, probability, reward
-
-Note that outcome distributions are not restored.
-\param mdp Model output (also returned)
-\param input Source of the RMDP
-\param header Whether the first line of the file represents the header.
-                The column names are not checked for correctness or number!
-\returns The input model
- */
-template<class Model>
-Model& from_csv(Model& mdp, istream& input, bool header = true){
-{
-    string line;
-    // skip the first row if so instructed
-    if(header) input >> line;
-
-    input >> line;
-    while(input.good()){
-        string cellstring;
-        stringstream linestream(line);
-        long idstatefrom, idstateto, idaction, idoutcome;
-        prec_t probability, reward;
-
-        // read idstatefrom
-        getline(linestream, cellstring, ',');
-        idstatefrom = stoi(cellstring);
-        // read idaction
-        getline(linestream, cellstring, ',');
-        idaction = stoi(cellstring);
-        // read idoutcome
-        getline(linestream, cellstring, ',');
-        idoutcome = stoi(cellstring);
-        // read idstateto
-        getline(linestream, cellstring, ',');
-        idstateto = stoi(cellstring);
-        // read probability
-        getline(linestream, cellstring, ',');
-        probability = stof(cellstring);
-        // read reward
-        getline(linestream, cellstring, ',');
-        reward = stof(cellstring);
-
-        add_transition<Model>(mdp,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
-
-        input >> line;
-    }
-    return mdp;
-}
-}
-
-/**
-Loads the transition probabilities and rewards from a CSV file.
-\param mdp Model output (also returned)
-\param filename Name of the file
-\param header Whether to create a header of the file too
-\returns The input model
- */
-template<class Model>
-Model& from_csv_file(Model& mdp, const string& filename, bool header = true){
-    ifstream ifs(filename);
-    from_csv(mdp, ifs, header);
-    ifs.close();
-    return mdp;
-}
-
-/**
-Uniformly sets the thresholds to the provided value for all states and actions.
-This method should be used only with models that support thresholds.
-
-This function only applies to models that have thresholds, such as ones using
-"WeightedOutcomeAction" or its derivatives.
-
-\param model Model to set thresholds for
-\param threshold New thresholds value
-*/
-template<class Model>
-void set_thresholds(Model& mdp, prec_t threshold){
-    for(auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
-            state.get_action(ai).set_threshold(threshold);
-        }
-    }
-}
-
-/**
-Checks whether outcome distributions sum to 1 for all states and actions.
-
-This function only applies to models that have thresholds, such as ones using
-"WeightedOutcomeAction" or its derivatives.
-
-*/
-template<class Model>
-bool is_outcomes_normalized(const Model& mdp){
-    for(auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
-            if(!state.get_action(ai).is_distribution_normalized())
-                return false;
-        }
-    }
-    return true;
-}
-
-/**
-Normalizes outcome distributions for all states and actions.
-
-This function only applies to models that have thresholds, such as ones using
-"WeightedOutcomeAction" or its derivatives.
-*/
-template<class Model>
-void normalize_outcomes(Model& mdp){
-    for(auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
-            state.get_action(ai).normalize_distribution();
-        }
-    }
-}
 
 }

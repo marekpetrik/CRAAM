@@ -1,13 +1,13 @@
 #pragma once
 
+#include "definitions.hpp"
+#include "Transition.hpp"
+
 #include <utility>
 #include <vector>
 #include <limits>
 #include <cassert>
-
-
-#include "definitions.hpp"
-#include "Transition.hpp"
+#include <string>
 
 using namespace std;
 
@@ -18,12 +18,20 @@ namespace craam {
 /// **************************************************************************************
 
 /**
- * Action in a regular MDP. There is no uncertainty and
- * the action contains only a single outcome.
- */
+Action in a regular MDP. There is no uncertainty and
+the action contains only a single outcome.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid.
+Actions are constructed as valid by default.
+*/
 class RegularAction{
 protected:
+    /// Transition probabilities
     Transition outcome;
+
+    /// Invalid actions are skipped during computation
+    bool valid = true;
 
 public:
     /** Type of an identifier for an outcome. It is ignored for the simple action. */
@@ -81,6 +89,15 @@ public:
     const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
 
     /** Returns the single outcome. */
+    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
+
+    /** Returns the outcome */
+    const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
+
+    /** Returns the outcome */
+    Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
+
+    /** Returns the single outcome. */
     const Transition& get_outcome() const {return outcome;};
 
     /** Returns the single outcome. */
@@ -90,16 +107,25 @@ public:
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method does nothing in this action.
     */
-    Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;};
-
-    /** Returns the single outcome. */
-    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
+    Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;}
 
     /** Normalizes transition probabilities */
     void normalize() {outcome.normalize();};
 
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;};
+
+    /**
+    Returns whether this is a valid action (or only a placeholder).
+    Invalid actions cannot be taken and may result from incomplete
+    sampling of a domain. They are skipped in the computation of value function.
+
+    The action is considered valid when there are some transitions
+    */
+    bool is_valid() const{return valid;};
+
+    /// Sets whether the action is valid (see is_valid)
+    void set_validity(bool newvalidity){valid = newvalidity;};
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
@@ -114,6 +140,10 @@ public:
 
     /** Returns the mean transition probabilities. Ignore rewards. */
     Transition mean_transition(OutcomeId) const {return outcome;};
+
+    /** Returns a json representation of the action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
 };
 
 
@@ -123,6 +153,10 @@ public:
 
 /**
 A class that manages creation and access to outcomes to be used by actions.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid.
+Actions are constructed as valid by default.
 */
 class OutcomeManagement{
 
@@ -130,6 +164,8 @@ protected:
     /** List of possible outcomes */
     vector<Transition> outcomes;
 
+    /// Invalid actions are skipped during computation
+    bool valid = true;
 public:
     /** Empty list of outcomes */
     OutcomeManagement() {};
@@ -137,27 +173,36 @@ public:
     /** Initializes with a list of outcomes */
     OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {};
 
+    /** Empty virtual destructor */
+    virtual ~OutcomeManagement() {};
+
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method is virtual to make overloading safer.
     */
     virtual Transition& create_outcome(long outcomeid);
 
-    /** Returns a transition for the outcome to the action. The transition must exist. */
+    /** Returns a transition for the outcome. The transition must exist. */
     const Transition& get_outcome(long outcomeid) const {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
 
-    /** Returns a transition for the outcome to the action. The transition must exist. */
+    /** Returns a transition for the outcome. The transition must exist. */
     Transition& get_outcome(long outcomeid) {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
         return outcomes[outcomeid];};
 
+    /** Returns a transition for the outcome. The transition must exist. */
+    const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
+
+    /** Returns a transition for the outcome. The transition must exist. */
+    Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
+
     /** Returns number of outcomes. */
     size_t outcome_count() const {return outcomes.size();};
+
     /** Returns number of outcomes. */
     size_t size() const {return outcome_count();};
-
 
     /** Adds an outcome defined by the transition.
     \param outcomeid Id of the new outcome. Intermediate ids are created empty
@@ -167,7 +212,6 @@ public:
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
     void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);};
-
 
     /** Returns the list of outcomes */
     const vector<Transition>& get_outcomes() const {return outcomes;};
@@ -180,6 +224,17 @@ public:
         result.append(std::to_string(get_outcomes().size()));
     }
 
+    /**
+    Returns whether this is a valid action (or only a placeholder).
+    Invalid actions cannot be taken and may result from incomplete
+    sampling of a domain. They are skipped in the computation of value function.
+
+    The action is considered valid when there are some transitions
+    */
+    bool is_valid() const{return valid;};
+
+    /// Sets whether the action is valid (see is_valid)
+    void set_validity(bool newvalidity){valid = newvalidity;};
 };
 
 /// **************************************************************************************
@@ -188,6 +243,10 @@ public:
 
 /**
 An action in the robust MDP with discrete outcomes.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid.
+Actions are constructed as valid by default.
 */
 class DiscreteOutcomeAction : public OutcomeManagement {
 
@@ -252,6 +311,11 @@ public:
 
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId oid) const {return outcomes[oid];};
+
+    /** Returns a json representation of action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
+
 };
 
 /// **************************************************************************************
@@ -261,16 +325,20 @@ public:
 
 /**
 An action in a robust MDP in which the outcomes are defined by a weighted function
-and a threshold. The uncertain behavior is parameterized by a base distribution
+and a threshold. The uncertain behavior is parametrized by a base distribution
 and a threshold value. An example may be a worst case computation:
-    min { u^T v | || u - d ||_1 <=  t}
+    \f[ \min \{ u^T v ~:~ \| u - d \|_1 \le  t\} \f]
 where v are the values for individual outcomes, d is the base distribution, and
 t is the threshold. See L1Action for an example of an instance of this template class.
 
-The function that determines the uncertainty set is defined by NatureConstr template parameter.
+The function that determines the uncertainty set is defined by NatureConstr
+template parameter.
 
-The distribution is initialized to be uniform over the provided elements;
-when a new outcome is added, then its weight in the distribution is 0.
+The distribution d over outcomes is uniform by default. See WeightedOutcomeAction::create_outcome.
+
+An action can be invalid, in which case it is skipped during any computations
+and cannot be used during a simulation. See is_valid.
+Actions are constructed as valid by default.
 */
 template<NatureConstr nature>
 class WeightedOutcomeAction : public OutcomeManagement{
@@ -336,11 +404,20 @@ public:
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This override also handles properly resizing the distribution.
 
+    If the corresponding outcome already exists, then it just returns it.
+
     The baseline distribution value for the new outcome(s) are set to be:
-        1/(new_outcomeid+1)
-    That is, it assumes uniform distribution of the outcomes.
-    Weights for existing outcomes are scaled appropriately to sum to a value
-    that would be equal to a sum of uniformly distributed values.
+        \f[ d_n' = \frac{1}{n+1}, \f]
+    where \f$ n \f$ is the new outcomeid. Weights for existing outcomes (if non-zero) are scaled appropriately to sum to a value
+    that would be equal to a sum of uniformly distributed values:
+    \f[ d_i' = d_i \frac{m \frac{1}{n+1}}{ \sum_{i=0}^{m} d_i }, \; i = 0 \ldots m \f]
+    where \f$ m \f$ is the previously maximal outcomeid; \f$ d_i' \f$ and \f$ d_i \f$ are the new and old weights of the
+    outcome \f$ i \f$ respectively. If the outcomes \f$ i < n\f$ do not exist
+    they are created with uniform weight.
+    This constructs a uniform distribution of the outcomes by default.
+
+    An exception during the computation may leave the distribution in an
+    incorrect state.
     */
     Transition& create_outcome(long outcomeid) override;
 
@@ -363,7 +440,7 @@ public:
      */
     void set_distribution(long outcomeid, prec_t weight);
 
-    /** Returns the baseline distribution. */
+    /** Returns the baseline distribution over outcomes. */
     const numvec& get_distribution() const {return distribution;};
 
     /**
@@ -406,6 +483,10 @@ public:
 
     /** Returns the mean transition probabilities */
     Transition mean_transition(OutcomeId outcomedist) const;
+
+    /** Returns a json representation of action
+    \param actionid Includes also action id*/
+    string to_json(long actionid = -1) const;
 };
 
 /// **************************************************************************************

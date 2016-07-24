@@ -25,7 +25,7 @@ for key, value in cfg_vars.items():
 
 ext_modules = [
     Extension(
-        "craam.craam",
+        "craam.crobust",
         ["craam/crobust.pyx"],
         extra_compile_args = ['-std=c++14','-fopenmp','-O2','-march=native'],
         extra_link_args=['-fopenmp'],
