@@ -42,14 +42,23 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         void set_reward(long sampleid, double reward) except +
         double get_reward(long sampleid) except +
 
-        vector[double] probabilities_vector(unsigned long size) 
+        numvec probabilities_vector(unsigned long size) 
 
-        vector[long]& get_indices() 
-        vector[double]& get_probabilities()
-        vector[double]& get_rewards() 
+        indvec& get_indices() 
+        numvec& get_probabilities()
+        numvec& get_rewards() 
     
         size_t size() 
 
+    cdef cppclass CRegularAction "craam::RegularAction":
+        CTransition& get_outcome(long outcomeid)
+
+        size_t outcome_count()
+
+    cdef cppclass CRegularState "craam::RegularState":
+        CRegularAction& get_action(long actionid)
+
+        size_t action_count()
 
     cdef cppclass CMDP "craam::MDP":
         CMDP(long)
@@ -84,6 +93,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         prec_t maxresidual=SOLPREC) const;
         
         string to_json() const;
+
+        CRegularState& get_state(long stateid)
 
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
@@ -144,10 +155,6 @@ cdef class MDP:
             if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
 
-    cpdef state_count(self):
-        """ Current number of states """
-        return dereference(self.thisptr).state_count()
-
     cpdef copy(self):
         """ Makes a copy of the object """
         r = MDP(0, self.discount)
@@ -174,6 +181,84 @@ cdef class MDP:
         """        
         add_transition[CMDP](dereference(self.thisptr),fromid, actionid, 0, toid, probability, reward)
 
+    cpdef long state_count(self):
+        """ Current number of states """
+        return dereference(self.thisptr).state_count()
+        
+    cpdef long action_count(self, long stateid):
+        """
+        Returns the number of actions
+        
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        """
+        return dereference(self.thisptr).get_state(stateid).action_count()
+        
+    cpdef long outcome_count(self, long stateid, long actionid):
+        """
+        Returns the number of outcomes
+        
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        actionid : int
+            Number of the action
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).outcome_count()
+
+    cpdef long transition_count(self, long stateid, long actionid, long outcomeid):
+        """
+        Number of transitions (sparse transition probability) following a state,
+        action, and outcome
+
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        actionid : int
+            Number of the action
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
+
+
+    cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ Returns the reward for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_reward(sampleid)
+        
+    cpdef get_rewards(self, long stateid, long actionid, long outcomeid):
+        """ Returns the reward for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_rewards()
+
+    cpdef long get_toid(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ Returns the target state for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()[sampleid]
+        
+    cpdef get_toids(self, long stateid, long actionid, long outcomeid):
+        """ Returns the target state for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()
+
+    cpdef double get_probability(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ Returns the probability for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()[sampleid]
+    
+    cpdef get_probabilities(self, long stateid, long actionid, long outcomeid):
+        """ Returns the probability for the given state, action, and outcome """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()
+
+    cpdef set_reward(self, long stateid, long actionid, long outcomeid, long sampleid, double reward):
+        """
+        Sets the reward for the given state, action, outcome, and sample
+        """
+        dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).set_reward(sampleid, reward)
+        
+    cpdef long sample_count(self, long stateid, long actionid, long outcomeid):
+        """
+        Returns the number of samples (single-state transitions) for the action and outcome
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
         
     cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0):
