@@ -978,3 +978,160 @@ cdef class RMDP:
         Returns a json representation of the RMDP. Use json.tool to pretty print.
         """
         return dereference(self.thisptr).to_json().decode('UTF-8')
+
+
+
+# ***************************************************************************
+# *******    Implementable    *******
+# ***************************************************************************
+
+cdef extern from "../../craam/include/ImMDP.hpp" namespace 'craam::impl':
+    
+    cdef cppclass MDPI_R:
+    
+        MDPI_R(const CMDP& mdp, const indvec& observ2state, const CTransition& initial);
+
+        vector[long] obspol2statepol(const vector[long]& obspol) except +;
+        
+        const RMDP_L1& get_robust_mdp() except +
+
+        vector[long] solve_reweighted(long iterations, double discount) except +;
+        vector[long] solve_robust(long iterations, double threshold, double discount) except +;
+        
+        double total_return(const vector[long]& obspol, double discount, double precision);
+        
+        void to_csv_file(const string& output_mdp, const string& output_state2obs, \
+                        const string& output_initial, bool headers) except +;
+    
+        long state_count(); 
+        long obs_count();
+
+        unique_ptr[MDPI_R] from_csv_file(const string& input_mdp, \
+                                            const string& input_state2obs, \
+                                            const string& input_initial, \
+                                            bool headers) except +;
+                                            
+
+cdef class MDPIR:
+    """
+    MDP with Implementability constraints. The implementability constraints
+    require states within a single observation to have the same action
+    chosen by the policy.
+
+    Uses solution methods based on solving a robust MDP.
+
+    Parameters
+    ----------
+    mdp : MDP
+        Base MDP
+    state2obs : np.ndarray
+        Maps states to observation indexes. The observation index is 0-based
+        and two states. The optimal 
+    initial : np.ndarray
+        The initial distribution
+    copy_mdp : bool, optional (true)
+        Whether to copy the MDP definition locally
+    """
+
+    cdef shared_ptr[MDPI_R] thisptr
+    cdef double discount
+    
+    def __cinit__(self, MDP mdp, np.ndarray[long] state2obs, np.ndarray[double] initial, copy_mdp=True):
+
+        cdef long states = mdp.state_count()
+        
+        if states != state2obs.size:
+            raise ValueError('The number of MDP states must equal to the size of state2obs.')
+        if state2obs.size != initial.size:
+            raise ValueError('Sizes of state2obs and initial must be the same.')
+
+        # construct the initial distribution
+        cdef CTransition initial_t = CTransition(np.arange(states),initial,np.zeros(states))
+
+        cdef indvec state2obs_c = state2obs
+        if not copy_mdp:
+            # this copies the MDP, it could be more efficient to just share the pointer
+            # but then need to take care not to overwrite
+            raise ValueError("Sharing MDP not yet supported")
+        else:
+            self.thisptr = make_shared[MDPI_R](dereference(mdp.thisptr), state2obs_c, initial_t)
+
+    def __init__(self, MDP mdp, np.ndarray[long] state2obs, np.ndarray[double] initial):
+        self.discount = mdp.discount
+
+    def __dealloc__(self):
+        pass
+
+    def solve_reweighted(self, long iterations, double discount):
+        """
+        Solves the problem by reweighting the samples according to the current distribution
+        
+        Parameters
+        ----------
+        iterations : int
+            Number of iterations
+        discount : float
+            Discount factor
+
+        Returns
+        -------
+        out : list
+            List of action indexes for observations
+        """
+        return dereference(self.thisptr).solve_reweighted(iterations, discount)
+
+    def solve_robust(self, long iterations, double threshold, double discount):
+        """
+        Solves the problem by reweighting the samples according to the current distribution
+        and computing a robust solution. The robustness is in terms of L1 norm and 
+        determined by the threshold.
+        
+        Parameters
+        ----------
+        iterations : int
+            Number of iterations
+        threshold : double
+            Bound on the L1 deviation probability
+        discount : float
+            Discount factor
+
+        Returns
+        -------
+        out : list
+            List of action indexes for observations
+        """
+        return dereference(self.thisptr).solve_robust(iterations, threshold, discount)
+
+
+    def get_robust(self):
+        """
+        Returns the robust representation of the implementable MDP
+        """
+        cdef RMDP result = RMDP(0, self.discount)
+        result.thisptr = make_shared[RMDP_L1](dereference(self.thisptr).get_robust_mdp())
+        return result
+
+    def obspol2statepol(self, np.ndarray[long] obspol):
+        """
+        Converts an observation policy to a state policy
+        """
+        return dereference(self.thisptr).obspol2statepol(obspol);
+
+    def state_count(self):
+        """ Number of states in the MDP """
+        return dereference(self.thisptr).state_count()
+
+    def obs_count(self):
+        """ Number of observations in the interpretable MDP """
+        return dereference(self.thisptr).obs_count()
+
+    def total_return(self, np.ndarray[long] obspol):
+        """ """
+        assert len(obspol) == self.obs_count()
+        return dereference(self.thisptr).total_return(obspol, self.discount, 1e-8)
+
+    def to_csv(self, mdp_file, state2obs_file, initial_file, headers):
+        """
+        Saves the problem to a csv file
+        """
+        dereference(self.thisptr).to_csv_file(mdp_file, state2obs_file, initial_file, headers)
