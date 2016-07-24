@@ -34,10 +34,9 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         long iterations
 
     cdef cppclass CTransition "craam::Transition":
-
         CTransition() 
-        CTransition(const vector[long]& indices, const vector[double]& probabilities, const vector[double]& rewards);
-        CTransition(const vector[double]& probabilities)
+        CTransition(const indvec& indices, const numvec& probabilities, const numvec& rewards)
+        CTransition(const numvec& probabilities)
 
         void set_reward(long sampleid, double reward) except +
         double get_reward(long sampleid) except +
@@ -47,17 +46,14 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         indvec& get_indices() 
         numvec& get_probabilities()
         numvec& get_rewards() 
-    
         size_t size() 
 
     cdef cppclass CRegularAction "craam::RegularAction":
         CTransition& get_outcome(long outcomeid)
-
         size_t outcome_count()
 
     cdef cppclass CRegularState "craam::RegularState":
         CRegularAction& get_action(long actionid)
-
         size_t action_count()
 
     cdef cppclass CMDP "craam::MDP":
@@ -66,6 +62,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         CMDP()
 
         size_t state_count() 
+        CRegularState& get_state(long stateid)
 
         SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
                         const numvec& valuefunction,
@@ -78,12 +75,12 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         prec_t maxresidual) const;
 
         SolutionDscDsc mpi_jac(Uncertainty uncert,
-                    prec_t discount,
-                    const numvec& valuefunction,
-                    unsigned long iterations_pi,
-                    prec_t maxresidual_pi,
-                    unsigned long iterations_vi,
-                    prec_t maxresidual_vi) const;
+                        prec_t discount,
+                        const numvec& valuefunction,
+                        unsigned long iterations_pi,
+                        prec_t maxresidual_pi,
+                        unsigned long iterations_vi,
+                        prec_t maxresidual_vi) const;
 
         SolutionDscDsc vi_jac_fix(prec_t discount,
                         const indvec& policy,
@@ -93,8 +90,6 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         prec_t maxresidual=SOLPREC) const;
         
         string to_json() const;
-
-        CRegularState& get_state(long stateid)
 
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
