@@ -182,7 +182,10 @@ BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
     SampledMDP smdp;
 
     smdp.add_samples(samples);
-    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
+    auto reward = (*smdp.get_mdp())[0][0][0].get_rewards()[1];
+    //cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
+
+    BOOST_CHECK_CLOSE(reward, 1.666666, 1e-4);
 
     // check that the reward is constructed correctly from samples
     DiscreteSamples samples2;
@@ -197,7 +200,9 @@ BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
     samples2.add_sample(0,0,0,0.0,1.0,0,0);
 
     smdp.add_samples(samples2);
-    cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
+    //cout << (*smdp.get_mdp())[0][0][0].get_rewards()[1] << endl;
+    reward = (*smdp.get_mdp())[0][0][0].get_rewards()[1];
+    BOOST_CHECK_CLOSE(reward, 2.916666666666, 1e-4);
 }
 
 BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
