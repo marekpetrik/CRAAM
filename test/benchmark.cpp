@@ -1,9 +1,10 @@
+#include "RMDP.hpp"
+#include "modeltools.hpp"
 
 #include <chrono>
 #include <iostream>
 #include <fstream>
 
-#include "RMDP.hpp"
 
 using namespace std;
 using namespace craam;
@@ -26,7 +27,8 @@ int main(int argc, char * argv []){
         cout << "file could not be open";
         return -1;
     }
-    auto rmdp = RMDP::from_csv(ifs,true);
+    RMDP_D rmdp;
+    from_csv(rmdp,ifs,true);
     ifs.close();
 
     cout << "running test" << endl;
@@ -37,14 +39,14 @@ int main(int argc, char * argv []){
     // library option -lprofiler
     //ProfilerStart("mpi.prof");
 
-    vector<prec_t> value(rmdp->state_count());
-    auto&& sol = rmdp->mpi_jac_rob(value,0.999,2000,0.0001,2000,0.0001);
+    vector<prec_t> value(rmdp.state_count(),0.0);
+    auto&& sol = rmdp.mpi_jac(Uncertainty::Robust,0.999,value,2000,0.0001,2000,0.0001);
 
     //ProfilerStop();
 
     auto finish = std::chrono::high_resolution_clock::now();
 
-    cout << "done." <<endl;
+    cout << "done." << endl;
     cout << "Iterations: " << sol.iterations <<  ", Residual: " << sol.residual << endl;
 
     std::cout << "Duration:  *** " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms *** \n";
