@@ -1065,7 +1065,7 @@ cdef class RMDP:
 # *******    Implementable    *******
 # ***************************************************************************
 
-cdef extern from "../../craam/include/ImMDP.hpp" namespace 'craam::impl':
+cdef extern from "../include/ImMDP.hpp" namespace 'craam::impl':
     
     cdef cppclass MDPI_R:
     
