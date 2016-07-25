@@ -3,6 +3,27 @@
 # distutils: library_dirs = ../lib 
 # distutils: include_dirs = ../include 
 
+"""
+A suite of tools for sampling, solving and manipulating MDPs. Includes
+robust and interpretable MDPs.
+
+The main functionality is provided by the individual classes below:
+
+- Solve MDPs: :py:class:`craam.MDP`
+- Solve Robust MDPs: :py:class:`craam.RMDP`
+- Simulate MDPs and generate samples: :py:class:`craam.SimulatorMDP`, :py:class:`craam.DiscreteSamples`
+- Construct MDPs from samples: :py:class:`craam.SampledMDP`, :py:class:`craam.DiscreteSamples`
+- Solve interpretable MDPs: :py:class:`craam.MDPIR`
+
+This library is a thin Python wrapper around a C++ implementation.
+
+References
+----------
+
+- Petrik, M., Subramanian, D. (2015). RAAM : The benefits of robustness in approximating aggregated MDPs in reinforcement learning. In Neural Information Processing Systems (NIPS).
+- Petrik, M., & Luss, R. (2016). Interpretable Policies for Dynamic Product Recommendations. In Uncertainty in Artificial Intelligence (UAI).
+"""
+
 import numpy as np 
 cimport numpy as np
 from libcpp.vector cimport vector
@@ -124,7 +145,7 @@ cdef class MDP:
     Parameters
     ----------
     statecount : int, optional (0)
-        An estimate of the numeber of states (for pre-allocation). When more states
+        An estimate of the number of states (for pre-allocation). When more states
         are added, the estimate is readjusted.
     discount : double, optional (1.0)
         The discount factor
@@ -570,19 +591,18 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
         
         ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
 
-cdef class Simulation:
+cdef class SimulatorMDP:
     """
-    Simulates an MDP.
-
-    Constructs from and MDP object and an initial transition.
+    Simulates state evolution of an MDP for a given policy.
 
     Parameters
     ----------
     mdp : MDP
-        Markov decision process source
+        Markov decision process that governs the simulation.
     initial : np.ndarray
-        Initial transition. The lentgth of the vector should correspond to the
-        number of states.
+        Probability distribution for the initial state. 
+        Its length must match the number of states and must be 
+        a valid distribution.
     """
     cdef ModelSimulator *_thisptr
 
@@ -627,7 +647,10 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
 cdef class SampledMDP:
     """
-    Constructs an MDP from provided samples
+    Constructs an MDP from samples: :py:class:`DiscreteSamples`.
+
+    Samples can be added multiple times and the MDP is updated 
+    automatically.
     """
 
     cdef shared_ptr[CSampledMDP] _thisptr
@@ -661,6 +684,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
 cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
     """
+    Computes a worstcase distribution subject to an L1 constraint
+
     o = cworstcase_l1(z,q,t)
     
     Computes the solution of:
@@ -674,7 +699,7 @@ cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
     Notes
     -----
     This implementation works in O(n log n) time because of the sort. Using
-    quickselect to choose the right quantile would work in O(n) time.
+    quickselect to choose the correct quantile would work in O(n) time.
     
     The parameter z may be a masked array. In that case, the distribution values 
     are normalized to the unmasked entries.
