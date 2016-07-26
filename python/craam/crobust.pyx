@@ -228,21 +228,6 @@ cdef class MDP:
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).outcome_count()
 
-    cpdef long transition_count(self, long stateid, long actionid):
-        """
-        Number of transitions (sparse transition probability) following a state,
-        action, and outcome
-
-        Parameters
-        ----------
-        stateid : int
-            Number of the state
-        actionid : int
-            Number of the action
-        """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().size()
-
-
     cpdef double get_reward(self, long stateid, long actionid, long sampleid):
         """ 
         Returns the reward for the given state, action, and outcome 
@@ -344,7 +329,7 @@ cdef class MDP:
         """
         dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().set_reward(sampleid, reward)
         
-    cpdef long sample_count(self, long stateid, long actionid):
+    cpdef long get_sample_count(self, long stateid, long actionid):
         """
         Returns the number of samples (single-state transitions) for the action and outcome
 
@@ -543,6 +528,9 @@ cdef class MDP:
         Number of states is ``n = |states|``. The number of available action-outcome
         pairs is ``m``.
         
+        Must have the same number of action for each state. Output is also given
+        for invalid actions.
+
         Returns
         ----------
         transitions : np.ndarray[double,double,double] (n x n x m)
@@ -552,14 +540,40 @@ cdef class MDP:
             the target state.
         rewards : np.ndarray[double, double] (n x m)
             The rewards for each state and action
-        actions : np.ndarray[long] (m)
-            The id of the action for the state
         """
-        
-        # compute the maximal number of actions
 
-        cdef np.ndarray[double,ndim=3] transitions
-        cdef np.ndarray[double,ndim=2] rewards
+        cdef long state_count = dereference(self.thisptr).state_count() 
+
+        if state_count == 0:
+            return None,None
+
+        cdef long action_count = dereference(self.thisptr).get_state(0).action_count()
+
+        cdef long s, s1i, s2i, ai 
+
+        for si in range(state_count):
+            if dereference(self.thisptr).get_state(si).action_count() != state_count:
+                raise ValueError("Not the same number of actions for each state")
+
+        cdef np.ndarray[double,ndim=3] transitions = np.zeros(state_count, state_count, action_count)
+        cdef np.ndarray[double,ndim=2] rewards = np.zeros(state_count, action_count)
+
+        cdef long sample_count, sci
+
+        cdef double prob, rew
+
+        for s1i in range(state_count):
+            for ai in range(action_count):
+                sample_count = dereference(self.thisptr).get_sample_count(s1i,a)
+                for sci in range(sample_count):
+                    s2i = dereference(self.thisptr).get_toid(s1i,a,sci)
+                    prob = dereference(self.thisptr).get_probability(s1i,a,sci)
+                    rew = dereference(self.thisptr).get_reward(s1i,a,sci)
+
+                    transitions[s1i, s2i, ai] = prob
+                    rewards[s1i, ai] += prob * rew
+
+        return transitions, rewards
 
     cpdef to_json(self):
         """
