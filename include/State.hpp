@@ -12,9 +12,9 @@ using namespace std;
 
 namespace craam {
 
-/// **************************************************************************************
-///  SA State (SA rectangular, also used for a regular MDP)
-/// **************************************************************************************
+// **************************************************************************************
+//  SA State (SA rectangular, also used for a regular MDP)
+// **************************************************************************************
 
 /**
 State for sa-rectangular uncertainty (or no uncertainty) in an MDP
@@ -132,12 +132,15 @@ public:
 
 };
 
-/// **********************************************************************
-/// *********************    SPECIFIC STATE DEFINITIONS    ***************
-/// **********************************************************************
+// **********************************************************************
+// *********************    SPECIFIC STATE DEFINITIONS    ***************
+// **********************************************************************
 
+/// Regular MDP state with no outcomes
 typedef SAState<RegularAction> RegularState;
+/// State with uncertain outcomes; unconstrained and now weights
 typedef SAState<DiscreteOutcomeAction> DiscreteRobustState;
+/// State with uncertain outcomes with L1 constraints on the distribution 
 typedef SAState<L1OutcomeAction> L1RobustState;
 }
 

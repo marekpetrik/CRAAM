@@ -198,7 +198,9 @@ cdef class MDP:
         add_transition[CMDP](dereference(self.thisptr),fromid, actionid, 0, toid, probability, reward)
 
     cpdef long state_count(self):
-        """ Current number of states """
+        """ 
+        Returns the number of states 
+        """
         return dereference(self.thisptr).state_count()
         
     cpdef long action_count(self, long stateid):
@@ -241,38 +243,132 @@ cdef class MDP:
 
 
     cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
-        """ Returns the reward for the given state, action, and outcome """
+        """ 
+        Returns the reward for the given state, action, and outcome 
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_reward(sampleid)
         
     cpdef get_rewards(self, long stateid, long actionid, long outcomeid):
-        """ Returns the reward for the given state, action, and outcome """
+        """ 
+        Returns the reward for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_rewards()
 
     cpdef long get_toid(self, long stateid, long actionid, long outcomeid, long sampleid):
-        """ Returns the target state for the given state, action, and outcome """
+        """ 
+        Returns the target state for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()[sampleid]
         
     cpdef get_toids(self, long stateid, long actionid, long outcomeid):
-        """ Returns the target state for the given state, action, and outcome """
+        """ 
+        Returns the target state for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()
 
     cpdef double get_probability(self, long stateid, long actionid, long outcomeid, long sampleid):
-        """ Returns the probability for the given state, action, and outcome """
+        """ 
+        Returns the probability for the given state, action, outcome, and index of a non-zero transition probability
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()[sampleid]
     
     cpdef get_probabilities(self, long stateid, long actionid, long outcomeid):
-        """ Returns the probability for the given state, action, and outcome """
+        """ 
+        Returns the list of probabilities for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()
 
     cpdef set_reward(self, long stateid, long actionid, long outcomeid, long sampleid, double reward):
         """
         Sets the reward for the given state, action, outcome, and sample
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        reward : double 
+            New reward
         """
         dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).set_reward(sampleid, reward)
         
     cpdef long sample_count(self, long stateid, long actionid, long outcomeid):
         """
         Returns the number of samples (single-state transitions) for the action and outcome
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
         
@@ -537,6 +633,29 @@ cdef class DiscreteSamples:
         """
         pass
         
+    def add_sample(self, long state_from, long action, long state_to, long reward, double weight=1.0, long step=0, long run=-1):
+        """
+        Adds a new individual sample to the collection
+
+        Parameters
+        ----------
+        state_from : int
+            Originating state
+        action: int
+            Action taken
+        state_to : int
+            Destination step
+        reward : double
+            Reward received
+        weight : double, optional
+            Relative weight of the sample
+        step : int, optional
+            Index of the sample within a single sequence (0-based)
+        run : int, optional
+            Numerical identifier of the current run (sequence)
+        """
+        dereference(self._thisptr).add_sample(state_from, action, state_to, reward, weight, step, run)
+
     def initialsamples(self):
         """
         Returns samples of initial decision states.
@@ -715,6 +834,14 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         prec_t residual
         long iterations
 
+    cdef cppclass CRegularAction "craam::RegularAction":
+        CTransition& get_outcome(long outcomeid)
+        size_t outcome_count()
+
+    cdef cppclass CRegularState "craam::RegularState":
+        CRegularAction& get_action(long actionid)
+        size_t action_count()
+
     cdef cppclass RMDP_L1:
         RMDP_L1(long)
         RMDP_L1(const RMDP_L1&)
@@ -824,6 +951,167 @@ cdef class RMDP:
         """        
         add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,
                                 toid, probability, reward)
+
+
+    cpdef long state_count(self):
+        """ 
+        Returns the number of states 
+        """
+        return dereference(self.thisptr).state_count()
+        
+    cpdef long action_count(self, long stateid):
+        """
+        Returns the number of actions
+        
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        """
+        return dereference(self.thisptr).get_state(stateid).action_count()
+        
+    cpdef long outcome_count(self, long stateid, long actionid):
+        """
+        Returns the number of outcomes
+        
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        actionid : int
+            Number of the action
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).outcome_count()
+
+    cpdef long transition_count(self, long stateid, long actionid, long outcomeid):
+        """
+        Number of transitions (sparse transition probability) following a state,
+        action, and outcome
+
+        Parameters
+        ----------
+        stateid : int
+            Number of the state
+        actionid : int
+            Number of the action
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
+
+
+    cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ 
+        Returns the reward for the given state, action, and outcome 
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_reward(sampleid)
+        
+    cpdef get_rewards(self, long stateid, long actionid, long outcomeid):
+        """ 
+        Returns the reward for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_rewards()
+
+    cpdef long get_toid(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ 
+        Returns the target state for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()[sampleid]
+        
+    cpdef get_toids(self, long stateid, long actionid, long outcomeid):
+        """ 
+        Returns the target state for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()
+
+    cpdef double get_probability(self, long stateid, long actionid, long outcomeid, long sampleid):
+        """ 
+        Returns the probability for the given state, action, outcome, and index of a non-zero transition probability
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()[sampleid]
+    
+    cpdef get_probabilities(self, long stateid, long actionid, long outcomeid):
+        """ 
+        Returns the list of probabilities for the given state, action, and outcome 
+        
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()
+
+    cpdef set_reward(self, long stateid, long actionid, long outcomeid, long sampleid, double reward):
+        """
+        Sets the reward for the given state, action, outcome, and sample
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        outcomeid : int
+            Uncertain outcome (robustness)
+        sampleid : int
+            Index of the "sample" used in the sparse representation of the transition probabilities
+        reward : double 
+            New reward
+        """
+        dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).set_reward(sampleid, reward)
 
     cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution):
         """

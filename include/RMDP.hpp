@@ -386,7 +386,9 @@ An uncertain MDP with L1 constrained robustness. See craam::L1RobustState.
 */
 typedef GRMDP<L1RobustState> RMDP_L1;
 
+/// Solution with discrete action and outcome policies
 typedef GSolution<long, long> SolutionDscDsc;
+/// Solution with discrete action and randomized outcome policy
 typedef GSolution<long, numvec> SolutionDscProb;
 
 
