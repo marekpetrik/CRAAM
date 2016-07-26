@@ -157,10 +157,10 @@ cdef class MDP:
     """ Discount factor """
     cdef public double discount
 
-    def __cinit__(self, int statecount = 0, double discount = 1.0):
+    def __cinit__(self, long statecount = 0, double discount = 1.0):
         self.thisptr = make_shared[CMDP](statecount)
 
-    def __init__(self, int statecount, double discount):
+    def __init__(self, long statecount, double discount):
         self.discount = discount
         
     def __dealloc__(self):
@@ -342,7 +342,7 @@ cdef class MDP:
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().size()
         
-    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
+    cpdef vi_gs(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -384,7 +384,7 @@ cdef class MDP:
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations
 
-    cpdef vi_jac(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
+    cpdef vi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -496,8 +496,8 @@ cdef class MDP:
             Any transition probability less than the threshold is ignored leading to 
             sparse representations. If not provided, no transitions are ignored
         """
-        cdef int actioncount = transitions.shape[2]
-        cdef int statecount = transitions.shape[0]
+        cdef long actioncount = transitions.shape[2]
+        cdef long statecount = transitions.shape[0]
 
         # erase the current MDP object
         self.thisptr = make_shared[CMDP](statecount)
@@ -507,8 +507,8 @@ cdef class MDP:
         if statecount != transitions.shape[1] or statecount != rewards.shape[0]:
             raise ValueError('The number of states in transitions and rewards is inconsistent.')
 
-        cdef int aoindex, fromid, toid
-        cdef int actionid 
+        cdef long aoindex, fromid, toid
+        cdef long actionid 
         cdef double transitionprob, rewardval
 
         for aoindex in range(actioncount):    
@@ -552,11 +552,11 @@ cdef class MDP:
         cdef long s, s1i, s2i, ai 
 
         for si in range(state_count):
-            if dereference(self.thisptr).get_state(si).action_count() != state_count:
-                raise ValueError("Not the same number of actions for each state")
+            if dereference(self.thisptr).get_state(si).action_count() != action_count:
+                raise ValueError("Not the same number of actions for each state: " + str(si))
 
-        cdef np.ndarray[double,ndim=3] transitions = np.zeros(state_count, state_count, action_count)
-        cdef np.ndarray[double,ndim=2] rewards = np.zeros(state_count, action_count)
+        cdef np.ndarray[double,ndim=3] transitions = np.zeros((state_count, state_count, action_count))
+        cdef np.ndarray[double,ndim=2] rewards = np.zeros((state_count, action_count))
 
         cdef long sample_count, sci
 
@@ -564,11 +564,11 @@ cdef class MDP:
 
         for s1i in range(state_count):
             for ai in range(action_count):
-                sample_count = dereference(self.thisptr).get_sample_count(s1i,a)
+                sample_count = self.get_sample_count(s1i,ai)
                 for sci in range(sample_count):
-                    s2i = dereference(self.thisptr).get_toid(s1i,a,sci)
-                    prob = dereference(self.thisptr).get_probability(s1i,a,sci)
-                    rew = dereference(self.thisptr).get_reward(s1i,a,sci)
+                    s2i = self.get_toid(s1i,ai,sci)
+                    prob = self.get_probability(s1i,ai,sci)
+                    rew = self.get_reward(s1i,ai,sci)
 
                     transitions[s1i, s2i, ai] = prob
                     rewards[s1i, ai] += prob * rew
@@ -655,6 +655,12 @@ cdef class DiscreteSamples:
         """
         dereference(self._thisptr).add_sample(state_from, action, state_to, reward, weight, step, run)
 
+    def add_initial(self, long stateid):
+        """
+        Adds the state as a sample from the initial distribution
+        """
+        dereference(self._thisptr).add_initial(stateid)
+
     def initialsamples(self):
         """
         Returns samples of initial decision states.
@@ -691,23 +697,26 @@ cdef class DiscreteSamples:
         return dereference(self._thisptr).get_steps()
 
 
-cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
-    CDiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
-    CDiscreteSamples simulate[Model](Model& sim, ModelRandomPolicy pol, long horizon, long runs);
+cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
     cdef cppclass ModelSimulator:
         ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial, long seed);
         ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial);
 
-    cdef cppclass ModelRandomPolicy:
-        
+    # this is a fake class just to fool cython to make the right calls
+    cdef cppclass Policy:
+        pass
+
+    cdef cppclass ModelRandomPolicy(Policy):
         ModelRandomPolicy(const ModelSimulator& sim, long seed);        
         ModelRandomPolicy(const ModelSimulator& sim);        
 
-    cdef cppclass ModelDeterministicPolicy:
-        
+    cdef cppclass ModelDeterministicPolicy(Policy):
         ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
+
+    CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
+    CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term);
 
 cdef class SimulatorMDP:
     """
@@ -723,6 +732,7 @@ cdef class SimulatorMDP:
         a valid distribution.
     """
     cdef ModelSimulator *_thisptr
+    cdef long _state_count
 
     def __cinit__(self, MDP mdp, np.ndarray[double] initial):
 
@@ -730,37 +740,94 @@ cdef class SimulatorMDP:
             raise ValueError("Initial distribution must be as long as the number of MDP states, which is " + str(mdp.state_count()))
 
         cdef shared_ptr[CMDP] cmdp = mdp.thisptr
-
+        # cache the number of state to check that the provided policy is correct
+        self._state_count = dereference(cmdp).state_count()
         self._thisptr = new ModelSimulator(cmdp, CTransition(initial)) 
                 
     def __dealloc__(self):
         del self._thisptr        
+    
+    def state_count(self):
+        "Number of states in the underlying MDP."""
+        return self._state_count
 
-    def simulate_random(self):
+    def simulate_random(self, horizon, runs, tran_limit, prob_term):
         """
         Simulates a uniformly random policy
-        """
+    
+        Parameters
+        ----------
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        tran_limit : int, optional 
+            Limit on the total number of transitions generated
+            across all the runs. The simulation stops once 
+            this number is reached.
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
 
-        # create a random policy
-        cdef ModelRandomPolicy * rp =  new ModelRandomPolicy(dereference(self._thisptr))
+        Returns
+        -------
+        out : DiscreteSamples
+        """
+        cdef ModelRandomPolicy * rp = \
+                new ModelRandomPolicy(dereference(self._thisptr))
         
         try:
             newsamples = DiscreteSamples()
-
-            # TODO: make sure that this is moved through an rvalue
-            newsamples._thisptr[0] = simulate(dereference(self._thisptr), dereference(rp), 10, 10);
-
+            newsamples._thisptr[0] = simulate[ModelSimulator](dereference(self._thisptr), dereference(rp), horizon, runs, tran_limit, prob_term);
             return newsamples
-
         finally:
             del rp
 
+    def simulate_policy(self, np.ndarray[long] policy, horizon, runs, tran_limit, prob_term):
+        """
+        Simulates a policy
+
+        Parameters
+        ----------
+        policy : np.ndarray[long]
+            Policy used for the simulation
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        tran_limit : int, optional 
+            Limit on the total number of transitions generated
+            across all the runs. The simulation stops once 
+            this number is reached.
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
+
+        Returns
+        -------
+        out : DiscreteSamples
+        """
+
+        if policy.shape[0] != self._state_count:
+            raise ValueError("Policy size must match the number of states " + str(self._state_count))
+
+        cdef ModelDeterministicPolicy * rp = \
+                new ModelDeterministicPolicy(dereference(self._thisptr), policy)
+        
+        try:
+            newsamples = DiscreteSamples()
+            newsamples._thisptr[0] = simulate[ModelSimulator](dereference(self._thisptr), dereference(rp), horizon, runs, tran_limit, prob_term);
+            return newsamples
+        finally:
+            del rp
 
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
         CSampledMDP();
         void add_samples(const CDiscreteSamples& samples);
         shared_ptr[CMDP] get_mdp_mod()
+        CTransition get_initial()
+        long state_count();
 
 
 cdef class SampledMDP:
@@ -790,6 +857,15 @@ cdef class SampledMDP:
         cdef MDP m = MDP(0, discount = discount)
         m.thisptr = dereference(self._thisptr).get_mdp_mod()
         return m
+
+    cpdef get_initial(self):
+        """
+        Returns the initial distribution inferred from samples
+        """
+        cdef long int state_count = dereference(self._thisptr).state_count()
+        cdef CTransition t = dereference(self._thisptr).get_initial()
+        return np.array(t.probabilities_vector(state_count))
+            
 
 # distutils: language = c++
 # distutils: libraries = craam
@@ -901,10 +977,10 @@ cdef class RMDP:
     cdef shared_ptr[RMDP_L1] thisptr
     cdef public double discount
 
-    def __cinit__(self, int statecount, double discount):
+    def __cinit__(self, long statecount, double discount):
         self.thisptr = make_shared[RMDP_L1](statecount)
 
-    def __init__(self, int statecount, double discount):
+    def __init__(self, long statecount, double discount):
         self.discount = discount
         
     def __dealloc__(self):
@@ -1158,7 +1234,7 @@ cdef class RMDP:
         return r
 
         
-    cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
+    cpdef vi_gs(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0, int stype=0):
         """
         Runs value iteration using the worst case (simplex) distribution for the 
@@ -1335,8 +1411,8 @@ cdef class RMDP:
             Any transition probability less than the threshold is ignored leading to 
             sparse representations. If not provided, no transitions are ignored
         """
-        cdef int actioncount = len(actions) # really the number of action
-        cdef int statecount = transitions.shape[0]
+        cdef long actioncount = len(actions) # really the number of action
+        cdef long statecount = transitions.shape[0]
 
         if actioncount != transitions.shape[2] or actioncount != rewards.shape[1]:
             raise ValueError('The number of actions must match the 3rd dimension of transitions and the 2nd dimension of rewards.')
@@ -1345,8 +1421,8 @@ cdef class RMDP:
         if len(set(actions)) != actioncount:
             raise ValueError('The actions must be unique.')
 
-        cdef int aoindex, fromid, toid
-        cdef int actionid 
+        cdef long aoindex, fromid, toid
+        cdef long actionid 
         cdef double transitionprob, rewardval
 
         for aoindex in range(actioncount):    

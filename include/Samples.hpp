@@ -19,7 +19,6 @@ namespace msen{
 using namespace util::lang;
 using namespace std;
 
-// -----------------------------------------------------------------------------------------
 
 /**
 Represents a single transition between two states after taking an action:
@@ -80,7 +79,6 @@ protected:
     long _run;
 };
 
-/// -----------------------------------------------------------------------------------------
 
 /**
 General representation of samples:
@@ -320,7 +318,6 @@ protected:
     unordered_map<State,long,SHash> state_map;
 };
 
-/// -----------------------------------------------------------------------------------------
 
 /**
 Turns arbitrary samples to discrete ones (with continuous numbers assigned to states)
@@ -428,7 +425,6 @@ protected:
 };
 
 
-/// -----------------------------------------------------------------------------------------
 
 /**
 Constructs an MDP from integer samples.
@@ -531,8 +527,15 @@ public:
     /** \returns Initial distribution based on empirical sample data */
     Transition get_initial() const {return initial;}
 
-    /** Returns state-action cumulative weights \f$ z \f$. See class description for details. */
+    /** \returns State-action cumulative weights \f$ z \f$. 
+    See class description for details. */
     vector<vector<prec_t>> get_state_action_weights(){return state_action_weights;}
+
+    /** Returns thenumber of states in the samples (the highest observed index. 
+    Some may be missing) 
+    \returns 0 when there are no samples 
+    */
+    long state_count(){return state_action_weights.size();}
 protected:
 
     /** Internal MDP representation */
@@ -545,7 +548,6 @@ protected:
     vector<vector<prec_t>> state_action_weights;
 };
 
-/// -----------------------------------------------------------------------------------------
 
 
  /**
