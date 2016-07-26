@@ -71,6 +71,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
     cdef cppclass CRegularAction "craam::RegularAction":
         CTransition& get_outcome(long outcomeid)
+        CTransition& get_outcome()
         size_t outcome_count()
 
     cdef cppclass CRegularState "craam::RegularState":
@@ -227,7 +228,7 @@ cdef class MDP:
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).outcome_count()
 
-    cpdef long transition_count(self, long stateid, long actionid, long outcomeid):
+    cpdef long transition_count(self, long stateid, long actionid):
         """
         Number of transitions (sparse transition probability) following a state,
         action, and outcome
@@ -239,10 +240,10 @@ cdef class MDP:
         actionid : int
             Number of the action
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().size()
 
 
-    cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
+    cpdef double get_reward(self, long stateid, long actionid, long sampleid):
         """ 
         Returns the reward for the given state, action, and outcome 
 
@@ -252,14 +253,12 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         sampleid : int
             Index of the "sample" used in the sparse representation of the transition probabilities
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_reward(sampleid)
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_reward(sampleid)
         
-    cpdef get_rewards(self, long stateid, long actionid, long outcomeid):
+    cpdef get_rewards(self, long stateid, long actionid):
         """ 
         Returns the reward for the given state, action, and outcome 
         
@@ -269,12 +268,10 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_rewards()
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_rewards()
 
-    cpdef long get_toid(self, long stateid, long actionid, long outcomeid, long sampleid):
+    cpdef long get_toid(self, long stateid, long actionid, long sampleid):
         """ 
         Returns the target state for the given state, action, and outcome 
         
@@ -284,14 +281,12 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         sampleid : int
             Index of the "sample" used in the sparse representation of the transition probabilities
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()[sampleid]
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_indices()[sampleid]
         
-    cpdef get_toids(self, long stateid, long actionid, long outcomeid):
+    cpdef get_toids(self, long stateid, long actionid):
         """ 
         Returns the target state for the given state, action, and outcome 
         
@@ -301,12 +296,10 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_indices()
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_indices()
 
-    cpdef double get_probability(self, long stateid, long actionid, long outcomeid, long sampleid):
+    cpdef double get_probability(self, long stateid, long actionid, long sampleid):
         """ 
         Returns the probability for the given state, action, outcome, and index of a non-zero transition probability
         
@@ -316,14 +309,12 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         sampleid : int
             Index of the "sample" used in the sparse representation of the transition probabilities
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()[sampleid]
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_probabilities()[sampleid]
     
-    cpdef get_probabilities(self, long stateid, long actionid, long outcomeid):
+    cpdef get_probabilities(self, long stateid, long actionid):
         """ 
         Returns the list of probabilities for the given state, action, and outcome 
         
@@ -333,12 +324,10 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).get_probabilities()
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_probabilities()
 
-    cpdef set_reward(self, long stateid, long actionid, long outcomeid, long sampleid, double reward):
+    cpdef set_reward(self, long stateid, long actionid, long sampleid, double reward):
         """
         Sets the reward for the given state, action, outcome, and sample
 
@@ -348,16 +337,14 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         sampleid : int
             Index of the "sample" used in the sparse representation of the transition probabilities
         reward : double 
             New reward
         """
-        dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).set_reward(sampleid, reward)
+        dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().set_reward(sampleid, reward)
         
-    cpdef long sample_count(self, long stateid, long actionid, long outcomeid):
+    cpdef long sample_count(self, long stateid, long actionid):
         """
         Returns the number of samples (single-state transitions) for the action and outcome
 
@@ -367,10 +354,8 @@ cdef class MDP:
             Originating state
         actionid : int
             Action taken
-        outcomeid : int
-            Uncertain outcome (robustness)
         """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().size()
         
     cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0):
@@ -834,12 +819,12 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         prec_t residual
         long iterations
 
-    cdef cppclass CRegularAction "craam::RegularAction":
+    cdef cppclass CL1OutcomeAction "craam::L1OutcomeAction":
         CTransition& get_outcome(long outcomeid)
         size_t outcome_count()
 
-    cdef cppclass CRegularState "craam::RegularState":
-        CRegularAction& get_action(long actionid)
+    cdef cppclass CL1RobustState "craam::L1RobustState":
+        CL1OutcomeAction& get_action(long actionid)
         size_t action_count()
 
     cdef cppclass RMDP_L1:
@@ -848,6 +833,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         RMDP_L1()
 
         size_t state_count() 
+        CL1RobustState& get_state(long stateid)
 
         void normalize()
 
@@ -1157,12 +1143,6 @@ cdef class RMDP:
         r.thisptr.reset(new RMDP_L1(dereference(self.thisptr)))
         return r
 
-    cpdef long state_count(self):
-        """
-        Returns the number of states
-        """
-        return dereference(self.thisptr).state_count()
-        
         
     cpdef vi_gs(self, int iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                             double maxresidual=0, int stype=0):
