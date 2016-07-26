@@ -751,7 +751,7 @@ cdef class SimulatorMDP:
         "Number of states in the underlying MDP."""
         return self._state_count
 
-    def simulate_random(self, horizon, runs, tran_limit, prob_term):
+    def simulate_random(self, horizon, runs, tran_limit=0, prob_term=0.0):
         """
         Simulates a uniformly random policy
     
@@ -783,14 +783,16 @@ cdef class SimulatorMDP:
         finally:
             del rp
 
-    def simulate_policy(self, np.ndarray[long] policy, horizon, runs, tran_limit, prob_term):
+    def simulate_policy(self, np.ndarray[long] policy, horizon, runs, tran_limit=0, prob_term=0.0):
         """
         Simulates a policy
 
         Parameters
         ----------
         policy : np.ndarray[long]
-            Policy used for the simulation
+            Policy used for the simulation. Must be as long as
+            the number of states. Each entry marks the index
+            of the action to take (0-based)
         horizon : int 
             Simulation horizon
         runs : int
