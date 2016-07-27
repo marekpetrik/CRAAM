@@ -452,7 +452,9 @@ There is some extra memory penalty due to storing these weights.
 
 \a Important: Actions that are not sampled (no samples per that state
 and action pair) are labeled as invalid and are not included in the computation
-of value function or the solution.
+of value function or the solution. For example, if there is an action 1 in state zero
+but there are no samples that include action 0 then action 0 is still created, but is
+ignored when computing the value function.
 
 When sample sets are added by multiple calls of SampledMDP::add_samples, the results is the
 same as if all the individual sample sets were combined and added together. See SampledMDP::add_samples
