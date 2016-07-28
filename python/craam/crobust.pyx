@@ -718,6 +718,9 @@ cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
     CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term);
 
+    pair[indvec, numvec] simulate_return[Model](Model& sim, double discount, Policy pol, long horizon, long runs, double prob_term, long seed);
+    pair[indvec, numvec] simulate_return[Model](Model& sim, double discount, Policy pol, long horizon, long runs, double prob_term);
+
 cdef class SimulatorMDP:
     """
     Simulates state evolution of an MDP for a given policy.
@@ -733,6 +736,7 @@ cdef class SimulatorMDP:
     """
     cdef ModelSimulator *_thisptr
     cdef long _state_count
+    cdef double _discount
 
     def __cinit__(self, MDP mdp, np.ndarray[double] initial):
 
@@ -743,6 +747,7 @@ cdef class SimulatorMDP:
         # cache the number of state to check that the provided policy is correct
         self._state_count = dereference(cmdp).state_count()
         self._thisptr = new ModelSimulator(cmdp, CTransition(initial)) 
+        self._discount = mdp.discount
                 
     def __dealloc__(self):
         del self._thisptr        
@@ -822,6 +827,53 @@ cdef class SimulatorMDP:
             return newsamples
         finally:
             del rp
+        
+    def simulate_policy_return(self, np.ndarray[long] policy, horizon, runs, discount=None, prob_term=0.0):
+        """
+        Simulates a policy
+
+        Parameters
+        ----------
+        policy : np.ndarray[long]
+            Policy used for the simulation. Must be as long as
+            the number of states. Each entry marks the index
+            of the action to take (0-based)
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        discount : double, optional
+            Discount factor, uses the one from the MDP is not provided
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
+
+        Returns
+        -------
+        states : np.ndarray[long]
+            State for which returns are available
+        returns : np.ndarray[long]
+            Returns for those states
+        """
+
+        if policy.shape[0] != self._state_count:
+            raise ValueError("Policy size must match the number of states " + str(self._state_count))
+
+        if discount is None:
+            discount = self._discount
+
+        cdef ModelDeterministicPolicy * rp = \
+                new ModelDeterministicPolicy(dereference(self._thisptr), policy)
+        
+        cdef pair[indvec,numvec] result
+        try:
+            result = simulate_return[ModelSimulator](dereference(self._thisptr), \
+                        discount, dereference(rp), horizon, runs, prob_term);
+            
+            return result.first, result.second
+        finally:
+            del rp
+
 
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":

@@ -146,7 +146,7 @@ This method assumes that the simulator can start simulation in any state. There 
 an internal state, however, which is independent of the transitions; for example this may be
 the internal state of the random number generator.
 
-States and actions are passed by value everywhere and therefore it is important that
+States and actions are passed by value everywhere (moved when appropriate) and therefore it is important that
 they are lightweight objects.
 
 
@@ -268,11 +268,12 @@ public:
 
     /**
     Initializes randomized polices, transition probabilities
-    for each state. The policy is applicable only to MDPs that
+    for each state. The policy is applicable only to simulators that
     have:
 
       1) At most as many states as probabilities.size()
       2) At least as many actions are max(probabilities[i].size() | i) 
+
 
     \param sim Simulator used with the policy. The reference is retained,
                 the object should not be deleted
@@ -339,18 +340,19 @@ public:
 
     \param sim Simulator used with the policy. The reference is retained,
                 the object should not be deleted
-    \param probabilities List of action probabilities for each state
+    \param actions Index of action to take for each state 
     */
-    DeterministicPolicy(const Sim& sim, const indvec& actions):
+    DeterministicPolicy(const Sim& sim, indvec actions):
         actions(actions), sim(sim) {};
 
     /** Returns a random action */
     Action operator() (State state){
         // check that the state is valid for this policy
         long sl = static_cast<long>(state);
+
         assert(sl >= 0 && size_t(sl) < actions.size());
 
-        // existence of the action is check by the simulator
+        // existence of the action is checked by the simulator
         return sim.action(state,actions[sl]);
     };
 
