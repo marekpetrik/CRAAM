@@ -256,8 +256,7 @@ public:
                     unsigned long iterations_pi=MAXITER,
                     prec_t maxresidual_pi=SOLPREC,
                     unsigned long iterations_vi=MAXITER,
-                    prec_t maxresidual_vi=SOLPREC/2,
-                    bool show_progress = false) const;
+                    prec_t maxresidual_vi=SOLPREC/2) const;
 
     /**
     Value function evaluation using Jacobi iteration for a fixed policy.
@@ -269,7 +268,6 @@ public:
     \param iterations Maximal number of inner loop value iterations
     \param maxresidual Stop the inner policy iteration when
             the residual drops below this threshold.
-    \param show_progress
     \return Computed (approximate) solution (value function)
      */
     SolType vi_jac_fix(prec_t discount,
