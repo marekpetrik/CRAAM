@@ -166,6 +166,32 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     BOOST_CHECK_CLOSE(samples.mean_return(0.9), 3, 0.0001);
 }
 
+BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si_return ) {
+    Counter sim(0.9,0,1);
+
+    RandomPolicy<Counter> random_pol(sim,1); // sets the random seed
+    auto samples_returns = simulate_return(sim,0.9,random_pol,20,20);
+    
+    auto v = samples_returns.second;
+    auto meanreturn = accumulate(v.begin(), v.end(), 0.0) / prec_t(v.size());
+
+    BOOST_CHECK_CLOSE(meanreturn, -3.51759102217019, 0.0001);
+
+    samples_returns = simulate_return(sim,0.9,random_pol,1,20);
+
+    v = samples_returns.second;
+    meanreturn = accumulate(v.begin(), v.end(), 0.0) / prec_t(v.size());
+
+    BOOST_CHECK_CLOSE(meanreturn, 0, 0.0001);
+
+    Counter sim2(0.9,3,1);
+    samples_returns = simulate_return(sim2,0.9,random_pol,1,20);
+
+    v = samples_returns.second;
+    meanreturn = accumulate(v.begin(), v.end(), 0.0) / prec_t(v.size());
+
+    BOOST_CHECK_CLOSE(meanreturn, 3, 0.0001);
+}
 BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
     // check that the reward is constructed correctly from samples
     DiscreteSamples samples;

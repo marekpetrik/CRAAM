@@ -11,6 +11,7 @@ namespace craam{namespace msen {
 using namespace std;
 using namespace util::lang;
 
+
 SampledMDP::SampledMDP() : mdp(make_shared<MDP>()) {}
 
 void SampledMDP::add_samples(const DiscreteSamples& samples){

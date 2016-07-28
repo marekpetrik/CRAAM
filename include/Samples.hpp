@@ -41,10 +41,10 @@ used for example to compute the return from samples.
 template <class State, class Action>
 class Sample {
 public:
-    Sample(const State& state_from, const Action& action, const State& state_to,
+    Sample(State state_from, Action action, State state_to,
            prec_t reward, prec_t weight, long step, long run):
-        _state_from(state_from), _action(action),
-        _state_to(state_to), _reward(reward), _weight(weight), _step(step), _run(run){
+        _state_from(move(state_from)), _action(move(action)),
+        _state_to(move(state_to)), _reward(reward), _weight(weight), _step(step), _run(run){
         assert(weight >= 0);};
 
     /** Original state */
@@ -114,27 +114,13 @@ public:
     };
 
     /** Adds a sample starting in a decision state */
-    void add_sample(const State& state_from, const Action& action,
-                    const State& state_to, prec_t reward, prec_t weight,
+    void add_sample(State state_from, Action action,
+                    State state_to, prec_t reward, prec_t weight,
                     long step, long run){
 
-        states_from.push_back(state_from);
-        actions.push_back(action);
-        states_to.push_back(state_to);
-        rewards.push_back(reward);
-        weights.push_back(weight);
-        steps.push_back(step);
-        runs.push_back(run);
-    }
-
-    /** Adds a sample starting in a decision state */
-    void add_sample(State&& state_from, Action&& action,
-                    State&& state_to, prec_t reward, prec_t weight,
-                    long step, long run){
-
-        states_from.push_back(state_from);
-        actions.push_back(action);
-        states_to.push_back(state_to);
+        states_from.push_back(move(state_from));
+        actions.push_back(move(action));
+        states_to.push_back(move(state_to));
         rewards.push_back(reward);
         weights.push_back(weight);
         steps.push_back(step);
@@ -150,7 +136,6 @@ public:
         set<int> runs;
 
         for(size_t si : indices(*this)){
-
             auto es = get_sample(si);
             result += es.reward() * pow(discount,es.step());
             runs.insert(es.run());
@@ -166,7 +151,8 @@ public:
     /** Access to samples */
     Sample<State,Action> get_sample(long i) const{
         assert(i >=0 && size_t(i) < size());
-        return Sample<State,Action>(states_from[i],actions[i],states_to[i],rewards[i],weights[i],steps[i],runs[i]);};
+        return Sample<State,Action>(states_from[i],actions[i],states_to[i],
+                rewards[i],weights[i],steps[i],runs[i]);};
 
     /** Access to samples */
     Sample<State,Action> operator[](long i) const{

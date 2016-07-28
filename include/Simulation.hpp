@@ -25,14 +25,14 @@ using namespace util::lang;
 /**
 Runs the simulator and generates samples.
 
-This method assumes that the simulator can state simulation in any state. There may be
+This method assumes that the simulator can start simulation in any state. There may be
 an internal state, however, which is independent of the transitions; for example this may be
 the internal state of the random number generator.
 
-States and actions are passed by value everywhere and therefore it is important that
-they are lightweight objects.
+States and actions are passed by value everywhere (moved when appropriate) and 
+therefore it is important that they are lightweight objects.
 
-An example definition of a simulator should have the following methods:
+A simulator should have the following methods:
 \code
 /// This class represents a stateless simular, but the non-constant
 /// functions may change the state of the random number generator
@@ -65,7 +65,7 @@ public:
 }
 \endcode
 
-\tparam Sim Simulator class used in the simulation. See the main description for the methods
+\tparam Sim Simulator class used in the simulation. See the main description for the methods that
             the simulator must provide.
 \tparam SampleType Class used to hold the samples.
 
@@ -84,13 +84,13 @@ void simulate(
 
     long transitions = 0;
 
-    // initialize random numbers when appropriate
+    // initialize random numbers to be used with random termination
     default_random_engine generator(seed);
     uniform_real_distribution<double> distribution(0.0,1.0);
 
     for(auto run=0l; run < runs; run++){
 
-        typename Sim::State&& state = sim.init_state();
+        typename Sim::State state = sim.init_state();
         samples.add_initial(state);
 
         for(auto step : range(0l,horizon)){
@@ -98,11 +98,11 @@ void simulate(
             if(sim.end_condition(state) || (tran_limit > 0 && transitions > tran_limit) )
                 break;
 
-            auto&& action = policy(state);
-            auto&& rewardState = sim.transition(state,action);
+            auto action = policy(state);
+            auto reward_state = sim.transition(state,action);
 
-            auto reward = rewardState.first;
-            auto nextstate = move(rewardState.second);
+            auto reward = reward_state.first;
+            auto nextstate = move(reward_state.second);
 
             samples.add_sample(move(state), move(action), nextstate, reward, 1.0, step, run);
             state = move(nextstate);
@@ -121,8 +121,10 @@ void simulate(
 /**
 Runs the simulator and generates samples.
 
-See the other version of the method for more details. This variant
+See the overloaded version of the method for more details. This variant
 constructs and returns the samples object.
+
+\returns Set of samples
 */
 template<class Sim, class SampleType=Samples<typename Sim::State, typename Sim::Action>>
 SampleType simulate(
@@ -134,6 +136,81 @@ SampleType simulate(
     SampleType samples = SampleType();
     simulate(sim, samples, policy, horizon, runs, tran_limit, prob_term, seed);
     return samples;
+}
+
+
+/**
+Runs the simulator and computer the returns from the simulation.
+
+This method assumes that the simulator can start simulation in any state. There may be
+an internal state, however, which is independent of the transitions; for example this may be
+the internal state of the random number generator.
+
+States and actions are passed by value everywhere and therefore it is important that
+they are lightweight objects.
+
+
+\tparam Sim Simulator class used in the simulation. See the main description for the methods that
+            the simulator must provide.
+
+\param sim Simulator that holds the properties needed by the simulator
+\param discount Discount to use in the computation
+\param policy Policy function
+\param horizon Number of steps
+\param prob_term The probability of termination in each step
+
+\returns Pair of (states, cumulative returns starting in states)
+ */
+
+template<class Sim>
+pair<vector<typename Sim::State>, numvec> 
+simulate_return(Sim& sim, prec_t discount,
+                const function<typename Sim::Action(typename Sim::State&)>& policy,
+                long horizon, long runs, prec_t prob_term=0.0,
+                random_device::result_type seed = random_device{}()){
+
+    long transitions = 0;
+
+    // initialize random numbers to be used with random termination
+    default_random_engine generator(seed);
+    uniform_real_distribution<double> distribution(0.0,1.0);
+
+    // pre-initialize output values
+    vector<typename Sim::State> start_states(runs);
+    numvec returns(runs);
+
+    for(auto run : range(0l,runs)){
+
+        typename Sim::State state = sim.init_state();
+        start_states[run] = state;
+
+        prec_t runreturn = 0;
+        for(auto step : range(0l,horizon)){
+            // check form termination conditions
+            if(sim.end_condition(state))
+                break;
+
+            auto action = policy(state);
+            auto reward_state = sim.transition(state,action);
+            
+            auto reward = reward_state.first;
+            auto nextstate = move(reward_state.second);
+
+            runreturn += reward * pow(discount, step);
+
+            state = move(nextstate);
+
+            // test the termination probability only after at least one transition
+            if( (prob_term > 0.0) && (distribution(generator) <= prob_term) )
+                break;
+            transitions++;
+        };
+
+        returns[run] = runreturn;
+
+    }
+
+    return make_pair(move(start_states), move(returns));
 }
 
 // ************************************************************************************
@@ -329,15 +406,24 @@ public:
     /// Returns a sample from the initial states.
     State init_state();
     
-    /// Returns a sample of the reward and a decision state following an expectation state
+    /** 
+    Returns a sample of the reward and a decision state following a state
+
+    If the transition probabilities do not sum to 1, then them remainder
+    is considered as a probability of transitioning to a terminal state
+    (one with an index that is too large; see ModelSimulator::end_condition)
+    */
     pair<double,State> transition(State, Action);
 
     /**
-    Checks whether the decision state is terminal
-    any state with index equal or greater than the number
-    of states is considered to be terminal */
+    Checks whether the decision state is terminal. A state is 
+    assumed to be terminal when:
+        1. Its index is too large. That is, the index is equal or greater 
+           than the number of states is considered to be terminal
+        2. It has no actions (not even invalid ones)
+    */
     bool end_condition(State s) const 
-        {return size_t(s) >= mdp->size();};
+        {return (size_t(s) >= mdp->size()) || (action_count(s) == 0);};
 
     /// State dependent action list 
     size_t action_count(State state) const 
