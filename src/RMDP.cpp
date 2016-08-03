@@ -348,7 +348,7 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
 
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
-                prec_t newvalue;
+                prec_t newvalue = 0;
 
                 switch(type){
                 case Uncertainty::Robust:
