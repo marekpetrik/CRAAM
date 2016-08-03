@@ -248,6 +248,7 @@ public:
     \param iterations_vi Maximal number of inner loop value iterations
     \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
                 This value should be smaller than maxresidual_pi
+    \param show_progress Whether to report on progress during the computation
     \return Computed (approximate) solution
      */
     SolType mpi_jac(Uncertainty uncert,
@@ -256,7 +257,8 @@ public:
                     unsigned long iterations_pi=MAXITER,
                     prec_t maxresidual_pi=SOLPREC,
                     unsigned long iterations_vi=MAXITER,
-                    prec_t maxresidual_vi=SOLPREC/2) const;
+                    prec_t maxresidual_vi=SOLPREC/2,
+                    bool show_progress=false) const;
 
     /**
     Value function evaluation using Jacobi iteration for a fixed policy.

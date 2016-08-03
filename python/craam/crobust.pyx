@@ -102,7 +102,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         unsigned long iterations_pi,
                         prec_t maxresidual_pi,
                         unsigned long iterations_vi,
-                        prec_t maxresidual_vi) const;
+                        prec_t maxresidual_vi,
+                        bool show_progress) const;
 
         SolutionDscDsc vi_jac_fix(prec_t discount,
                         const indvec& policy,
@@ -426,8 +427,8 @@ cdef class MDP:
 
 
     cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                                    double maxresidual = 0, long valiterations = 1000, int stype=0,
-                                    double valresidual=-1):
+                                    double maxresidual = 0, long valiterations = -1, int stype=0,
+                                    double valresidual=-1, bool show_progress = False):
         """
         Runs modified policy iteration using the worst distribution constrained by the threshold 
         and l1 norm difference from the base distribution.
@@ -445,10 +446,12 @@ cdef class MDP:
             Maximal residual at which the iterations stop. A negative value
             will ensure the necessary number of iterations.
         valiterations : int, optional
-            Maximal number of iterations for value function computation
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
         valresidual : double, optional 
             Maximal residual at which iterations of computing the value function 
             stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
             
         Returns
         -------
@@ -465,12 +468,15 @@ cdef class MDP:
         self._check_value(valuefunction)
         cdef Uncertainty unc = Average
 
+        if valiterations <= 0:
+            valiterations = iterations
+
         if valresidual < 0:
             valresidual = maxresidual / 2
 
         cdef SolutionDscDsc sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual,valiterations,\
-                        valresidual)
+                        valresidual,show_progress)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations
@@ -998,7 +1004,8 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                     unsigned long iterations_pi,
                     prec_t maxresidual_pi,
                     unsigned long iterations_vi,
-                    prec_t maxresidual_vi)
+                    prec_t maxresidual_vi,
+                    bool show_progress)
         
         string to_json() const
 
@@ -1384,7 +1391,7 @@ cdef class RMDP:
 
     cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual = 0, long valiterations = 1000, int stype=0,
-                                    double valresidual=-1):
+                                    double valresidual=-1, bool show_progress = False):
         """
         Runs modified policy iteration using the worst distribution constrained by the threshold 
         and l1 norm difference from the base distribution.
@@ -1432,7 +1439,7 @@ cdef class RMDP:
 
         cdef SolutionDscProb sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
                         valuefunction,iterations,maxresidual,valiterations,\
-                        valresidual)
+                        valresidual, show_progress)
 
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.outcomes

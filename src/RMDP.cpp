@@ -269,7 +269,8 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
                            unsigned long iterations_pi,
                            prec_t maxresidual_pi,
                             unsigned long iterations_vi,
-                            prec_t maxresidual_vi) const -> SolType{
+                            prec_t maxresidual_vi,
+                            bool show_progress) const -> SolType{
 
     //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
     //                      "Unknown/invalid (average not supported) optimization type.");
@@ -302,6 +303,9 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
     numvec * targetvalue = & evenvalue;
 
     for(i = 0; i < iterations_pi; i++){
+
+        if(show_progress)
+            cout << "Policy iteration " << i << "/" << iterations_pi << ":" << endl;
 
         std::swap<numvec*>(targetvalue, sourcevalue);
 
@@ -337,12 +341,19 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
 
         residual_pi = *max_element(residuals.begin(),residuals.end());
 
+        if(show_progress)
+            cout << "    Bellman residual: " << residual_pi << endl;
+
         // the residual is sufficiently small
         if(residual_pi <= maxresidual_pi)
             break;
 
+        if(show_progress)
+            cout << "    Value iteration: ";
         // compute values using value iteration
         for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
+            if(show_progress)
+                cout << ".";
 
             swap(targetvalue, sourcevalue);
 
@@ -365,6 +376,8 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
             }
             residual_vi = *max_element(residuals.begin(),residuals.end());
         }
+        if(show_progress)
+            cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     numvec & valuenew = *targetvalue;
     return SolType(valuenew,policy,outcomes,residual_pi,i);
