@@ -438,11 +438,11 @@ cdef class MDP:
         
         Parameters
         ----------
-        iterations : int
+        iterations : int, optional
             Maximal number of iterations
         valuefunction : np.ndarray, optional
             The initial value function. Created automatically if not provided.            
-        maxresidual : double
+        maxresidual : double, optional
             Maximal residual at which the iterations stop. A negative value
             will ensure the necessary number of iterations.
         valiterations : int, optional
@@ -1401,11 +1401,11 @@ cdef class RMDP:
         
         Parameters
         ----------
-        iterations : int
+        iterations : int, optional
             Maximal number of iterations
         valuefunction : np.ndarray, optional
             The initial value function. Created automatically if not provided.            
-        maxresidual : double
+        maxresidual : double, optional
             Maximal residual at which the iterations stop. A negative value
             will ensure the necessary number of iterations.
         valiterations : int, optional
