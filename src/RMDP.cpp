@@ -19,10 +19,9 @@ using namespace util::lang;
 
 namespace craam {
 
-
-/// **************************************************************************************
-///  Generic MDP Class
-/// **************************************************************************************
+// **************************************************************************************
+//  Generic MDP Class
+// **************************************************************************************
 
 
 template<class SType>
@@ -153,6 +152,12 @@ auto GRMDP<SType>::vi_gs(Uncertainty type, prec_t discount, numvec valuefunction
     //              "Unknown/invalid (average not supported) optimization type.");
 
 
+    // just quit if there are not states
+    if( state_count() == 0)
+        return SolType();
+
+    // check if the value function is a correct size, and if it is length 0
+    // then creates an appropriate size
     if(valuefunction.size() > 0){
         if(valuefunction.size() != states.size())
             throw invalid_argument("Incorrect dimensions of value function.");
@@ -204,6 +209,12 @@ auto GRMDP<SType>::vi_jac(Uncertainty type, prec_t discount, const numvec& value
     //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
     //                      "Unknown/invalid (average not supported) optimization type.");
 
+    // just quit if there are not states
+    if( state_count() == 0)
+        return SolType();
+
+    // check if the value function is a correct size, and if it is length 0
+    // then creates an appropriate size
     if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
         throw invalid_argument("Incorrect size of value function.");
 
@@ -275,8 +286,13 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
     //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
     //                      "Unknown/invalid (average not supported) optimization type.");
 
+    // just quit if there are not states
+    if( state_count() == 0)
+        return SolType();
 
-    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
+    // check if the value function is a correct size, and if it is length 0
+    // then creates an appropriate size
+    if( (valuefunction.size() > 0) && (valuefunction.size() != state_count()) )
         throw invalid_argument("Incorrect size of value function.");
 
     numvec oddvalue(0);        // set in even iterations (0 is even)
@@ -390,6 +406,9 @@ auto GRMDP<SType>::vi_jac_fix(prec_t discount,
                             const numvec& valuefunction,
                             unsigned long iterations,
                             prec_t maxresidual) const -> SolType{
+    // just quit if there are not states
+    if( state_count() == 0)
+        return SolType();
 
     if(policy.size() != state_count())
         throw invalid_argument("Dimension of the policy must match the state count.");
@@ -523,9 +542,9 @@ GRMDP<SType>::transition_mat_t(const ActionPolicy& policy, const OutcomePolicy& 
     return result;
 }
 
-/// **********************************************************************
-/// *********************    TEMPLATE DECLARATIONS    ********************
-/// **********************************************************************
+// **********************************************************************
+// *********************    TEMPLATE DECLARATIONS    ********************
+// **********************************************************************
 
 template class GRMDP<RegularState>;
 template class GRMDP<DiscreteRobustState>;

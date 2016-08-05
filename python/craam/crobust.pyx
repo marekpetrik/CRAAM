@@ -553,7 +553,7 @@ cdef class MDP:
         if state_count == 0:
             return None,None
 
-        cdef long action_count = dereference(self.thisptr).get_state(0).action_count()
+        cdef size_t action_count = dereference(self.thisptr).get_state(0).action_count()
 
         cdef long s, s1i, s2i, ai 
 
