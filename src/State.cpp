@@ -5,11 +5,11 @@
 
 #include "cpp11-range-master/range.hpp"
 
-using namespace util::lang;
-
 
 namespace craam {
 
+using namespace util::lang;
+    
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
 // **************************************************************************************

@@ -13,6 +13,7 @@ const prec_t tolerance = 1e-5;
 
 /**
   Represents sparse transition probabilities and rewards from a single state.
+  The class can be also used to represent a generic sparse distribution.
 
   The destination indexes are sorted increasingly (as added). This makes it simpler to
   aggregate multiple transition probabilities and should also make value iteration
@@ -126,35 +127,33 @@ public:
     long max_index() const {return indices.empty() ? -1 : indices.back();};
 
     /**
-    Constructs and returns a dense vector of probabilities.
+    Constructs and returns a dense vector of probabilities, which
+    includes 0 transition probabilities.
     \param size Size of the constructed vector
     */
     numvec probabilities_vector(size_t size) const;
 
     /**
-    Scales transition probabilities according to the provided parameter
-    and adds them to the provided vector. This method ignores rewards.
-    \param scale Multiplicative modification of transition probabilities
-    \param transition Transition probabilities being added to. This value
-                        is modified within the function.
+    Constructs and returns a dense vector of rewards, which
+    includes 0 transition probabilities. Rewards for indices with
+    zero transition probability are zero.
+    \param size Size of the constructed vector
     */
-    void probabilities_addto(prec_t scale, numvec& transition) const;
+    numvec rewards_vector(size_t size) const;
 
-    /**
-    Scales transition probabilities and rewards according to the provided parameter
-    and adds them to the provided vector.
-
-    \param scale Multiplicative modification of transition probabilities
-    \param transition Transition probabilities being added to. This value
-                        is modified within the function.
+    /** 
+    Indices with positive probabilities.
     */
-    void probabilities_addto(prec_t scale, Transition& transition) const;
-
-    /** State indices for each possible transition */
     const indvec& get_indices() const {return indices;};
-    /** Probabilities of possible transitions */
+    /** 
+    Returns list of positive probabilities for indexes returned by
+    get_indices. See also probabilities_vector.
+    */
     const numvec& get_probabilities() const {return probabilities;};
-    /** Rewards associated with transitions */
+    /** 
+    Rewards for indices with positive probabilities returned by
+    get_indices. See also rewards_vector.
+    */
     const numvec& get_rewards() const {return rewards;};
 
     /** Sets the reward for a transition to a particular state */

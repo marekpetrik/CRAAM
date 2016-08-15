@@ -93,6 +93,8 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/include/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/modeltools.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/modeltools.hpp
           )
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)

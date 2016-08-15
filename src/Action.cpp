@@ -138,42 +138,45 @@ template<NatureConstr nature>
 Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid){
     if(outcomeid < 0)
         throw invalid_argument("Outcomeid must be non-negative.");
-
     // 1: compute the weight for the new outcome and old ones
 
-    // new size of the list of outcomes
-    size_t newsize = outcomeid + 1;
-    // current size of the set
-    size_t oldsize = outcomes.size();
-
-    if(newsize <= oldsize){
-        // no need to add anything
+    size_t newsize = outcomeid + 1; // new size of the list of outcomes
+    size_t oldsize = outcomes.size(); // current size of the set
+    if(newsize <= oldsize){// no need to add anything
         return outcomes[outcomeid];
     }
-
     // new uniform weight for each element
     prec_t newweight = 1.0/prec_t(outcomeid+1);
-
     // check if need to scale the existing weights
     if(oldsize > 0){
         auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
         // only scale when the sum is not zero
-
         if(weightsum > 0){
             prec_t normal = (oldsize * newweight) / weightsum;
             transform(distribution.begin(), distribution.end(),distribution.begin(),
                       [normal](prec_t x){return x * normal;});
         }
     }
-
-    if(outcomeid >= (long) outcomes.size())
-        outcomes.resize(newsize);
-
+    outcomes.resize(newsize);
     // got to resize the distribution too and assign weights that are uniform
     distribution.resize(newsize, newweight);
-
     return outcomes[outcomeid];
 }
+
+template<NatureConstr nature>
+Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid, prec_t weight){
+    if(outcomeid < 0)
+        throw invalid_argument("Outcomeid must be non-negative.");
+    assert(weight >= 0 && weight <= 1);
+    
+    if(outcomeid >= outcomes.size()){ // needs to resize arrays
+        outcomes.resize(outcomeid+1);
+        distribution.resize(outcomeid+1);
+    }
+    set_distribution(outcomeid, weight);
+    return outcomes[outcomeid];
+}
+
 
 template<NatureConstr nature>
 auto WeightedOutcomeAction<nature>::maximal(const numvec& valuefunction, prec_t discount) const

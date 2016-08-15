@@ -1,14 +1,14 @@
-#include <iostream>
-#include <sstream>
-#include <cmath>
-#include <numeric>
-
 #include "Transition.hpp"
 #include "Action.hpp"
 #include "State.hpp"
 #include "RMDP.hpp"
 #include "definitions.hpp"
 #include "modeltools.hpp"
+
+#include <iostream>
+#include <sstream>
+#include <cmath>
+#include <numeric>
 
 using namespace std;
 using namespace craam;
@@ -38,7 +38,7 @@ template<class Model>
 Model create_test_mdp(){
     Model rmdp(3);
 
-    // nonrobust
+    // nonrobust and deterministic
     // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
     add_transition<Model>(rmdp,0,1,1,1.0,0.0);
     add_transition<Model>(rmdp,1,1,2,1.0,0.0);
@@ -1011,3 +1011,29 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
 
 }
 
+// ********************************************************************************
+//  Test robustification 
+// ********************************************************************************
+
+BOOST_AUTO_TEST_CASE(test_robustification){
+    MDP mdp = create_test_mdp<MDP>();
+    
+    // no transition to zero probability states
+    RMDP_L1 rmdp_nz = robustify<L1RobustState>(mdp, false);
+    // allow transitions to zero probability states
+    RMDP_L1 rmdp_z = robustify<L1RobustState>(mdp, true);
+    
+
+    
+    cout << "MDP Solution " << mdp.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    
+    set_outcome_thresholds(rmdp_nz, 2.0);
+    set_outcome_thresholds(rmdp_z, 2.0);
+
+    cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+
+    cout << rmdp_z.to_json() << endl;
+}

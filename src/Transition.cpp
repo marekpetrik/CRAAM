@@ -14,30 +14,23 @@ namespace craam {
 
 Transition::Transition(const indvec& indices, const numvec& probabilities,
                         const numvec& rewards){
-
     if(indices.size() != probabilities.size() || indices.size() != rewards.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
-
     auto sorted = sort_indexes(indices);
-
     for(auto k : sorted)
         add_sample(indices[k],probabilities[k],rewards[k]);
 }
 
 Transition::Transition(const indvec& indices, const numvec& probabilities){
-
     if(indices.size() != probabilities.size())
         throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
-
     auto sorted = sort_indexes(indices);
-
     for(auto k : sorted)
         add_sample(indices[k],probabilities[k],0.0);
 }
 
 
 Transition::Transition(const numvec& probabilities){
-
     for(auto k : util::lang::indices(probabilities))
         add_sample(k, probabilities[k], 0.0);
 }
@@ -46,11 +39,8 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
 
     if(probability < -0.001) throw invalid_argument("probabilities must be non-negative.");
     if(stateid < 0) throw invalid_argument("State id must be non-negative.");
-
     // if the probability is 0 or negative, just do not add the sample
-    if(probability <= 0){
-        return;
-    }
+    if(probability <= 0) return; 
 
     // test for the last index; the index is not in the transition yet and belong to the end
     if(indices.size() == 0 || this->indices.back() < stateid){
@@ -60,7 +50,6 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
     }
     // the index is already in the transitions, or belongs in the middle
     else{
-
         size_t findex;  // lower bound on the index of the element
         bool present;   // whether the index was found
 
@@ -75,16 +64,13 @@ void Transition::add_sample(long stateid, prec_t probability, prec_t reward) {
             findex = fiter - indices.begin();
             present = (*fiter == stateid);
         }
-
         // there is a transition to this element already
         if(present){
             auto p_old = probabilities[findex];
             probabilities[findex] += probability;
-
             auto r_old = rewards[findex];
             auto new_reward = (p_old * r_old + probability * reward) / 
                                 (probabilities[findex]);
-
             rewards[findex] = new_reward;
         // the transition is not there, the element needs to be inserted
         }else{
@@ -147,24 +133,29 @@ prec_t Transition::mean_reward() const{
 }
 
 numvec Transition::probabilities_vector(size_t size) const{
+    if(max_index() >= 0 && static_cast<long>(size) <= max_index())
+        throw range_error("Size must be greater than the maximal index");
+
     numvec result(size, 0.0);
 
-    for(size_t i : util::lang::indices(*this)){
+    for(size_t i : util::lang::indices(indices)){
         result[indices[i]] = probabilities[i];
     }
 
     return result;
 }
 
-void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
-    for(size_t i : util::lang::indices(*this))
-        transition[indices[i]] += scale*probabilities[i];
-}
+numvec Transition::probabilities_vector(size_t size) const{
+    if(max_index() >= 0 && static_cast<long>(size) <= max_index())
+        throw range_error("Size must be greater than the maximal index");
 
-void Transition::probabilities_addto(prec_t scale, Transition& transition) const{
+    numvec result(size, 0.0);
 
-    for(size_t i : util::lang::indices(*this))
-        transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
+    for(size_t i : util::lang::indices(indices)){
+        result[indices[i]] = rewards[i];
+    }
+
+    return result;
 }
 
 string Transition::to_json(long outcomeid) const{

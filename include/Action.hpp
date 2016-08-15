@@ -182,6 +182,11 @@ public:
     */
     virtual Transition& create_outcome(long outcomeid);
 
+    /**
+    Creates a new outcome at the end. Similar to push_back.
+    */
+    virtual Transition& create_outcome(){return create_outcome(outcomes.size());};
+
     /** Returns a transition for the outcome. The transition must exist. */
     const Transition& get_outcome(long outcomeid) const {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
@@ -328,16 +333,19 @@ An action in a robust MDP in which the outcomes are defined by a weighted functi
 and a threshold. The uncertain behavior is parametrized by a base distribution
 and a threshold value. An example may be a worst case computation:
     \f[ \min \{ u^T v ~:~ \| u - d \|_1 \le  t\} \f]
-where v are the values for individual outcomes, d is the base distribution, and
-t is the threshold. See L1Action for an example of an instance of this template class.
+where \f$ v \f$ are the values for individual outcomes, \f$ d \f$ is the nominal 
+outcome distribution, and \f$ t \f$ is the threshold. 
+See L1Action for an example of an instance of this template class.
 
 The function that determines the uncertainty set is defined by NatureConstr
 template parameter.
 
-The distribution d over outcomes is uniform by default. See WeightedOutcomeAction::create_outcome.
+The distribution d over outcomes is uniform by default:
+see WeightedOutcomeAction::create_outcome.
 
 An action can be invalid, in which case it is skipped during any computations
 and cannot be used during a simulation. See is_valid.
+
 Actions are constructed as valid by default.
 */
 template<NatureConstr nature>
@@ -401,8 +409,9 @@ public:
     prec_t fixed(numvec const& valuefunction, prec_t discount, OutcomeId dist) const;
 
     /**
-    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
-    This override also handles properly resizing the distribution.
+    Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid 
+    to be a valid identifier. This override also properly resizing the nominal
+    outcome distribution and rewighs is accordingly.
 
     If the corresponding outcome already exists, then it just returns it.
 
@@ -418,9 +427,34 @@ public:
 
     An exception during the computation may leave the distribution in an
     incorrect state.
+    
+    \param outcomeid Index of outcome to create
+    \returns Transition that corresponds to outcomeid
     */
     Transition& create_outcome(long outcomeid) override;
+    
+    /**
+    Adds a sufficient number of empty outcomes/transitions for the provided outcomeid 
+    to be a valid identifier. The weights of new outcomes < outcomeid are set
+    to 0. This operation does rescale weights in order to preserve their sum.
 
+    If the outcome already exists, its nominal weight is overwritten.
+    
+    Note that this operation may leave the action in an invalid state in
+    which the nominal outcome distribution does not sum to 1.
+    
+    \param outcomeid Index of outcome to create
+    \param weight New nominal weight for the outcome.
+    \returns Transition that corresponds to outcomeid
+    */
+    Transition& create_outcome(long outcomeid, prec_t weight);
+
+    /**
+    Creates a weighted outcome at the end. Similar to push_back.
+    See create_outcome(long, double) for details.
+    */
+    Transition& create_outcome(prec_t weight){return create_outcome(size(),weight);};
+    
     /**
     Sets the base distribution over the outcomes.
 

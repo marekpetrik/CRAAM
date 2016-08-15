@@ -1,9 +1,16 @@
+#include "definitions.hpp"
+#include "Transition.hpp"
+#include "State.hpp"
+#include "Action.hpp"
+#include "RMDP.hpp"
+
 #include <vector>
 #include <istream>
 #include <fstream>
 #include <memory>
-#include <tuple>
+#include <string>
 #include <cassert>
+#include <sstream>
 
 #include "cpp11-range-master/range.hpp"
 
@@ -14,6 +21,7 @@
 
 namespace craam {
 
+using namespace std;
 using namespace util::lang;
 
 /**
@@ -211,9 +219,56 @@ void normalize_outcome_dst(Model& mdp){
 }
 
 
-// ****************************************************************
-// ********* Construction from matrices ***************************
-// ****************************************************************
+/**
+Adds uncertainty to a regular MDP. Turns transition probabilities to uncertain
+outcomes and uses the transition probabilities as the nominal weights assigned to
+the outcomes.
+
+The input is an MDP:
+\f$ \mathcal{M} = (\mathcal{S},\mathcal{A},P,r) ,\f$
+where the states are \f$ \mathcal{S} = \{ s_1, \ldots, s_n \} \f$
+The output RMDP is:
+\f$ \bar{\mathcal{M}} = (\mathcal{S},\mathcal{A},\mathcal{B}, \bar{P},\bar{r},d), \f$
+where the states and actions are the same as in the original MDP and
+\f$ d : \mathcal{S} \times \mathcal{A} \rightarrow \Delta^{\mathcal{B}} \f$ is
+the nominal probability of outcomes. Outcomes, transition probabilities, and rewards depend on whether uncertain transitions 
+to zero-probability states are allowed:
+
+When allowzeros = true, then \f$ \bar{\mathcal{M}} \f$ will also allow uncertain
+transition to states that have zero probabilities in \f$ \mathcal{M} \f$.
+- Outcomes are identical for all states and actions:
+    \f$ \mathcal{B} = \{ b_1, \ldots, b_n \} \f$
+- Transition probabilities are:
+    \f$ \bar{P}(s_i,a,b_k,s_l) =  1 \text{ if } k = l, \text{ otherwise } 0  \f$
+- Rewards are:
+    \f$ \bar{r}(s_i,a,b_k,s_l) = r(s_i,a,s_k) \text{ if } k = l, \text{ otherwise } 0 \f$
+- Nominal outcome probabilities are:
+    \f$ d(s,a,b_k) = P(s,a,s_k) \f$
+    
+When allowzeros = false, then \f$ \bar{\mathcal{M}} \f$ will only allow transitions to 
+states that have non-zero transition probabilities in \f$ \mathcal{M} \f$. Let \f$ z_k(s,a) \f$ denote 
+the \f$ k \f$-th state with a non-zero transition probability from state \f$ s \f$ and action \f$ a \f$.
+- Outcomes for \f$ s,a \f$ are:
+    \f$ \mathcal{B}(s,a) = \{ b_1, \ldots, b_{|z(s,a)|} \}, \f$
+    where \f$ |z(s,a)| \f$ is the number of positive transition probabilities in \f$ P \f$.
+- Transition probabilities are:
+    \f$ \bar{P}(s_i,a,b_k,s_l) = 1 \text{ if } z_k(s_i,a) = l, \text{ otherwise } 0  \f$
+- Rewards are:
+    \f$ \bar{r}(s_i,a,b_k,s_k) = r(s_i,a,s_{z_k(s_i,a)}) \f$
+- Nominal outcome probabilities are:
+    \f$ d(s,a,b_k) = P(s,a,z_k(s,a)) \f$
+
+\tparam SType State type for the RMDP being constructed. The actions must support methods:
+    - set_distribution(long outcomeid, prec_t weight)
+
+\param mdp MDP \f$ \mathcal{M} \f$ used as the input
+\param allowzeros Whether to allow outcomes to states with zero 
+                    transition probability
+\returns RMDP with nominal probabilities
+*/
+template<class SType>
+GRMDP<SType> robustify(const MDP& mdp, bool allowzeros);
+
 
 }
 

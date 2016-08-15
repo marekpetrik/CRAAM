@@ -154,7 +154,7 @@ public:
     /** Retrieves an existing state */
     SType& operator[](long stateid){return get_state(stateid);};
 
-    /** Returns list of all states */
+    /** \returns list of all states */
     const vector<SType>& get_states() const {return states;};
 
     /**
@@ -200,7 +200,8 @@ public:
     // ----------------------------------------------
 
     /**
-    Gauss-Seidel value iteration variant (not parallelized).
+    Gauss-Seidel varaint of value iteration (not parallelized).
+    
     This function is suitable for computing the value function of a finite state MDP. If
     the states are ordered correctly, one iteration is enough to compute the optimal value function.
     Since the value function is updated from the first state to the last, the states should be ordered
@@ -221,7 +222,7 @@ public:
                   prec_t maxresidual=SOLPREC) const;
 
     /**
-    Jacobi value iteration variant. This method uses OpenMP to parallelize the computation.
+    Jacobi variant of value iteration. This method uses OpenMP to parallelize the computation.
     \param uncert Type of realization of the uncertainty
     \param valuefunction Initial value function.
     \param discount Discount factor.
