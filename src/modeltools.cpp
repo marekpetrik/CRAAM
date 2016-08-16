@@ -23,16 +23,20 @@ GRMDP<SType> robustify(const MDP& mdp, bool allowzeros){
                 numvec rewards = t.rewards_vector(mdp.state_count());
                 for(size_t nsi : indices(probabilities)){
                     // create the outcome with the appropriate weight
-                    Transition& newoutcome = newaction.create_outcome(probabilities[nsi]);
+                    Transition& newoutcome = 
+                        newaction.create_outcome(newaction.size(), 
+                                                probabilities[nsi]);
                     // adds the single sample for each outcome
-                    newoutcome.add_sample(t.get_indices()[nsi], 1.0, rewards[nsi]);
+                    newoutcome.add_sample(nsi, 1.0, rewards[nsi]);
                 }    
             }
             else{
                 // only consider non-zero probabilities unless allowzeros is used
                 for(size_t nsi : indices(t)){
                     // create the outcome with the appropriate weight
-                    Transition& newoutcome = newaction.create_outcome(t.get_probabilities()[nsi]);
+                    Transition& newoutcome = 
+                        newaction.create_outcome(newaction.size(), 
+                                                t.get_probabilities()[nsi]);
                     // adds the single sample for each outcome
                     newoutcome.add_sample(t.get_indices()[nsi], 1.0, t.get_rewards()[nsi]);
                 }    

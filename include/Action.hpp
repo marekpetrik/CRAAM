@@ -450,12 +450,6 @@ public:
     Transition& create_outcome(long outcomeid, prec_t weight);
 
     /**
-    Creates a weighted outcome at the end. Similar to push_back.
-    See create_outcome(long, double) for details.
-    */
-    Transition& create_outcome(prec_t weight){return create_outcome(size(),weight);};
-    
-    /**
     Sets the base distribution over the outcomes.
 
     The function check for correctness of the distribution.

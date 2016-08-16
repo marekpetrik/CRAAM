@@ -127,6 +127,25 @@ public:
     long max_index() const {return indices.empty() ? -1 : indices.back();};
 
     /**
+    Scales transition probabilities according to the provided parameter
+    and adds them to the provided vector. This method ignores rewards.
+    \param scale Multiplicative modification of transition probabilities
+    \param transition Transition probabilities being added to. This value
+                        is modified within the function.
+    */
+    void probabilities_addto(prec_t scale, numvec& transition) const;
+
+    /**
+    Scales transition probabilities and rewards according to the provided parameter
+    and adds them to the provided vector.
+
+    \param scale Multiplicative modification of transition probabilities
+    \param transition Transition probabilities being added to. This value
+                        is modified within the function.
+    */
+    void probabilities_addto(prec_t scale, Transition& transition) const;
+
+    /**
     Constructs and returns a dense vector of probabilities, which
     includes 0 transition probabilities.
     \param size Size of the constructed vector

@@ -169,7 +169,7 @@ Transition& WeightedOutcomeAction<nature>::create_outcome(long outcomeid, prec_t
         throw invalid_argument("Outcomeid must be non-negative.");
     assert(weight >= 0 && weight <= 1);
     
-    if(outcomeid >= outcomes.size()){ // needs to resize arrays
+    if(outcomeid >= static_cast<long>(outcomes.size())){ // needs to resize arrays
         outcomes.resize(outcomeid+1);
         distribution.resize(outcomeid+1);
     }

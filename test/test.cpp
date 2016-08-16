@@ -1015,25 +1015,51 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
 //  Test robustification 
 // ********************************************************************************
 
+
+MDP create_test_mdp_robustify(){
+    MDP mdp(4);
+
+    // nonrobust, single action, just to check basic robustification
+    add_transition(mdp,0,0,1,0.5,1.0);
+    add_transition(mdp,0,0,2,0.5,2.0);
+    // probability of transition to state 3 is 0
+    //add_transition<Model>(mdp,0,0,2,0.0,1.1);
+    // states 1-4 are terminal (value 0)
+
+    return mdp;
+}
+
 BOOST_AUTO_TEST_CASE(test_robustification){
-    MDP mdp = create_test_mdp<MDP>();
+    MDP mdp = create_test_mdp_robustify();
     
     // no transition to zero probability states
     RMDP_L1 rmdp_nz = robustify<L1RobustState>(mdp, false);
     // allow transitions to zero probability states
     RMDP_L1 rmdp_z = robustify<L1RobustState>(mdp, true);
-    
 
+    BOOST_CHECK_CLOSE(mdp.mpi_jac(Uncertainty::Robust, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
+    BOOST_CHECK_CLOSE(rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
+    BOOST_CHECK_CLOSE(rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
     
-    cout << "MDP Solution " << mdp.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    //cout << "MDP Solution " <<  << endl;
+    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
     
-    set_outcome_thresholds(rmdp_nz, 2.0);
-    set_outcome_thresholds(rmdp_z, 2.0);
+    set_outcome_thresholds(rmdp_nz, 0.5);
+    set_outcome_thresholds(rmdp_z, 0.5);
 
-    cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    BOOST_CHECK_CLOSE(rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction[0],
+                    (1.0 * (0.5 + 0.25) + 2.0 * (0.5 - 0.25)), 1e-4);
+    BOOST_CHECK_CLOSE(rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction[0],
+                    (1.0 * (0.5) + 2.0 * (0.5 - 0.25) + 0.0 * 0.25), 1e-4);
 
-    cout << rmdp_z.to_json() << endl;
+    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
 }
+
+
+
+

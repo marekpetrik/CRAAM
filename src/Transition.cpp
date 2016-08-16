@@ -132,6 +132,18 @@ prec_t Transition::mean_reward() const{
     return value;
 }
 
+
+void Transition::probabilities_addto(prec_t scale, numvec& transition) const{
+    for(size_t i : util::lang::indices(*this))
+        transition[indices[i]] += scale*probabilities[i];
+}
+
+void Transition::probabilities_addto(prec_t scale, Transition& transition) const{
+
+    for(size_t i : util::lang::indices(*this))
+        transition.add_sample(indices[i], scale*probabilities[i], scale*rewards[i]);
+}
+
 numvec Transition::probabilities_vector(size_t size) const{
     if(max_index() >= 0 && static_cast<long>(size) <= max_index())
         throw range_error("Size must be greater than the maximal index");
@@ -145,7 +157,7 @@ numvec Transition::probabilities_vector(size_t size) const{
     return result;
 }
 
-numvec Transition::probabilities_vector(size_t size) const{
+numvec Transition::rewards_vector(size_t size) const{
     if(max_index() >= 0 && static_cast<long>(size) <= max_index())
         throw range_error("Size must be greater than the maximal index");
 
