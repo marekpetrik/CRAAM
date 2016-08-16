@@ -1,3 +1,5 @@
+#pragma once
+
 #include "definitions.hpp"
 #include "Transition.hpp"
 #include "State.hpp"
@@ -269,6 +271,10 @@ the \f$ k \f$-th state with a non-zero transition probability from state \f$ s \
 template<class SType>
 GRMDP<SType> robustify(const MDP& mdp, bool allowzeros);
 
+/**
+Instantiated template version of robustify.
+*/
+RMDP_L1 robustify_l1(const MDP& mdp, bool allowzeros);
 
 }
 

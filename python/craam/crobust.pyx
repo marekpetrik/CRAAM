@@ -1015,6 +1015,8 @@ cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
     bool is_outcome_dst_normalized[Model](const Model& mdp)
     void normalize_outcome_dst[Model](Model& mdp)
     void set_outcome_dst[Model](Model& mdp, size_t stateid, size_t actionid, const numvec& dist)
+    RMDP_L1 robustify_l1(const CMDP& mdp, bool allowzeros)
+
 
 cdef class RMDP:
     """
@@ -1293,6 +1295,22 @@ cdef class RMDP:
         r = RMDP(0, self.discount)
         r.thisptr.reset(new RMDP_L1(dereference(self.thisptr)))
         return r
+
+    cpdef robustify_mdp(self, MDP mdp, bool allowzeros):
+        """
+        Overwrites current RMDP with a robustified version of the 
+        provided MDP. 
+
+        If allowzeros = True the there is an outcome k for every state k and the
+        transition from outcome k is directly to state k (deterministic). This way,
+        even the probability of transiting to any state 0, the reaization of 
+        the robust uncertainty may have non-zero weight for that state.
+
+        If allowzeros = False then outcomes are added only for transitions with positive
+        probabilities.
+        """
+        cdef RMDP_L1 rmdp = robustify_l1(dereference(mdp.thisptr), allowzeros)
+        self.thisptr.reset(new RMDP_L1(rmdp))
 
         
     cpdef vi_gs(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
