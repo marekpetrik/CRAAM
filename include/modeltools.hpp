@@ -36,16 +36,7 @@ Adds a transition probability and reward for a particular outcome.
 \param reward The reward associated with the transition.
 */
 template<class Model>
-void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
-
-    // make sure that the destination state exists
-    mdp.create_state(toid);
-
-    auto& state_from = mdp.create_state(fromid);
-    auto& action = state_from.create_action(actionid);
-    Transition& outcome = action.create_outcome(outcomeid);
-    outcome.add_sample(toid,probability,reward);
-}
+void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
 
 /**
 Adds a transition probability and reward for a model with no outcomes.
@@ -79,45 +70,7 @@ Note that outcome distributions are not restored.
 \returns The input model
  */
 template<class Model>
-Model& from_csv(Model& mdp, istream& input, bool header = true){
-{
-    string line;
-    // skip the first row if so instructed
-    if(header) input >> line;
-
-    input >> line;
-    while(input.good()){
-        string cellstring;
-        stringstream linestream(line);
-        long idstatefrom, idstateto, idaction, idoutcome;
-        prec_t probability, reward;
-
-        // read idstatefrom
-        getline(linestream, cellstring, ',');
-        idstatefrom = stoi(cellstring);
-        // read idaction
-        getline(linestream, cellstring, ',');
-        idaction = stoi(cellstring);
-        // read idoutcome
-        getline(linestream, cellstring, ',');
-        idoutcome = stoi(cellstring);
-        // read idstateto
-        getline(linestream, cellstring, ',');
-        idstateto = stoi(cellstring);
-        // read probability
-        getline(linestream, cellstring, ',');
-        probability = stof(cellstring);
-        // read reward
-        getline(linestream, cellstring, ',');
-        reward = stof(cellstring);
-
-        add_transition<Model>(mdp,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
-
-        input >> line;
-    }
-    return mdp;
-}
-}
+Model& from_csv(Model& mdp, istream& input, bool header = true);
 
 /**
 Loads the transition probabilities and rewards from a CSV file.
@@ -145,46 +98,20 @@ This function only applies to models that have thresholds, such as ones using
 \param threshold New thresholds value
 */
 template<class Model>
-void set_outcome_thresholds(Model& mdp, prec_t threshold){
-    for(const auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state))
-            state.get_action(ai).set_threshold(threshold);
-    }
-}
+void set_outcome_thresholds(Model& mdp, prec_t threshold);
 
 /**
 Sets the distribution for outcomes for each state and
 action to be uniform. 
 */
 template<class Model>
-void set_uniform_outcome_dst(Model& mdp){
-
-    for(const auto si : indices(mdp)){
-        auto& s = mdp[si];
-        for(const auto ai : indices(s)){
-            auto& a = s[ai];
-            numvec distribution(a.size(), 
-                    1.0 / static_cast<prec_t>(a.size()));
-
-            a.set_distribution(distribution);
-        }
-    }
-}
-
-
+void set_uniform_outcome_dst(Model& mdp);
 
 /**
 Sets the distribution of outcomes for the given state and action.
 */
 template<class Model>
-void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& dist){
-    assert(stateid >= 0 && stateid < mdp.size());
-    assert(actionid >= 0 && actionid < mdp[stateid].size());
-
-    mdp[stateid][actionid].set_distribution(dist);
-}
-
+void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& dist);
 
 /**
 Checks whether outcome distributions sum to 1 for all states and actions.
@@ -194,16 +121,7 @@ This function only applies to models that have thresholds, such as ones using
 
 */
 template<class Model>
-bool is_outcome_dst_normalized(const Model& mdp){
-    for(auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state)){
-            if(!state[ai].is_distribution_normalized())
-                return false;
-        }
-    }
-    return true;
-}
+bool is_outcome_dst_normalized(const Model& mdp);
 
 /**
 Normalizes outcome distributions for all states and actions.
@@ -212,14 +130,7 @@ This function only applies to models that have thresholds, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 */
 template<class Model>
-void normalize_outcome_dst(Model& mdp){
-    for(auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state))
-            state.get_action(ai).normalize_distribution();
-    }
-}
-
+void normalize_outcome_dst(Model& mdp);
 
 /**
 Adds uncertainty to a regular MDP. Turns transition probabilities to uncertain
