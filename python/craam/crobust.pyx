@@ -1303,7 +1303,7 @@ cdef class RMDP:
 
         If allowzeros = True the there is an outcome k for every state k and the
         transition from outcome k is directly to state k (deterministic). This way,
-        even the probability of transiting to any state 0, the reaization of 
+        even the probability of transitioning to any state 0, the realization of 
         the robust uncertainty may have non-zero weight for that state.
 
         If allowzeros = False then outcomes are added only for transitions with positive
