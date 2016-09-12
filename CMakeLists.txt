@@ -28,7 +28,7 @@ find_package(OpenMP)
 find_package(Boost COMPONENTS unit_test_framework ) # CMake does not detect header-only packages. Also needs uBlas and format
 find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
-    message(WARNING "Unit tests require Boost." )
+    message(WARNING "Unit tests (testit) require Boost unit test library and may not compile." )
 endif()
 
 # DEBUG
@@ -42,7 +42,7 @@ endif()
 
 # **** TURN FEATURES ON AND OFF ****
 
-option (BUILD_TESTS "Build tests (requires Boost)" ${Boost_FOUND})
+option (BUILD_TESTS "Build tests (requires Boost)" ON)
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
 option (BUILD_ADVANCED "Build advandced functionality beyond pure RMDPs (requires Boost)" ON)
 
