@@ -29,13 +29,20 @@ cimport numpy as np
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.utility cimport pair
-from libcpp.memory cimport unique_ptr, shared_ptr, make_shared
+from libcpp.memory cimport unique_ptr, shared_ptr
 from libcpp cimport bool
 import statistics
 from collections import namedtuple 
 from math import sqrt
 import warnings 
 from cython.operator import dereference
+
+# The following definition is for backwards compatibility with Cython 0.23
+# replace in 0.24 by
+#   from libcpp.memory cimport make_shared
+cdef extern from "<memory>" namespace "std" nogil:
+    shared_ptr[T] make_shared[T](...) except +
+    unique_ptr[T] make_unique[T](...) # except +
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                                             
