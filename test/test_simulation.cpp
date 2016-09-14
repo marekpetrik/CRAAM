@@ -86,9 +86,8 @@ and actions move it up and down. The reward is equal to the position.
 
 Representation
 ~~~~~~~~~~~~~~
-- Decision state: position (int)
+- State: position (int)
 - Action: change (int)
-- Expectation state: position, action (int,int)
 */
 class Counter{
 private:

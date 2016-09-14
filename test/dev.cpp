@@ -26,77 +26,6 @@ void print_vector(vector<T> vec){
         cout << p << " ";
     }
 }
-//
-//int main_im(){
-//    const double discount = 0.9;
-//
-//    cout << "Running ... " << endl;
-//
-//    auto mdpi = MDPI_R::from_csv_file("mdp.csv","observ.csv","initial.csv");
-//
-//    cout << "States: " << mdpi->state_count() << " Observations: " << mdpi->obs_count() << endl;
-//    cout << "Solving MDP ..." << endl;
-//
-//    auto mdp = mdpi->get_mdp();
-//    auto&& sol = mdp->mpi_jac_ave(numvec(0), discount);
-//    auto&& initial = mdpi->get_initial();
-//
-//    cout << "Return: " << sol.total_return(initial) << endl;
-//    cout << "Policy: ";
-//    print_vector(sol.policy);
-//    cout << endl;
-//
-//    // check that the policy is correct
-//    auto res = mdp->assert_policy_correct(indvec(mdp->state_count(), 0), indvec(mdp->state_count(), 0));
-//    assert(res == -1);
-//
-//    auto sol_base = mdp->vi_jac_fix(numvec(0),discount,indvec(mdp->state_count(), 0),
-//                                    indvec(mdp->state_count(), 0));
-//    cout << "Baseline policy return: " << sol_base.total_return(initial) << endl;
-//
-//    cout << "Solving constrained MDP ... " << endl;
-//
-//    for(auto i : range(0,5)){
-//        auto pol = mdpi->solve_reweighted(i,0.9);
-//        cout << "Iteration: " << i << "  :  ";
-//        print_vector(pol);
-//        cout << endl;
-//    }
-//
-//    auto pol = mdpi->solve_reweighted(10,discount);
-//
-//    auto sol_impl = mdp->vi_jac_fix(numvec(0),discount, mdpi->obspol2statepol(pol),
-//                    indvec(mdp->state_count(), 0));
-//
-//    cout << "Return implementable: " << sol_impl.total_return(initial) << endl;
-//
-//    cout << "Generating implementable policies (randomly) ..." << endl;
-//
-//    auto max_return = 0.0;
-//    indvec max_pol(mdpi->obs_count(),-1);
-//
-//    for(auto i : range(0,20000)){
-//        auto rand_pol = mdpi->random_policy();
-//
-//        auto ret = mdp->vi_jac_fix(numvec(0),discount, mdpi->obspol2statepol(rand_pol),
-//                    indvec(mdp->state_count(), 0)).total_return(initial);
-//
-//        if(ret > max_return){
-//            max_pol = rand_pol;
-//            max_return = ret;
-//        }
-//
-//        //cout << "index " << i << " return " << ret << endl;
-//    }
-//
-//    cout << "Maximal return " << max_return << endl;
-//    cout << "Best policy: ";
-//    print_vector(max_pol);
-//    cout << endl;
-//
-//    return 0;
-//
-//}
 
 /**
 A simple simulator class. The state represents a position in a chain
@@ -104,9 +33,8 @@ and actions move it up and down. The reward is equal to the position.
 
 Representation
 ~~~~~~~~~~~~~~
-- Decision state: position (int)
+- State: position (int)
 - Action: change (int)
-- Expectation state: position, action (int,int)
 */
 class Counter{
 private:
@@ -116,9 +44,8 @@ private:
     const int initstate;
 
 public:
-    typedef int DState;
-    typedef pair<int,int> EState;
-    typedef int Action;
+    using State = int;
+    using Action = int;
 
     /**
     Define the success of each action
@@ -131,15 +58,8 @@ public:
         return initstate;
     }
 
-    pair<int,int> transition_dec(int state, int action) const{
-        return make_pair(state,action);
-    }
-
-    pair<double,int> transition_exp(const pair<int,int> expstate) {
-        int pos = expstate.first;
-        int act = expstate.second;
-
-        int nextpos = d(gen) ? pos + act : pos;
+    pair<double,int> transition(int pos, int action) {
+        int nextpos = d(gen) ? pos + action : pos;
         return make_pair((double) pos, nextpos);
     }
 
@@ -147,14 +67,13 @@ public:
         return false;
     }
 
-    vector<int> actions(int) const{
-        return actions_list;
+    int action(State state, long index) const{
+        return actions_list[index];
     }
 
-    vector<int> actions() const{
-        return actions_list;
-    }
+    size_t action_count(State) const{return actions_list.size();};
 };
+
 
 /** A counter that terminates at either end as defined by the end state */
 class CounterTerminal : public Counter {
@@ -186,18 +105,18 @@ int main(void){
     const prec_t discount = 0.9;
 
     CounterTerminal sim(0.9,0,terminal_state,1);
-    RandomPolicySI<CounterTerminal> random_pol(sim);
+    RandomPolicy<CounterTerminal> random_pol(sim);
 
-    Samples<CounterTerminal> samples;
-    simulate_stateless(sim,samples,random_pol,100,100);
-    simulate_stateless(sim,samples,[](int){return 1;},10,20);
-    simulate_stateless(sim,samples,[](int){return -1;},10,20);
+    auto samples = make_samples<CounterTerminal>();
+    simulate(sim,samples,random_pol,100,100);
+    simulate(sim,samples,[](int){return 1;},10,20);
+    simulate(sim,samples,[](int){return -1;},10,20);
 
-    SampleDiscretizerSI<CounterTerminal> sd;
+    SampleDiscretizerSI<typename CounterTerminal::State, typename CounterTerminal::Action> sd;
     // initialize action values
     sd.add_action(-1); sd.add_action(+1);
     //initialize state values
-    for(auto i : range(-terminal_state,terminal_state)) sd.add_dstate(i);
+    for(auto i : util::lang::range(-terminal_state,terminal_state)) sd.add_state(i);
 
     sd.add_samples(samples);
 
@@ -206,7 +125,7 @@ int main(void){
     auto mdp = smdp.get_mdp();
     auto&& initial = smdp.get_initial();
 
-    auto&& sol = mdp->mpi_jac_ave(numvec(0),discount);
+    auto&& sol = mdp->mpi_jac(Uncertainty::Average,discount);
 
     cout << "Optimal policy: "; print_vector(sol.policy); cout << "Return " <<  sol.total_return(initial) << endl;
 
@@ -214,7 +133,7 @@ int main(void){
     indvec observations(mdp->state_count(), -1);
     size_t last_obs(0), inobs(0);
     cout << "Observations: " << mdp->state_count() << " states  ";
-    for(auto i : range(size_t(0), mdp->state_count())){
+    for(auto i : util::lang::range(size_t(0), mdp->state_count())){
         // check if this is a terminal state
         if(mdp->get_state(i).action_count() == 0 || inobs >= 2){
             if(inobs > 0 && mdp->get_state(i).action_count() == 0){
@@ -237,7 +156,7 @@ int main(void){
 
     isol = mdpi.solve_reweighted(10, discount, randompolicy);
 
-    auto sol_impl = mdp->vi_jac_fix(numvec(0),discount, mdpi.obspol2statepol(isol),
+    auto sol_impl = mdp->vi_jac_fix(discount, mdpi.obspol2statepol(isol),
                     indvec(mdp->state_count(), 0));
 
     cout << "Implementable pol: "; print_vector(isol);
@@ -248,10 +167,11 @@ int main(void){
     auto max_return = 0.0;
     indvec max_pol(mdpi.obs_count(),-1);
 
-    for(auto i : range(0,200)){
+    for(auto i : util::lang::range(0,200)){
+        (void)(i);
         auto rand_pol = mdpi.random_policy();
 
-        auto ret = mdp->vi_jac_fix(numvec(0),discount, mdpi.obspol2statepol(rand_pol),
+        auto ret = mdp->vi_jac_fix(discount, mdpi.obspol2statepol(rand_pol),
                     indvec(mdp->state_count(), 0)).total_return(initial);
 
         if(ret > max_return){
