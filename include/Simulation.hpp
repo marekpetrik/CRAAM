@@ -170,7 +170,6 @@ simulate_return(Sim& sim, prec_t discount,
                 random_device::result_type seed = random_device{}()){
 
     long transitions = 0;
-
     // initialize random numbers to be used with random termination
     default_random_engine generator(seed);
     uniform_real_distribution<double> distribution(0.0,1.0);
@@ -180,13 +179,12 @@ simulate_return(Sim& sim, prec_t discount,
     numvec returns(runs);
 
     for(auto run : range(0l,runs)){
-
         typename Sim::State state = sim.init_state();
         start_states[run] = state;
 
         prec_t runreturn = 0;
         for(auto step : range(0l,horizon)){
-            // check form termination conditions
+            // check from-state termination conditions
             if(sim.end_condition(state))
                 break;
 
@@ -197,19 +195,14 @@ simulate_return(Sim& sim, prec_t discount,
             auto nextstate = move(reward_state.second);
 
             runreturn += reward * pow(discount, step);
-
             state = move(nextstate);
-
             // test the termination probability only after at least one transition
             if( (prob_term > 0.0) && (distribution(generator) <= prob_term) )
                 break;
             transitions++;
         };
-
         returns[run] = runreturn;
-
     }
-
     return make_pair(move(start_states), move(returns));
 }
 

@@ -117,7 +117,7 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
                         const indvec& natpolicy,
                         const numvec& valuefunction,
                         unsigned long iterations,
-                        prec_t maxresidual=SOLPREC) const;
+                        prec_t maxresidual) const;
         
         string to_json() const;
 
@@ -395,11 +395,8 @@ cdef class MDP:
     cpdef vi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual=0):
         """
-        Runs value iteration using the worst case (simplex) distribution for the 
-        outcomes.
-        
-        This is the parallel version of the update with values updates for all states
-        simultaneously.
+        Value iteration. This is the parallel (Jacobi) version of the update 
+        with values updates for all states simultaneously.
         
         Parameters
         ----------
@@ -432,6 +429,45 @@ cdef class MDP:
         return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations
 
+
+    cpdef vi_jac_fix(self, np.ndarray[long] policy, long iterations=DEFAULT_ITERS, \
+                        valuefunction = np.empty(0), double maxresidual=0):
+        """
+        Value iteration for a fixed policy. Can be used to compute the return of a policy. 
+        This is the parallel (Jacobi) version of the update  with values updates for 
+        all states simultaneously.
+        
+        Parameters
+        ----------
+        policy : np.ndarray
+            Policy to use in computing the value function
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+        self._check_value(valuefunction)
+        
+        cdef np.ndarray[long] natpolicy = np.zeros(dereference(self.thisptr).state_count(), dtype=long)
+        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac_fix(self.discount,\
+                        policy,natpolicy,valuefunction,iterations,maxresidual)
+
+        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations
 
     cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
                                     double maxresidual = 0, long valiterations = -1, int stype=0,
@@ -875,10 +911,9 @@ cdef class SimulatorMDP:
         if discount is None:
             discount = self._discount
 
+        cdef pair[indvec,numvec] result
         cdef ModelDeterministicPolicy * rp = \
                 new ModelDeterministicPolicy(dereference(self._thisptr), policy)
-        
-        cdef pair[indvec,numvec] result
         try:
             result = simulate_return[ModelSimulator](dereference(self._thisptr), \
                         discount, dereference(rp), horizon, runs, prob_term);
@@ -1675,7 +1710,7 @@ cdef class MDPIR:
         return dereference(self.thisptr).obs_count()
 
     def total_return(self, np.ndarray[long] obspol):
-        """ """
+        """ The return of an interpretable policy """
         assert len(obspol) == self.obs_count()
         return dereference(self.thisptr).total_return(obspol, self.discount, 1e-8)
 

@@ -283,10 +283,8 @@ auto GRMDP<SType>::mpi_jac(Uncertainty type,
                             prec_t maxresidual_vi,
                             bool show_progress) const -> SolType{
 
-    //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
-    //                      "Unknown/invalid (average not supported) optimization type.");
 
-    // just quit if there are not states
+    // just quit if there are no states
     if( state_count() == 0)
         return SolType();
 
