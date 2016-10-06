@@ -1015,6 +1015,9 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         CTransition& get_outcome(long outcomeid)
         size_t outcome_count()
 
+        void set_threshold(prec_t threshold)
+        prec_t get_threshold()
+
     cdef cppclass CL1RobustState "craam::L1RobustState":
         CL1OutcomeAction& get_action(long actionid)
         size_t action_count()
@@ -1133,7 +1136,6 @@ cdef class RMDP:
         add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,
                                 toid, probability, reward)
 
-
     cpdef long state_count(self):
         """ 
         Returns the number of states 
@@ -1172,11 +1174,39 @@ cdef class RMDP:
         Parameters
         ----------
         stateid : int
-            Number of the state
+            State index
         actionid : int
-            Number of the action
+            Action index
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
+
+    cpdef double get_threshold(self, long stateid, long actionid):
+        """ 
+        Returns the robustness threshold for the given state and action 
+
+        Parameters
+        ----------
+        stateid : int
+            State index
+        actionid : int
+            Action index
+        """
+        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_threshold()
+
+    cpdef set_threshold(self, long stateid, long actionid, double threshold):
+        """ 
+        Sets the robustness threshold for the given state and action 
+
+        Parameters
+        ----------
+        stateid : int
+            State index
+        actionid : int
+            Action index
+        threshold : double
+            New threshold value
+        """
+        dereference(self.thisptr).get_state(stateid).get_action(actionid).set_threshold(threshold)
 
 
     cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
@@ -1350,6 +1380,15 @@ cdef class RMDP:
 
         If allowzeros = False then outcomes are added only for transitions with positive
         probabilities.
+
+        The initial thresholds are all set to 0.
+
+        Parameters
+        ----------
+        mdp : MDP   
+            The source MDP
+        allowzeros : bool
+            Whether to allow outcomes to states with zero transition probabilities
         """
         cdef RMDP_L1 rmdp = robustify_l1(dereference(mdp.thisptr), allowzeros)
         self.thisptr.reset(new RMDP_L1(rmdp))

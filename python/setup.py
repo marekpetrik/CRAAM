@@ -39,9 +39,9 @@ setup(
     author_email='marekpetrik@gmail.com',
     packages=['craam'],
     scripts=[],
-    url='',
+    url='http://www.github.com/marekpetrik/craam',
     license='LICENSE',
-    description='Algorithms for solving robust and approximate (and plain) Markov decision processes',
+    description='Algorithms for solving robust and approximate and plain Markov decision processes',
     install_requires=[
     ],
     cmdclass = {'build_ext' : build_ext},
