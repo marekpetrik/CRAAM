@@ -109,7 +109,7 @@ void Transition::normalize(){
 prec_t Transition::compute_value(numvec const& valuefunction, prec_t discount) const{
 
     if(indices.empty())
-        throw range_error("No transitions defined. Cannot compute value.");
+        throw range_error("No transitions defined for the state action-pair. Cannot compute value.");
 
     prec_t value = 0.0;
 

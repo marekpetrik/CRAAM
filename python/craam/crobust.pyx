@@ -991,16 +991,47 @@ cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
             p >= 0
             
     where o is the objective value
+
+    See Also
+    --------
+    worstcase_l1 returns also the optimal solution not only the optimal value
           
     Notes
     -----
     This implementation works in O(n log n) time because of the sort. Using
     quickselect to choose the correct quantile would work in O(n) time.
-    
-    The parameter z may be a masked array. In that case, the distribution values 
-    are normalized to the unmasked entries.
     """
     return worstcase_l1(z,q,t).second
+
+def worstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
+    """
+    Computes a worstcase distribution subject to an L1 constraint
+
+    o = cworstcase_l1(z,q,t)
+    
+    Computes the solution of:
+    min_p   p^T * z
+    s.t.    ||p - q|| <= t
+            1^T p = 1
+            p >= 0
+            
+    where o is the objective value
+          
+    Returns
+    -------
+    p_opt : np.ndarray
+        Optimal solution
+    f_opt : float
+        Optimal objective value
+          
+    Notes
+    -----
+    This implementation works in O(n log n) time because of the sort. Using
+    quickselect to choose the correct quantile would work in O(n) time.
+    """
+    cdef np.ndarray p = worstcase_l1(z,q,t).first
+    cdef double f = worstcase_l1(z,q,t).second
+    return p, f
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
