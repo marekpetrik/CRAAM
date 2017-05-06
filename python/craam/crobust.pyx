@@ -974,15 +974,16 @@ cdef class SampledMDP:
 # distutils: library_dirs = ../lib 
 # distutils: include_dirs = ../include 
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
-    pair[vector[double],double] worstcase_l1(const vector[double] & z, \
+cdef extern from "../include/definitions.hpp" namespace 'craam' nogil:
+    pair[numvec,double] c_worstcase_l1 "craam::worstcase_l1" (const vector[double] & z, \
                         const vector[double] & q, double t)
 
-cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
+
+cpdef worstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
     """
     Computes a worstcase distribution subject to an L1 constraint
 
-    o = cworstcase_l1(z,q,t)
+    o = worstcase_l1(z,q,t)
     
     Computes the solution of:
     min_p   p^T * z
@@ -994,20 +995,26 @@ cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
 
     See Also
     --------
-    worstcase_l1 returns also the optimal solution not only the optimal value
+    worstcase_l1_dst returns also the optimal solution not only the optimal value
           
     Notes
     -----
     This implementation works in O(n log n) time because of the sort. Using
     quickselect to choose the correct quantile would work in O(n) time.
     """
-    return worstcase_l1(z,q,t).second
+    return c_worstcase_l1(z,q,t).second
 
-def worstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
+cpdef cworstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
+    """
+    DEPRECATED: use worstcase_l1 instead
+    """
+    return worstcase_l1(z,q,t)
+
+def worstcase_l1_dst(np.ndarray[double] z, np.ndarray[double] q, double t):
     """
     Computes a worstcase distribution subject to an L1 constraint
 
-    o = cworstcase_l1(z,q,t)
+    p,o = worstcase_l1_dst(z,q,t)
     
     Computes the solution of:
     min_p   p^T * z
@@ -1029,9 +1036,8 @@ def worstcase_l1(np.ndarray[double] z, np.ndarray[double] q, double t):
     This implementation works in O(n log n) time because of the sort. Using
     quickselect to choose the correct quantile would work in O(n) time.
     """
-    cdef np.ndarray p = worstcase_l1(z,q,t).first
-    cdef double f = worstcase_l1(z,q,t).second
-    return p, f
+    cdef pair[numvec, double] x = c_worstcase_l1(z,q,t)
+    return x.first, x.second
 
 cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
