@@ -3,6 +3,8 @@ title: "CRAAM: Robust And Approximate Markov decision processes"
 output: github_document
 ---
 
+[![Build Status](https://travis-ci.org/marekpetrik/CRAAM.svg?branch=master)](https://travis-ci.org/marekpetrik/CRAAM)
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```

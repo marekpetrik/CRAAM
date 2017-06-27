@@ -1,6 +1,8 @@
 CRAAM: Robust And Approximate Markov decision processes
 ================
 
+[![Build Status](https://travis-ci.org/marekpetrik/CRAAM.svg?branch=master)](https://travis-ci.org/marekpetrik/CRAAM)
+
 Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods.
 
 The library supports standard finite or infinite horizon discounted MDPs \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
@@ -233,8 +235,8 @@ value,policy,residual,iterations = mdp.mpi_jac(100)
 print('Value function s0-s9:', value[:10])
 ```
 
-    ## Value function s0-s9: [ 66.44550757  66.33966084  66.5940517   66.756899    66.67565465
-    ##   66.50746418  66.60688274  66.61276425  66.12316016  66.71227873]
+    ## Value function s0-s9: [ 69.66477134  69.69878666  69.86349142  69.35592051  69.72738515
+    ##   69.27471716  69.3910742   69.37349951  69.71188441  69.59685855]
 
 This example can be easily converted to a robust MDP by appropriately defining additional outcomes (the options available to nature) with transition matrices and rewards.
 
