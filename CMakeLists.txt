@@ -132,7 +132,7 @@ if (BUILD_TESTS)
     add_executable (unit_tests ${TSTS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
     
-    add_custom_target (testit   COMMAND unit_tests --show_progress --detect_memory_leaks --detect_fp_exceptions
+    add_custom_target (testit   COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
 endif (BUILD_TESTS)
