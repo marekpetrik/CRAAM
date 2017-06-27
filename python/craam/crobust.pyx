@@ -1099,11 +1099,10 @@ cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
     void set_outcome_dst[Model](Model& mdp, size_t stateid, size_t actionid, const numvec& dist)
     RMDP_L1 robustify_l1(const CMDP& mdp, bool allowzeros)
 
-
 cdef class RMDP:
     """
-    Contains the definition of the robust MDP and related optimization algorithms.
-    The algorithms can handle both robust and optimistic solutions.
+    An interface for solving robust MDPs (worst-case nature) and o
+    ptimistic MDPs (best-case nature). The uncertainty is bounded by L1 norms. 
     
     The states, actions, and outcomes are identified by consecutive ids, independently
     numbered for each type.

@@ -14,9 +14,9 @@ namespace craam {
 Introduction
 ------------
 
-Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods. 
+Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods.
 
-The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. Some basic stochazstic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
+The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
 
 The robust model extends the regular MDPs [Iyengar2005]. The library allows to model uncertainty in *both* the transitions and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to [Filar1997].
 
@@ -36,7 +36,7 @@ See the README.rst
 Getting Started
 ---------------
 
-The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The avialable specializations are:
+The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The available specializations are:
 
 - craam::MDP : plain MDP with no definition of uncertainty
 - craam::RMDP_D : a robust/uncertain with discrete outcomes with the best/worst one chosen
@@ -45,17 +45,16 @@ The main interface to the library is through the templated class GRMDP. The temp
 
 States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
 
-Transitions are added through function add_transition. New states, actions, or outcomes are automatically added based on the new transition. The actual algorithms are solved using:
+Transitions are added through function add_transition. New states, actions, or outcomes are automatically added based on the new transition. Main supported solution methods are:
 
 | Method                  |  Algorithm     |
 | ----------------------- | ----------------
-| GRMDP::vi_gs            | Gauss-Seidel value iteration; runs in a single thread. Computes the worst-case outcome for each action.
-| GRMDP::vi_jac           | Jacobi value iteration; parallelized with OpenMP. Computes the worst-case outcome for each action.
-| GRMDP::mpi_jac          | Jacobi modified policy iteration; parallelized with OpenMP. Computes the worst-case outcome for each action. Generally, modified policy iteration is vastly more efficient than value iteration.
-| GRMDP::vi_jac_fix       | Jacobi value iteration for policy evaluation; parallelized with OpenMP. Computes the worst-case outcome for each action.
+| GRMDP::vi_gs            | Gauss-Seidel value iteration; runs in a single thread.
+| GRMDP::vi_jac           | Jacobi value iteration; parallelized using OpenMP.
+| GRMDP::mpi_jac          | Jacobi modified policy iteration; parallelized with OpenMP. Generally, modified policy iteration is vastly more efficient than value iteration.
+| GRMDP::vi_jac_fix       | Jacobi value iteration for policy evaluation; parallelized with OpenMP.
 
-
-For uncertain MDPs, each method supports average, robust, and optimistic computation modes.
+Each of the methods above supports average, robust, and optimistic computation modes for the Nature.
 
 The following is a simple example of formulating and solving a small MDP.
 
