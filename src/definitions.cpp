@@ -96,7 +96,7 @@ The following is a simple example of formulating and solving a small MDP.
 To compile the file, run:
 
 \code{.sh}
-     $ g++ -fopenmp -std=c++11 -I<path_to_RAAM.hpp> -L <path_to_libcraam.a> simple.cpp -lcraam
+     $ g++ -fopenmp -std=c++14 -I<path_to_RAAM.hpp> -L <path_to_libcraam.a> simple.cpp -lcraam
 \endcode
 
 Notice that the order of the arguments matters (`-lcraam` must follow the file name).
