@@ -96,8 +96,12 @@ The following is a simple example of formulating and solving a small MDP.
 To compile the file, run:
 
 \code{.sh}
-     $ g++ -std=c++11 -I<path_to_RAAM.h> -L . -lcraam simple.cpp
+     $ g++ -fopenmp -std=c++11 -I<path_to_RAAM.hpp> -L <path_to_libcraam.a> simple.cpp -lcraam
 \endcode
+
+Notice that the order of the arguments matters (`-lcraam` must follow the file name).
+
+Also note that the library first needs to be build. See the README file for the instructions.
 
 Common Use Cases
 ----------------
