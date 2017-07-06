@@ -16,7 +16,6 @@
 
 #include "cpp11-range-master/range.hpp"
 
-
 // **********************************************************************
 // ***********************    HELPER FUNCTIONS    ***********************
 // **********************************************************************
@@ -307,7 +306,7 @@ GRMDP<SType> robustify(const MDP& mdp, bool allowzeros){
 }
 
 /// Instantiated version of robustify
-RMDP_L1 robustify_l1(const MDP& mdp, bool allowzeros){
+inline RMDP_L1 robustify_l1(const MDP& mdp, bool allowzeros){
     return robustify<L1RobustState>(mdp, allowzeros);
 }
 

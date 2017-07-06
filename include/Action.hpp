@@ -17,7 +17,6 @@
 
 namespace craam {
 
-
 using namespace std;
 using namespace util::lang;
 
@@ -50,45 +49,6 @@ public:
 
     /** Initializes outcomes to the provided transition vector */
     RegularAction(const Transition& outcome) : outcome(outcome) {};
-
-    /**
-    Computes the value of the action.
-    \param valuefunction State value function to use
-    \param discount Discount factor
-    \return Action value
-    */
-    prec_t value(const numvec& valuefunction, prec_t discount) const
-        {return outcome.compute_value(valuefunction, discount);};
-
-    /**
-    Computes a value of the action: see RegularAction::value. The
-    purpose of this method is for the general robust MDP setting.
-    */
-    prec_t average(const numvec& valuefunction, prec_t discount) const
-        {return value(valuefunction, discount);};
-
-    /**
-    Computes a value of the action: see RegularAction::value. The
-    purpose of this method is for the general robust MDP setting.
-    */
-    pair<OutcomeId, prec_t>
-    maximal(const numvec& valuefunction, prec_t discount) const
-        {return make_pair(0,value(valuefunction, discount));};
-
-    /**
-    Computes a value of the action: see RegularAction::value. The
-    purpose of this method is for the general robust MDP setting.
-    */
-    pair<OutcomeId, prec_t>
-    minimal(const numvec& valuefunction, prec_t discount) const
-        {return make_pair(0,value(valuefunction, discount));};
-
-    /**
-    Computes a value of the action: see RegularAction::value. The
-    purpose of this method is for the general robust MDP setting.
-    */
-    prec_t fixed(const numvec& valuefunction, prec_t discount, OutcomeId index) const
-        {return value(valuefunction, discount);};
 
     /** Returns the outcomes. */
     vector<Transition> get_outcomes() const {return vector<Transition>{outcome};};
@@ -297,86 +257,7 @@ public:
     DiscreteOutcomeAction(const vector<Transition>& outcomes)
         : OutcomeManagement(outcomes){};
 
-    /**
-    Computes the maximal outcome for the value function.
-    \param valuefunction Value function reference
-    \param discount Discount factor
-    \return The index and value of the maximal outcome
-     */
-    pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    maximal(numvec const& valuefunction, prec_t discount) const{
-
-        if(outcomes.empty()) throw invalid_argument("Action with no outcomes.");
-        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-        long result = -1;
-        for(size_t i = 0; i < outcomes.size(); i++){
-            const auto& outcome = outcomes[i];
-            auto value = outcome.compute_value(valuefunction, discount);
-            if(value > maxvalue){
-                maxvalue = value;
-                result = i;
-            }
-        }
-        return make_pair(result,maxvalue);
-    }
-
-    /**
-    Computes the minimal outcome for the value function
-    \param valuefunction Value function reference
-    \param discount Discount factor
-    \return The index and value of the maximal outcome
-    */
-    pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    minimal(numvec const& valuefunction, prec_t discount) const{
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes.");
-
-        prec_t minvalue = numeric_limits<prec_t>::infinity();
-        long result = -1;
-
-        for(size_t i = 0; i < outcomes.size(); i++){
-            const auto& outcome = outcomes[i];
-
-            auto value = outcome.compute_value(valuefunction, discount);
-            if(value < minvalue){
-                minvalue = value;
-                result = i;
-            }
-        }
-        return make_pair(result,minvalue);
-    }
-
-    /**
-    Computes the average outcome using a uniform distribution.
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    \return Mean value of the action
-     */
-    prec_t average(numvec const& valuefunction, prec_t discount) const{
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes.");
-
-        prec_t averagevalue = 0.0;
-        const prec_t weight = 1.0 / prec_t(outcomes.size());
-        for(size_t i = 0; i < outcomes.size(); ++i)
-            averagevalue += weight * outcomes[i].compute_value(valuefunction, discount);
-
-        return averagevalue;
-    }
-
-    /**
-    Computes the action value for a fixed index outcome.
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    \param index Index of the outcome used
-    \return Value of the action
-     */
-    prec_t fixed(numvec const& valuefunction, prec_t discount,
-                       DiscreteOutcomeAction::OutcomeId index) const{
-        assert(index >= 0l && index < (long) outcomes.size());
-        return outcomes[index].compute_value(valuefunction, discount); };
-
-    /** Whether the provided outcome is valid */
+     /** Whether the provided outcome is valid */
     bool is_outcome_correct(OutcomeId oid) const
         {return (oid >= 0) && ((size_t) oid < outcomes.size());};
 
@@ -422,9 +303,6 @@ where \f$ v \f$ are the values for individual outcomes, \f$ d \f$ is the nominal
 outcome distribution, and \f$ t \f$ is the threshold.
 See L1Action for an example of an instance of this template class.
 
-The function that determines the uncertainty set is defined by NatureConstr
-template parameter.
-
 The distribution d over outcomes is uniform by default:
 see WeightedOutcomeAction::create_outcome.
 
@@ -433,7 +311,6 @@ and cannot be used during a simulation. See is_valid.
 
 Actions are constructed as valid by default.
 */
-template<NatureConstr nature>
 class WeightedOutcomeAction : public OutcomeManagement{
 
 protected:
@@ -454,90 +331,6 @@ public:
     WeightedOutcomeAction(const vector<Transition>& outcomes)
         : OutcomeManagement(outcomes), threshold(0), distribution(0) {};
 
-    /**
-    Computes the maximal outcome distribution constraints on the nature's distribution.
-    Template argument nature represents the function used to select the constrained distribution
-    over the outcomes.
-    Does not work when the number of outcomes is zero.
-    \param valuefunction Value function reference
-    \param discount Discount factor
-    \return Outcome distribution and the mean value for the maximal bounded solution
-     */
-    pair<OutcomeId,prec_t> maximal(numvec const& valuefunction, prec_t discount) const{
-        assert(distribution.size() == outcomes.size());
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes.");
-        numvec outcomevalues(outcomes.size());
-        for(size_t i = 0; i < outcomes.size(); i++){
-            const auto& outcome = outcomes[i];
-            outcomevalues[i] = - outcome.compute_value(valuefunction, discount);
-        }
-        auto result = nature(outcomevalues, distribution, threshold);
-        result.second = -result.second;
-        return result;
-    }
-
-    /**
-    Computes the minimal outcome distribution constraints on the nature's distribution
-    Template argument nature represents the function used to select the constrained distribution
-    over the outcomes.
-    Does not work when the number of outcomes is zero.
-    \param valuefunction Value function reference
-    \param discount Discount factor
-    \return Outcome distribution and the mean value for the minimal bounded solution
-     */
-    pair<OutcomeId,prec_t> minimal(numvec const& valuefunction, prec_t discount) const{
-        assert(distribution.size() == outcomes.size());
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes");
-        numvec outcomevalues(outcomes.size());
-        for(size_t i = 0; i < outcomes.size(); i++){
-            const auto& outcome = outcomes[i];
-            outcomevalues[i] = outcome.compute_value(valuefunction, discount);
-        }
-        return nature(outcomevalues, distribution, threshold);
-    }
-
-    /**
-    Computes the average outcome using a uniform distribution.
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    \return Mean value of the action
-     */
-    prec_t average(numvec const& valuefunction, prec_t discount) const{
-        assert(distribution.size() == outcomes.size());
-
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes");
-
-        prec_t averagevalue = 0.0;
-        for(size_t i = 0; i < outcomes.size(); i++)
-            averagevalue += distribution[i] * outcomes[i].compute_value(valuefunction, discount);
-
-        return averagevalue;
-    }
-
-    /**
-    Computes the action value for a fixed index outcome.
-    \param valuefunction Updated value function
-    \param discount Discount factor
-    \param index Index of the outcome used
-    \return Value of the action
-     */
-    prec_t fixed(numvec const& valuefunction, prec_t discount, OutcomeId dist) const{
-        assert(distribution.size() == outcomes.size());
-
-        if(outcomes.empty())
-            throw invalid_argument("Action with no outcomes");
-        if(dist.size() != outcomes.size())
-            throw invalid_argument("Distribution size does not match number of outcomes");
-
-        prec_t averagevalue = 0.0;
-        for(size_t i = 0; i < outcomes.size(); i++)
-            averagevalue += dist[i] * outcomes[i].compute_value(valuefunction, discount);
-
-        return averagevalue;
-    }
 
     /**
     Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid
@@ -749,13 +542,6 @@ public:
         return result;
     }
 };
-
-// **************************************************************************************
-//  L1 Outcome Action
-// **************************************************************************************
-
-/// Action with robust outcomes with L1 constraints on the distribution
-typedef WeightedOutcomeAction<worstcase_l1> L1OutcomeAction;
 
 }
 

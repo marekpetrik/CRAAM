@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Action.hpp"
+#include "valueiteration.hpp"
 
 #include <utility>
 #include <tuple>
@@ -107,138 +108,6 @@ public:
         return move(get_action(actionid).mean_transition(outcomeid));
     }
 
-    /**
-    Finds the maximal optimistic action.
-    When there are no action then the return is assumed to be 0.
-    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
-    */
-    tuple<ActionId,OutcomeId,prec_t>
-    max_max(const numvec& valuefunction, prec_t discount) const{
-        if(is_terminal())
-            return make_tuple(-1,OutcomeId(),0);
-
-        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-        long result = -1l;
-        OutcomeId result_outcome;
-
-        for(size_t i = 0; i < actions.size(); i++){
-            const auto& action = actions[i];
-
-            // skip invalid actions
-            if(!action.is_valid()) continue;
-
-            auto value = action.maximal(valuefunction, discount);
-            if(value.second > maxvalue){
-                maxvalue = value.second;
-                result = i;
-                result_outcome = move(value.first);
-            }
-        }
-        return make_tuple(result,result_outcome,maxvalue);
-    }
-
-    /**
-    Finds the maximal pessimistic action
-    When there are no action then the return is assumed to be 0
-    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
-    */
-    tuple<ActionId,OutcomeId,prec_t>
-    max_min(const numvec& valuefunction, prec_t discount) const{
-        if(is_terminal())
-            return make_tuple(-1,OutcomeId(),0);
-
-        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-        long result = -1l;
-        OutcomeId result_outcome;
-
-        for(size_t i = 0; i < actions.size(); i++){
-            const auto& action = actions[i];
-
-            // skip invalid actions
-            if(!action.is_valid()) continue;
-
-            auto value = action.minimal(valuefunction, discount);
-            if(value.second > maxvalue){
-                maxvalue = value.second;
-                result = i;
-                result_outcome = move(value.first);
-            }
-        }
-        return make_tuple(result,result_outcome,maxvalue);
-    }
-
-    /**
-    Finds the action with the maximal average return
-    When there are no actions then the return is assumed to be 0.
-    \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
-    */
-    pair<ActionId,prec_t>
-    max_average(const numvec& valuefunction, prec_t discount) const{
-        if(is_terminal())
-            return make_pair(-1,0.0);
-
-        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-        long result = -1l;
-
-        for(size_t i = 0; i < actions.size(); i++){
-            auto const& action = actions[i];
-
-            // skip invalid actions
-            if(!action.is_valid()) continue;
-
-            auto value = action.average(valuefunction, discount);
-
-            if(value > maxvalue){
-                maxvalue = value;
-                result = i;
-            }
-        }
-        return make_pair(result, maxvalue);
-    }
-
-    /**
-    Computes the value of a fixed action
-    \return Value of state, 0 if it's terminal regardless of the action index
-    */
-    prec_t fixed_average(numvec const& valuefunction, prec_t discount,
-                         ActionId actionid) const{
-    
-        // this is the terminal state, return 0
-        if(is_terminal())
-            return 0;
-
-        if(actionid < 0 || actionid >= (long) actions.size())
-            throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
-
-        const auto& action = actions[actionid];
-
-        // cannot assume invalid actions
-        if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
-
-        return action.average(valuefunction, discount);
-    
-    }
-
-    /**
-    Computes the value of a fixed action.
-    \return Value of state, 0 if it's terminal regardless of the action index
-    */
-    prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
-                       ActionId actionid, OutcomeId outcomeid) const{
-   
-       // this is the terminal state, return 0
-        if(is_terminal())
-            return 0;
-
-        if(actionid < 0 || actionid >= (long) actions.size())
-                throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
-
-        const auto& action = actions[actionid];
-        // cannot assume invalid actions
-        if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
-
-        return action.fixed(valuefunction, discount, outcomeid);
-    }
 
     /** Returns json representation of the state
     \param stateid Includes also state id*/
@@ -256,7 +125,6 @@ public:
         result += ("]}");
         return result;
     }
-
 };
 
 // **********************************************************************
@@ -268,7 +136,7 @@ typedef SAState<RegularAction> RegularState;
 /// State with uncertain outcomes; unconstrained and now weights
 typedef SAState<DiscreteOutcomeAction> DiscreteRobustState;
 /// State with uncertain outcomes with L1 constraints on the distribution
-typedef SAState<L1OutcomeAction> L1RobustState;
+typedef SAState<WeightedOutcomeAction> L1RobustState;
 }
 
 

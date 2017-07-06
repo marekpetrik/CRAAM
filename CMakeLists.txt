@@ -6,6 +6,10 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
+# add cotire support (speed up compilation via precompiled headers)
+#set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+#include(cotire)
+
 set(VERSION "1.0.0")
 project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
@@ -121,7 +125,7 @@ add_custom_target (develop COMMAND develop_exe
 if (BUILD_TESTS)
     add_executable (unit_tests ${TSTS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-    
+    #cotire(unit_tests)
     add_custom_target (testit   COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
@@ -129,6 +133,7 @@ endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
 add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
+#cotire(benchmark)
 #target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
 
 # **** DOCUMENTATION ****

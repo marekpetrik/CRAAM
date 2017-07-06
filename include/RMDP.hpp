@@ -292,16 +292,18 @@ public:
     size_t size() const {return state_count();};
 
     /** Retrieves an existing state */
-    const SType& get_state(long stateid) const {assert(stateid >= 0 && size_t(stateid) < state_count());
-                                                return states[stateid];};
+    const SType& get_state(long stateid) const {
+        assert(stateid >= 0 && size_t(stateid) < state_count());
+        return states[stateid];};
 
     /** Retrieves an existing state */
     const SType& operator[](long stateid) const {return get_state(stateid);};
 
 
     /** Retrieves an existing state */
-    SType& get_state(long stateid) {assert(stateid >= 0 && size_t(stateid) < state_count());
-                                    return states[stateid];};
+    SType& get_state(long stateid) {
+        assert(stateid >= 0 && size_t(stateid) < state_count());
+        return states[stateid];};
 
     /** Retrieves an existing state */
     SType& operator[](long stateid){return get_state(stateid);};
@@ -319,11 +321,8 @@ public:
         for(auto const& s : states){
             for(auto const& a : s.get_actions()){
                 for(auto const& t : a.get_outcomes()){
-                    if(!t.is_normalized())
-                        return false;
-                }
-            }
-        }
+                    if(!t.is_normalized()) return false;
+        } } }
         return true;
     }
 
@@ -335,7 +334,8 @@ public:
 
     /**
     Computes occupancy frequencies using matrix representation of transition
-    probabilities. This method does not scale to larger state spaces
+    probabilities. This method may not scale well
+
     \param init Initial distribution (alpha)
     \param discount Discount factor (gamma)
     \param policy Policy of the decision maker
@@ -409,396 +409,7 @@ public:
         return -1;
     }
 
-    // ----------------------------------------------
-    // Solution methods
-    // ----------------------------------------------
-
-    /**
-    Gauss-Seidel variant of value iteration (not parallelized).
     
-    This function is suitable for computing the value function of a finite state MDP. If
-    the states are ordered correctly, one iteration is enough to compute the optimal value function.
-    Since the value function is updated from the first state to the last, the states should be ordered
-    in reverse temporal order.
-
-    Because this function updates the array value during the iteration, it may be
-    difficult to paralelize easily.
-    \param type Type of realization of the uncertainty
-    \param discount Discount factor.
-    \param valuefunction Initial value function. Passed by value, because it is modified.
-    \param iterations Maximal number of iterations to run
-    \param maxresidual Stop when the maximal residual falls below this value.
-     */
-    SolType vi_gs(Uncertainty type,
-                  prec_t discount,
-                  numvec valuefunction=numvec(0),
-                  unsigned long iterations=MAXITER,
-                  prec_t maxresidual=SOLPREC) const{
-    
-        
-        //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
-        //              "Unknown/invalid (average not supported) optimization type.");
-
-
-        // just quit if there are not states
-        if( state_count() == 0)
-            return SolType();
-
-        // check if the value function is a correct size, and if it is length 0
-        // then creates an appropriate size
-        if(valuefunction.size() > 0){
-            if(valuefunction.size() != states.size())
-                throw invalid_argument("Incorrect dimensions of value function.");
-        }else
-            valuefunction.assign(state_count(), 0.0);
-
-
-        GRMDP<SType>::ActionPolicy policy(states.size());
-        GRMDP<SType>::OutcomePolicy outcomes(states.size());
-
-        prec_t residual = numeric_limits<prec_t>::infinity();
-        size_t i;
-
-        for(i = 0; i < iterations && residual > maxresidual; i++){
-            residual = 0;
-
-            for(size_t s = 0l; s < states.size(); s++){
-                const auto& state = states[s];
-
-                tuple<ActionId,OutcomeId,prec_t> newvalue;
-
-                switch(type){
-                case Uncertainty::Robust:
-                    newvalue = state.max_min(valuefunction,discount);
-                    break;
-                case Uncertainty::Optimistic:
-                    newvalue = state.max_max(valuefunction,discount);
-                    break;
-                case Uncertainty::Average:
-                    pair<typename SType::ActionId,prec_t> avgvalue =
-                        state.max_average(valuefunction,discount);
-                    newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
-                    break;
-                }
-
-                residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
-                valuefunction[s] = get<2>(newvalue);
-
-                policy[s] = get<0>(newvalue);
-                outcomes[s] = get<1>(newvalue);
-            }
-        }
-        return SolType(valuefunction,policy,outcomes,residual,i);
-    }
-
-    /**
-    Jacobi variant of value iteration. This method uses OpenMP to parallelize the computation.
-    \param type Type of realization of the uncertainty
-    \param valuefunction Initial value function.
-    \param discount Discount factor.
-    \param iterations Maximal number of iterations to run
-    \param maxresidual Stop when the maximal residual falls below this value.
-     */
-    SolType vi_jac(Uncertainty type,
-                   prec_t discount,
-                   const numvec& valuefunction=numvec(0),
-                    unsigned long iterations=MAXITER,
-                    prec_t maxresidual=SOLPREC) const{
-    
-        //static_assert(type != Uncertainty::Robust || type != Uncertainty::Optimistic || type != Uncertainty::Average,
-        //                      "Unknown/invalid (average not supported) optimization type.");
-
-        // just quit if there are not states
-        if( state_count() == 0)
-            return SolType();
-
-        // check if the value function is a correct size, and if it is length 0
-        // then creates an appropriate size
-        if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
-            throw invalid_argument("Incorrect size of value function.");
-
-        numvec oddvalue(0);        // set in even iterations (0 is even)
-        numvec evenvalue(0);       // set in odd iterations
-
-        if(valuefunction.size() > 0){
-            oddvalue = valuefunction;
-            evenvalue = valuefunction;
-        }else{
-            oddvalue.assign(states.size(),0);
-            evenvalue.assign(states.size(),0);
-        }
-
-        GRMDP<SType>::ActionPolicy policy(states.size());
-        GRMDP<SType>::OutcomePolicy outcomes(states.size());
-
-        numvec residuals(states.size());
-
-        prec_t residual = numeric_limits<prec_t>::infinity();
-        size_t i;
-
-        for(i = 0; i < iterations && residual > maxresidual; i++){
-            numvec & sourcevalue = i % 2 == 0 ? oddvalue  : evenvalue;
-            numvec & targetvalue = i % 2 == 0 ? evenvalue : oddvalue;
-
-            #pragma omp parallel for
-            for(auto s = 0l; s < (long) states.size(); s++){
-                const auto& state = states[s];
-
-                tuple<ActionId,OutcomeId,prec_t> newvalue;
-
-                switch(type){
-                case Uncertainty::Robust:
-                    newvalue = state.max_min(sourcevalue,discount);
-                    break;
-                case Uncertainty::Optimistic:
-                    newvalue = state.max_max(sourcevalue,discount);
-                    break;
-                case Uncertainty::Average:
-                    pair<typename SType::ActionId,prec_t> avgvalue =
-                        state.max_average(sourcevalue,discount);
-                    newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
-                    break;
-                }
-
-                residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
-                targetvalue[s] = get<2>(newvalue);
-
-                policy[s] = get<0>(newvalue);
-                outcomes[s] = get<1>(newvalue);
-            }
-            residual = *max_element(residuals.begin(),residuals.end());
-        }
-        numvec & valuenew = i % 2 == 0 ? oddvalue : evenvalue;
-        return SolType(valuenew,policy,outcomes,residual,i);
-
-    }
-
-    /**
-    Modified policy iteration using Jacobi value iteration in the inner loop.
-    This method generalizes modified policy iteration to robust MDPs.
-    In the value iteration step, both the action *and* the outcome are fixed.
-
-    Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-    \param type Type of realization of the uncertainty
-    \param discount Discount factor
-    \param valuefunction Initial value function
-    \param iterations_pi Maximal number of policy iteration steps
-    \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-    \param iterations_vi Maximal number of inner loop value iterations
-    \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-                This value should be smaller than maxresidual_pi
-    \param show_progress Whether to report on progress during the computation
-    \return Computed (approximate) solution
-     */
-    SolType mpi_jac(Uncertainty type,
-                    prec_t discount,
-                    const numvec& valuefunction=numvec(0),
-                    unsigned long iterations_pi=MAXITER,
-                    prec_t maxresidual_pi=SOLPREC,
-                    unsigned long iterations_vi=MAXITER,
-                    prec_t maxresidual_vi=SOLPREC/2,
-                    bool show_progress=false) const{
-
-    
-        // just quit if there are no states
-        if( state_count() == 0)
-            return SolType();
-
-        // check if the value function is a correct size, and if it is length 0
-        // then creates an appropriate size
-        if( (valuefunction.size() > 0) && (valuefunction.size() != state_count()) )
-            throw invalid_argument("Incorrect size of value function.");
-
-        numvec oddvalue(0);        // set in even iterations (0 is even)
-        numvec evenvalue(0);       // set in odd iterations
-
-        if(valuefunction.size() > 0){
-            oddvalue = valuefunction;
-            evenvalue = valuefunction;
-        }else{
-            oddvalue.assign(states.size(),0);
-            evenvalue.assign(states.size(),0);
-        }
-
-        GRMDP<SType>::ActionPolicy policy(states.size());
-        GRMDP<SType>::OutcomePolicy outcomes(states.size());
-
-        numvec residuals(states.size());
-
-        prec_t residual_pi = numeric_limits<prec_t>::infinity();
-
-        size_t i; // defined here to be able to report the number of iterations
-
-        numvec * sourcevalue = & oddvalue;
-        numvec * targetvalue = & evenvalue;
-
-        for(i = 0; i < iterations_pi; i++){
-
-            if(show_progress)
-                cout << "Policy iteration " << i << "/" << iterations_pi << ":" << endl;
-
-            std::swap<numvec*>(targetvalue, sourcevalue);
-
-            prec_t residual_vi = numeric_limits<prec_t>::infinity();
-
-            // update policies
-            #pragma omp parallel for
-            for(auto s = 0l; s < (long) states.size(); s++){
-                const auto& state = states[s];
-
-                tuple<ActionId,OutcomeId,prec_t> newvalue;
-
-                switch(type){
-                case Uncertainty::Robust:
-                    newvalue = state.max_min(*sourcevalue,discount);
-                    break;
-                case Uncertainty::Optimistic:
-                    newvalue = state.max_max(*sourcevalue,discount);
-                    break;
-                case Uncertainty::Average:
-                    pair<typename SType::ActionId,prec_t> avgvalue =
-                        state.max_average(*sourcevalue,discount);
-                    newvalue = make_tuple(avgvalue.first,OutcomeId(),avgvalue.second);
-                    break;
-                }
-
-                residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
-                (*targetvalue)[s] = get<2>(newvalue);
-
-                policy[s] = get<0>(newvalue);
-                outcomes[s] = get<1>(newvalue);
-            }
-
-            residual_pi = *max_element(residuals.begin(),residuals.end());
-
-            if(show_progress)
-                cout << "    Bellman residual: " << residual_pi << endl;
-
-            // the residual is sufficiently small
-            if(residual_pi <= maxresidual_pi)
-                break;
-
-            if(show_progress)
-                cout << "    Value iteration: ";
-            // compute values using value iteration
-            for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
-                if(show_progress)
-                    cout << ".";
-
-                swap(targetvalue, sourcevalue);
-
-                #pragma omp parallel for
-                for(auto s = 0l; s < (long) states.size(); s++){
-                    prec_t newvalue = 0;
-
-                    switch(type){
-                    case Uncertainty::Robust:
-                    case Uncertainty::Optimistic:
-                        newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],outcomes[s]);
-                        break;
-                    case Uncertainty::Average:
-                        newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
-                        break;
-                    }
-
-                    residuals[s] = abs((*sourcevalue)[s] - newvalue);
-                    (*targetvalue)[s] = newvalue;
-                }
-                residual_vi = *max_element(residuals.begin(),residuals.end());
-            }
-            if(show_progress)
-                cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
-        }
-        numvec & valuenew = *targetvalue;
-        return SolType(valuenew,policy,outcomes,residual_pi,i);
-    }
-
-    /**
-    Value function evaluation using Jacobi iteration for a fixed policy.
-    and nature.
-    \param valuefunction Initial value function
-    \param discount Discount factor
-    \param policy Decision-maker's policy
-    \param natpolicy Nature's policy
-    \param iterations Maximal number of inner loop value iterations
-    \param maxresidual Stop the inner policy iteration when
-            the residual drops below this threshold.
-    \return Computed (approximate) solution (value function)
-     */
-    SolType vi_jac_fix(prec_t discount,
-                        const ActionPolicy& policy,
-                        const OutcomePolicy& natpolicy,
-                        const numvec& valuefunction=numvec(0),
-                        unsigned long iterations=MAXITER,
-                        prec_t maxresidual=SOLPREC) const{
-
-
-
-        // just quit if there are not states
-        if( state_count() == 0)
-            return SolType();
-
-        if(policy.size() != state_count())
-            throw invalid_argument("Dimension of the policy must match the state count.");
-        if(natpolicy.size() != state_count())
-            throw invalid_argument("Dimension of the nature's policy must match the state count.");
-
-        numvec oddvalue(0);        // set in even iterations (0 is even)
-        numvec evenvalue(0);       // set in odd iterations
-
-        if(valuefunction.size() > 0){
-            oddvalue = valuefunction;
-            evenvalue = valuefunction;
-        }else{
-            oddvalue.assign(states.size(),0);
-            evenvalue.assign(states.size(),0);
-        }
-
-        numvec residuals(states.size());
-        prec_t residual = numeric_limits<prec_t>::infinity();
-
-        size_t j; // defined here to be able to report the number of iterations
-
-        numvec * sourcevalue = & oddvalue;
-        numvec * targetvalue = & evenvalue;
-
-        for(j = 0; j < iterations && residual > maxresidual; j++){
-
-            swap(targetvalue, sourcevalue);
-
-            #pragma omp parallel for
-            for(auto s = 0l; s < (long) states.size(); s++){
-                auto newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],natpolicy[s]);
-
-                residuals[s] = abs((*sourcevalue)[s] - newvalue);
-                (*targetvalue)[s] = newvalue;
-            }
-            residual = *max_element(residuals.begin(),residuals.end());
-        }
-
-        return SolType(*targetvalue,policy,natpolicy,residual,j);
-    }
-
-    // TODO: a function like this could be useful
-    /*
-    Value function evaluation using Jacobi iteration for a fixed policy
-    and uncertainty realization type.
-    \param uncert Type of realization of the uncertainty
-    \param valuefunction Initial value function
-    \param discount Discount factor
-    \param policy Decision-maker's policy
-    \param iterations Maximal number of inner loop value iterations
-    \param maxresidual Stop the inner policy iteration when
-            the residual drops below this threshold.
-    \return Computed (approximate) solution (value function)
-     */
-    //SolType vi_jac_fix(Uncertainty uncert,
-    //                   prec_t discount,
-    //                   const ActionPolicy& policy,
-    //                   const numvec& valuefunction=numvec(0),
-    //                   unsigned long iterations=MAXITER,
-    //                   prec_t maxresidual=SOLPREC) const;
-
     /**
     Constructs the transition matrix for the policy.
     \param policy Policy of the decision maker
