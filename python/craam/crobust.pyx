@@ -1,7 +1,9 @@
 # distutils: language = c++
-# distutils: libraries = craam
-# distutils: library_dirs = ../lib 
 # distutils: include_dirs = ../include 
+
+# this was needed before switching to a header-only library
+# old-distutils: library_dirs = ../lib 
+# old-distutils: libraries = craam
 
 """
 A suite of tools for sampling, solving and manipulating MDPs. Includes
