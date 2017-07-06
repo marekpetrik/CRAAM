@@ -6,11 +6,15 @@
 #include <tuple>
 #include <vector>
 #include <stdexcept>
+#include <limits>
+#include <string>
 
+#include "cpp11-range-master/range.hpp"
 
-using namespace std;
 
 namespace craam {
+
+using namespace std;
 
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
@@ -45,7 +49,14 @@ public:
 
     /** Creates an action given by actionid if it does not exists.
     Otherwise returns the existing one. */
-    AType& create_action(long actionid);
+    AType& create_action(long actionid){
+        assert(actionid >= 0);
+
+        if(actionid >= (long) actions.size())
+            actions.resize(actionid+1);
+
+        return this->actions[actionid];
+    }
 
     /** Creates an action at the last position of the state */
     AType& create_action() {return create_action(actions.size());};
@@ -73,10 +84,18 @@ public:
     bool is_terminal() const {return actions.empty();};
 
     /** Normalizes transition probabilities to sum to one. */
-    void normalize();
+    void normalize(){
+        for(AType& a : actions)
+            a.normalize();
+    }
 
     /** Checks whether the prescribed action and outcome are correct */
-    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const;
+    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const{
+        if( (aid < 0) || ((size_t)aid >= actions.size()))
+            return false;
+
+        return actions[aid].is_outcome_correct(oid);
+    }
 
     /** Returns the mean reward following the action (and outcome). */
     prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
@@ -94,7 +113,29 @@ public:
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
     tuple<ActionId,OutcomeId,prec_t>
-    max_max(const numvec& valuefunction, prec_t discount) const;
+    max_max(const numvec& valuefunction, prec_t discount) const{
+        if(is_terminal())
+            return make_tuple(-1,OutcomeId(),0);
+
+        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+        long result = -1l;
+        OutcomeId result_outcome;
+
+        for(size_t i = 0; i < actions.size(); i++){
+            const auto& action = actions[i];
+
+            // skip invalid actions
+            if(!action.is_valid()) continue;
+
+            auto value = action.maximal(valuefunction, discount);
+            if(value.second > maxvalue){
+                maxvalue = value.second;
+                result = i;
+                result_outcome = move(value.first);
+            }
+        }
+        return make_tuple(result,result_outcome,maxvalue);
+    }
 
     /**
     Finds the maximal pessimistic action
@@ -102,7 +143,29 @@ public:
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
     tuple<ActionId,OutcomeId,prec_t>
-    max_min(const numvec& valuefunction, prec_t discount) const;
+    max_min(const numvec& valuefunction, prec_t discount) const{
+        if(is_terminal())
+            return make_tuple(-1,OutcomeId(),0);
+
+        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+        long result = -1l;
+        OutcomeId result_outcome;
+
+        for(size_t i = 0; i < actions.size(); i++){
+            const auto& action = actions[i];
+
+            // skip invalid actions
+            if(!action.is_valid()) continue;
+
+            auto value = action.minimal(valuefunction, discount);
+            if(value.second > maxvalue){
+                maxvalue = value.second;
+                result = i;
+                result_outcome = move(value.first);
+            }
+        }
+        return make_tuple(result,result_outcome,maxvalue);
+    }
 
     /**
     Finds the action with the maximal average return
@@ -110,25 +173,89 @@ public:
     \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
     */
     pair<ActionId,prec_t>
-    max_average(const numvec& valuefunction, prec_t discount) const;
+    max_average(const numvec& valuefunction, prec_t discount) const{
+        if(is_terminal())
+            return make_pair(-1,0.0);
+
+        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+        long result = -1l;
+
+        for(size_t i = 0; i < actions.size(); i++){
+            auto const& action = actions[i];
+
+            // skip invalid actions
+            if(!action.is_valid()) continue;
+
+            auto value = action.average(valuefunction, discount);
+
+            if(value > maxvalue){
+                maxvalue = value;
+                result = i;
+            }
+        }
+        return make_pair(result, maxvalue);
+    }
 
     /**
     Computes the value of a fixed action
     \return Value of state, 0 if it's terminal regardless of the action index
     */
     prec_t fixed_average(numvec const& valuefunction, prec_t discount,
-                         ActionId actionid) const;
+                         ActionId actionid) const{
+    
+        // this is the terminal state, return 0
+        if(is_terminal())
+            return 0;
+
+        if(actionid < 0 || actionid >= (long) actions.size())
+            throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
+
+        const auto& action = actions[actionid];
+
+        // cannot assume invalid actions
+        if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+
+        return action.average(valuefunction, discount);
+    
+    }
 
     /**
     Computes the value of a fixed action.
     \return Value of state, 0 if it's terminal regardless of the action index
     */
     prec_t fixed_fixed(numvec const& valuefunction, prec_t discount,
-                       ActionId actionid, OutcomeId outcomeid) const;
+                       ActionId actionid, OutcomeId outcomeid) const{
+   
+       // this is the terminal state, return 0
+        if(is_terminal())
+            return 0;
+
+        if(actionid < 0 || actionid >= (long) actions.size())
+                throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(actions.size()) );
+
+        const auto& action = actions[actionid];
+        // cannot assume invalid actions
+        if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+
+        return action.fixed(valuefunction, discount, outcomeid);
+    }
 
     /** Returns json representation of the state
     \param stateid Includes also state id*/
-    string to_json(long stateid = -1) const;
+    string to_json(long stateid = -1) const{
+        string result{"{"};
+        result += "\"stateid\" : ";
+        result += std::to_string(stateid);
+        result += ",\"actions\" : [";
+        for(auto ai : indices(actions)){
+            const auto& a = actions[ai];
+            result += a.to_json(ai);
+            result += ",";
+        }
+        if(!actions.empty()) result.pop_back(); // remove last comma
+        result += ("]}");
+        return result;
+    }
 
 };
 
@@ -140,7 +267,7 @@ public:
 typedef SAState<RegularAction> RegularState;
 /// State with uncertain outcomes; unconstrained and now weights
 typedef SAState<DiscreteOutcomeAction> DiscreteRobustState;
-/// State with uncertain outcomes with L1 constraints on the distribution 
+/// State with uncertain outcomes with L1 constraints on the distribution
 typedef SAState<L1OutcomeAction> L1RobustState;
 }
 

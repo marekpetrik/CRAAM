@@ -1,21 +1,23 @@
 #pragma once
 
+#include "Samples.hpp"
+#include "definitions.hpp"
+
 #include <utility>
 #include <vector>
 #include <memory>
 #include <random>
 #include <functional>
 #include <cmath>
+#include <algorithm>
+#include <cmath>
+#include <string>
 
-
-#include "Samples.hpp"
-#include "definitions.hpp"
 #include "cpp11-range-master/range.hpp"
 
 
 namespace craam{
 namespace msen {
-
 
 using namespace std;
 using namespace util::lang;
@@ -387,7 +389,12 @@ public:
     while the MDP object is stored internally.
     */
     ModelSimulator(const shared_ptr<const MDP>& mdp, const Transition& initial, 
-                        random_device::result_type seed = random_device{}());
+                        random_device::result_type seed = random_device{}()) :
+                gen(seed), mdp(mdp), initial(initial){
+
+        if(abs(initial.sum_probabilities() - 1) > SOLPREC)
+            throw invalid_argument("Initial transition probabilities must sum to 1");
+    }
 
     /** 
     Build a model simulator and share and MDP 
@@ -399,7 +406,12 @@ public:
         ModelSimulator(const_pointer_cast<const MDP>(mdp), initial, seed) {};
 
     /// Returns a sample from the initial states.
-    State init_state();
+    State init_state(){
+        const numvec& probs = initial.get_probabilities();
+        const indvec& inds = initial.get_indices();
+        auto dst = discrete_distribution<long>(probs.begin(), probs.end());
+        return inds[dst(gen)];
+    }
     
     /** 
     Returns a sample of the reward and a decision state following a state
@@ -407,8 +419,55 @@ public:
     If the transition probabilities do not sum to 1, then them remainder
     is considered as a probability of transitioning to a terminal state
     (one with an index that is too large; see ModelSimulator::end_condition)
+
+    \param state Current state
+    \param action Current action
     */
-    pair<double,State> transition(State, Action);
+    pair<double,State> transition(State state, Action action){
+
+        assert(state >= 0 && size_t(state) < mdp->size());
+        const auto& mdpstate = (*mdp)[state];
+
+        assert(action >= 0 && size_t(action) < mdpstate.size());
+        const auto& mdpaction = mdpstate[action];
+
+        if(!mdpaction.is_valid())
+            throw invalid_argument("Cannot transition using an invalid action");
+
+        const auto& tran = mdpaction.get_outcome();
+
+        const numvec& probs = tran.get_probabilities();
+        const numvec& rews = tran.get_rewards();
+        const indvec& inds = tran.get_indices();
+
+        // check if the transition sums to 1, if not use the remainder 
+        // as a probability of terminating
+        prec_t prob_termination = 1 - tran.sum_probabilities();
+
+        discrete_distribution<long> dst;
+
+        if(prob_termination > SOLPREC){
+            // copy the probabilities (there should be a faster way too)
+            numvec copy_probs(probs);
+            copy_probs.push_back(prob_termination);
+
+            dst = discrete_distribution<long>(copy_probs.begin(), copy_probs.end());
+        }else{
+            dst = discrete_distribution<long>(probs.begin(), probs.end());
+        }
+
+        const size_t nextindex = dst(gen);
+
+        // check if need to transition to a terminal state
+        const State nextstate = nextindex < inds.size() ? 
+                                inds[nextindex] : mdp->size();
+
+        // reward is zero when transitioning to a terminal state
+        const prec_t reward = nextindex < inds.size() ? 
+                                rews[nextindex] : 0.0;
+
+        return make_pair(reward, nextstate);
+    }
 
     /**
     Checks whether the decision state is terminal. A state is 

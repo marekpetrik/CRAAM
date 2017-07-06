@@ -3,15 +3,23 @@
 #include "definitions.hpp"
 #include "Transition.hpp"
 
+#include "cpp11-range-master/range.hpp"
 #include <utility>
 #include <vector>
 #include <limits>
 #include <cassert>
 #include <string>
-
-using namespace std;
+#include <numeric>
+#include <limits>
+#include <algorithm>
+#include <stdexcept>
+#include <cmath>
 
 namespace craam {
+
+
+using namespace std;
+using namespace util::lang;
 
 // **************************************************************************************
 // *** Regular action
@@ -143,7 +151,17 @@ public:
 
     /** Returns a json representation of the action
     \param actionid Includes also action id*/
-    string to_json(long actionid = -1) const;
+    string to_json(long actionid = -1) const{
+        string result{"{"};
+        result += "\"actionid\" : ";
+        result += std::to_string(actionid);
+        result += ",\"valid\" :";
+        result += std::to_string(valid);
+        result += ",\"transition\" : ";
+        result += outcome.to_json(-1);
+        result += "}";
+        return result;
+    }
 };
 
 
@@ -180,7 +198,15 @@ public:
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method is virtual to make overloading safer.
     */
-    virtual Transition& create_outcome(long outcomeid);
+    virtual Transition& create_outcome(long outcomeid){
+        if(outcomeid < 0)
+            throw invalid_argument("Outcomeid must be non-negative.");
+
+        if(outcomeid >= (long) outcomes.size())
+            outcomes.resize(outcomeid + 1);
+
+        return outcomes[outcomeid];
+    }
 
     /**
     Creates a new outcome at the end. Similar to push_back.
@@ -212,7 +238,7 @@ public:
     /** Adds an outcome defined by the transition.
     \param outcomeid Id of the new outcome. Intermediate ids are created empty
     \param t Transition that defines the outcome*/
-    void add_outcome(long outcomeid, const Transition& t);
+    void add_outcome(long outcomeid, const Transition& t){ create_outcome(outcomeid) = t; }
 
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
@@ -222,7 +248,10 @@ public:
     const vector<Transition>& get_outcomes() const {return outcomes;};
 
     /** Normalizes transitions for outcomes */
-    void normalize();
+    void normalize(){
+        for(Transition& t : outcomes)
+            t.normalize();
+    }
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
@@ -275,7 +304,21 @@ public:
     \return The index and value of the maximal outcome
      */
     pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    maximal(numvec const& valuefunction, prec_t discount) const;
+    maximal(numvec const& valuefunction, prec_t discount) const{
+
+        if(outcomes.empty()) throw invalid_argument("Action with no outcomes.");
+        prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+        long result = -1;
+        for(size_t i = 0; i < outcomes.size(); i++){
+            const auto& outcome = outcomes[i];
+            auto value = outcome.compute_value(valuefunction, discount);
+            if(value > maxvalue){
+                maxvalue = value;
+                result = i;
+            }
+        }
+        return make_pair(result,maxvalue);
+    }
 
     /**
     Computes the minimal outcome for the value function
@@ -284,7 +327,24 @@ public:
     \return The index and value of the maximal outcome
     */
     pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-    minimal(numvec const& valuefunction, prec_t discount) const;
+    minimal(numvec const& valuefunction, prec_t discount) const{
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes.");
+
+        prec_t minvalue = numeric_limits<prec_t>::infinity();
+        long result = -1;
+
+        for(size_t i = 0; i < outcomes.size(); i++){
+            const auto& outcome = outcomes[i];
+
+            auto value = outcome.compute_value(valuefunction, discount);
+            if(value < minvalue){
+                minvalue = value;
+                result = i;
+            }
+        }
+        return make_pair(result,minvalue);
+    }
 
     /**
     Computes the average outcome using a uniform distribution.
@@ -292,7 +352,17 @@ public:
     \param discount Discount factor
     \return Mean value of the action
      */
-    prec_t average(numvec const& valuefunction, prec_t discount) const;
+    prec_t average(numvec const& valuefunction, prec_t discount) const{
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes.");
+
+        prec_t averagevalue = 0.0;
+        const prec_t weight = 1.0 / prec_t(outcomes.size());
+        for(size_t i = 0; i < outcomes.size(); ++i)
+            averagevalue += weight * outcomes[i].compute_value(valuefunction, discount);
+
+        return averagevalue;
+    }
 
     /**
     Computes the action value for a fixed index outcome.
@@ -319,7 +389,22 @@ public:
 
     /** Returns a json representation of action
     \param actionid Includes also action id*/
-    string to_json(long actionid = -1) const;
+    string to_json(long actionid = -1) const{
+        string result{"{"};
+        result += "\"actionid\" : ";
+        result += std::to_string(actionid);
+        result += ",\"valid\" :";
+        result += std::to_string(valid);
+        result += ",\"outcomes\" : [";
+        for(auto oi : indices(outcomes)){
+            const auto& o = outcomes[oi];
+            result += o.to_json(oi);
+            result += ",";
+        }
+        if(!outcomes.empty()) result.pop_back(); // remove last comma
+        result += "]}";
+        return result;
+    }
 
 };
 
@@ -333,8 +418,8 @@ An action in a robust MDP in which the outcomes are defined by a weighted functi
 and a threshold. The uncertain behavior is parametrized by a base distribution
 and a threshold value. An example may be a worst case computation:
     \f[ \min \{ u^T v ~:~ \| u - d \|_1 \le  t\} \f]
-where \f$ v \f$ are the values for individual outcomes, \f$ d \f$ is the nominal 
-outcome distribution, and \f$ t \f$ is the threshold. 
+where \f$ v \f$ are the values for individual outcomes, \f$ d \f$ is the nominal
+outcome distribution, and \f$ t \f$ is the threshold.
 See L1Action for an example of an instance of this template class.
 
 The function that determines the uncertainty set is defined by NatureConstr
@@ -378,7 +463,19 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the maximal bounded solution
      */
-    pair<OutcomeId,prec_t> maximal(numvec const& valuefunction, prec_t discount) const;
+    pair<OutcomeId,prec_t> maximal(numvec const& valuefunction, prec_t discount) const{
+        assert(distribution.size() == outcomes.size());
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes.");
+        numvec outcomevalues(outcomes.size());
+        for(size_t i = 0; i < outcomes.size(); i++){
+            const auto& outcome = outcomes[i];
+            outcomevalues[i] = - outcome.compute_value(valuefunction, discount);
+        }
+        auto result = nature(outcomevalues, distribution, threshold);
+        result.second = -result.second;
+        return result;
+    }
 
     /**
     Computes the minimal outcome distribution constraints on the nature's distribution
@@ -389,7 +486,17 @@ public:
     \param discount Discount factor
     \return Outcome distribution and the mean value for the minimal bounded solution
      */
-    pair<OutcomeId,prec_t> minimal(numvec const& valuefunction, prec_t discount) const;
+    pair<OutcomeId,prec_t> minimal(numvec const& valuefunction, prec_t discount) const{
+        assert(distribution.size() == outcomes.size());
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes");
+        numvec outcomevalues(outcomes.size());
+        for(size_t i = 0; i < outcomes.size(); i++){
+            const auto& outcome = outcomes[i];
+            outcomevalues[i] = outcome.compute_value(valuefunction, discount);
+        }
+        return nature(outcomevalues, distribution, threshold);
+    }
 
     /**
     Computes the average outcome using a uniform distribution.
@@ -397,7 +504,18 @@ public:
     \param discount Discount factor
     \return Mean value of the action
      */
-    prec_t average(numvec const& valuefunction, prec_t discount) const;
+    prec_t average(numvec const& valuefunction, prec_t discount) const{
+        assert(distribution.size() == outcomes.size());
+
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes");
+
+        prec_t averagevalue = 0.0;
+        for(size_t i = 0; i < outcomes.size(); i++)
+            averagevalue += distribution[i] * outcomes[i].compute_value(valuefunction, discount);
+
+        return averagevalue;
+    }
 
     /**
     Computes the action value for a fixed index outcome.
@@ -406,10 +524,23 @@ public:
     \param index Index of the outcome used
     \return Value of the action
      */
-    prec_t fixed(numvec const& valuefunction, prec_t discount, OutcomeId dist) const;
+    prec_t fixed(numvec const& valuefunction, prec_t discount, OutcomeId dist) const{
+        assert(distribution.size() == outcomes.size());
+
+        if(outcomes.empty())
+            throw invalid_argument("Action with no outcomes");
+        if(dist.size() != outcomes.size())
+            throw invalid_argument("Distribution size does not match number of outcomes");
+
+        prec_t averagevalue = 0.0;
+        for(size_t i = 0; i < outcomes.size(); i++)
+            averagevalue += dist[i] * outcomes[i].compute_value(valuefunction, discount);
+
+        return averagevalue;
+    }
 
     /**
-    Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid 
+    Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid
     to be a valid identifier. This override also properly resizing the nominal
     outcome distribution and rewighs is accordingly.
 
@@ -427,27 +558,64 @@ public:
 
     An exception during the computation may leave the distribution in an
     incorrect state.
-    
+
     \param outcomeid Index of outcome to create
     \returns Transition that corresponds to outcomeid
     */
-    Transition& create_outcome(long outcomeid) override;
-    
+    Transition& create_outcome(long outcomeid) override{
+        if(outcomeid < 0)
+            throw invalid_argument("Outcomeid must be non-negative.");
+        // 1: compute the weight for the new outcome and old ones
+
+        size_t newsize = outcomeid + 1; // new size of the list of outcomes
+        size_t oldsize = outcomes.size(); // current size of the set
+        if(newsize <= oldsize){// no need to add anything
+            return outcomes[outcomeid];
+        }
+        // new uniform weight for each element
+        prec_t newweight = 1.0/prec_t(outcomeid+1);
+        // check if need to scale the existing weights
+        if(oldsize > 0){
+            auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
+            // only scale when the sum is not zero
+            if(weightsum > 0){
+                prec_t normal = (oldsize * newweight) / weightsum;
+                transform(distribution.begin(), distribution.end(),distribution.begin(),
+                          [normal](prec_t x){return x * normal;});
+            }
+        }
+        outcomes.resize(newsize);
+        // got to resize the distribution too and assign weights that are uniform
+        distribution.resize(newsize, newweight);
+        return outcomes[outcomeid];
+    }
+
     /**
-    Adds a sufficient number of empty outcomes/transitions for the provided outcomeid 
+    Adds a sufficient number of empty outcomes/transitions for the provided outcomeid
     to be a valid identifier. The weights of new outcomes < outcomeid are set
     to 0. This operation does rescale weights in order to preserve their sum.
 
     If the outcome already exists, its nominal weight is overwritten.
-    
+
     Note that this operation may leave the action in an invalid state in
     which the nominal outcome distribution does not sum to 1.
-    
+
     \param outcomeid Index of outcome to create
     \param weight New nominal weight for the outcome.
     \returns Transition that corresponds to outcomeid
     */
-    Transition& create_outcome(long outcomeid, prec_t weight);
+    Transition& create_outcome(long outcomeid, prec_t weight){
+        if(outcomeid < 0)
+            throw invalid_argument("Outcomeid must be non-negative.");
+        assert(weight >= 0 && weight <= 1);
+
+        if(outcomeid >= static_cast<long>(outcomes.size())){ // needs to resize arrays
+            outcomes.resize(outcomeid+1);
+            distribution.resize(outcomeid+1);
+        }
+        set_distribution(outcomeid, weight);
+        return outcomes[outcomeid];
+    }
 
     /**
     Sets the base distribution over the outcomes.
@@ -456,7 +624,17 @@ public:
 
     \param distribution New distribution of outcomes.
      */
-    void set_distribution(const numvec& distribution);
+    void set_distribution(const numvec& distribution){
+        if(distribution.size() != outcomes.size())
+            throw invalid_argument("Invalid distribution size.");
+        prec_t sum = accumulate(distribution.begin(),distribution.end(), 0.0);
+        if(sum < 0.99 || sum > 1.001)
+            throw invalid_argument("Distribution does not sum to 1.");
+        if((*min_element(distribution.begin(),distribution.end())) < 0)
+            throw invalid_argument("Distribution must be non-negative.");
+
+        this->distribution = distribution;
+    }
 
     /**
     Sets weight for a particular outcome.
@@ -466,7 +644,10 @@ public:
     \param distribution New distribution of outcomes.
     \param weight New weight
      */
-    void set_distribution(long outcomeid, prec_t weight);
+    void set_distribution(long outcomeid, prec_t weight){
+        assert(outcomeid >= 0 && (size_t) outcomeid < outcomes.size());
+        distribution[outcomeid] = weight;
+    }
 
     /** Returns the baseline distribution over outcomes. */
     const numvec& get_distribution() const {return distribution;};
@@ -476,18 +657,34 @@ public:
     is initialized. Exception is thrown if the distribution sums
     to zero.
     */
-    void normalize_distribution();
+    void normalize_distribution(){
+        auto weightsum = accumulate(distribution.begin(), distribution.end(), 0.0);
+
+        if(weightsum > 0.0){
+            for(auto& p : distribution)
+                p /= weightsum;
+        }else{
+            throw invalid_argument("Distribution sums to 0 and cannot be normalized.");
+        }
+    }
 
     /**
     Checks whether the outcome distribution is normalized.
     */
-    bool is_distribution_normalized() const;
+    bool is_distribution_normalized() const{
+        return abs(1.0-accumulate(distribution.begin(), distribution.end(), 0.0)) < SOLPREC;
+    }
 
     /**
     Sets an initial uniform value for the threshold (0) and the distribution.
     If the distribution already exists, then it is overwritten.
     */
-    void uniform_distribution();
+    void uniform_distribution(){
+        distribution.clear();
+        if(outcomes.size() > 0)
+            distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
+        threshold = 0.0;
+    }
 
     /** Returns threshold value */
     prec_t get_threshold() const {return threshold;};
@@ -507,22 +704,60 @@ public:
         {return (oid.size() == outcomes.size());};
 
     /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId outcomedist) const;
+    prec_t mean_reward(OutcomeId outcomedist) const{
+        assert(outcomedist.size() == outcomes.size());
+        prec_t result = 0;
+        for(size_t i = 0; i < outcomes.size(); i++){
+            result += outcomedist[i] * outcomes[i].mean_reward();
+        }
+        return result;
+    }
 
     /** Returns the mean transition probabilities */
-    Transition mean_transition(OutcomeId outcomedist) const;
+    Transition mean_transition(OutcomeId outcomedist) const{
+        assert(outcomedist.size() == outcomes.size());
+        Transition result;
+        for(size_t i = 0; i < outcomes.size(); i++)
+            outcomes[i].probabilities_addto(outcomedist[i], result);
+        return result;
+    }
 
     /** Returns a json representation of action
     \param actionid Includes also action id*/
-    string to_json(long actionid = -1) const;
+    string to_json(long actionid = -1) const{
+        string result{"{"};
+        result += "\"actionid\" : ";
+        result += std::to_string(actionid);
+        result += ",\"valid\" :";
+        result += std::to_string(valid);
+        result += ",\"threshold\" : ";
+        result += std::to_string(threshold);
+        result += ",\"outcomes\" : [";
+        for(auto oi : indices(outcomes)){
+            const auto& o = outcomes[oi];
+            result +=o.to_json(oi);
+            result +=",";
+        }
+        if(!outcomes.empty()) result.pop_back(); // remove last comma
+        result += "],\"distribution\" : [";
+        for(auto d : distribution){
+            result += std::to_string(d);
+            result += ",";
+        }
+        if(!distribution.empty()) result.pop_back(); // remove last comma
+        result += "]}";
+        return result;
+    }
 };
 
 // **************************************************************************************
 //  L1 Outcome Action
 // **************************************************************************************
 
-/// Action with robust outcomes with L1 constraints on the distribution 
+/// Action with robust outcomes with L1 constraints on the distribution
 typedef WeightedOutcomeAction<worstcase_l1> L1OutcomeAction;
 
 }
+
+
 
