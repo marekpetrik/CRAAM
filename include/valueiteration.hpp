@@ -433,8 +433,8 @@ vi_gs(const GRMDP<SType>& mdp, Uncertainty type,
                 break;
             case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                    max_average(state,valuefunction,discount);
-                newvalue = make_tuple<SType,nature>(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
+                    max_average<SType,nature>(state, valuefunction,discount);
+                newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
                 break;
             }
 
@@ -657,10 +657,10 @@ mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
                 switch(type){
                 case Uncertainty::Robust:
                 case Uncertainty::Optimistic:
-                    newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],outcomes[s]);
+                    newvalue = fixed_fixed<SType,nature>(states[s], *sourcevalue,discount,policy[s],outcomes[s]);
                     break;
                 case Uncertainty::Average:
-                    newvalue = states[s].fixed_average(*sourcevalue,discount,policy[s]);
+                    newvalue = fixed_average<SType,nature>(states[s],*sourcevalue,discount,policy[s]);
                     break;
                 }
 

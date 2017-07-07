@@ -4,6 +4,7 @@
 #include "RMDP.hpp"
 #include "definitions.hpp"
 #include "modeltools.hpp"
+#include "valueiteration.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -101,9 +102,9 @@ BOOST_AUTO_TEST_CASE(test_l1_worst_case){
 
 BOOST_AUTO_TEST_CASE( empty_test ){
     MDP m(0);
-    m.mpi_jac(Uncertainty::Average, 0.9);
-    m.vi_jac(Uncertainty::Average, 0.9);
-    m.vi_gs(Uncertainty::Average, 0.9);
+    mpi_jac(m, Uncertainty::Average, 0.9);
+    vi_jac(m, Uncertainty::Average, 0.9);
+    vi_gs(m, Uncertainty::Average, 0.9);
 }
 
 BOOST_AUTO_TEST_CASE( basic_tests ) {
