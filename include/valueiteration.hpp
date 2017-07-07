@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RMDP.hpp"
+#include <functional>
 
 #include "cpp11-range-master/range.hpp"
 
@@ -23,6 +24,20 @@ The function returns the worst-case solution and the objective value.
 */
 typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p, 
                                                 prec_t threshold);
+
+
+/// L1 robust response
+inline vec_scal_t nature_l1_robust(const numvec& v, const numvec& p, prec_t threshold){
+    return worstcase_l1(v,p,threshold);
+}
+/// L1 optimistic response
+inline vec_scal_t nature_l1_optimistic(const numvec& v, const numvec& p, prec_t threshold){
+    //TODO: this could be faster without copying the vector and just modifying the function
+    numvec minusv(v.size());
+    transform(begin(v), end(v), begin(minusv), negate<prec_t>());
+    auto&& result = worstcase_l1(minusv,p,threshold);
+    return make_pair(result.first, -result.second);
+}
 
 // *******************************************************
 // RegularAction computation methods
@@ -509,9 +524,134 @@ inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse 
 }
 
 
+/**
+Regular modified policy iteration using Jacobi value iteration in the inner loop.
+This method generalizes modified policy iteration to robust MDPs.
+In the value iteration step, both the action *and* the outcome are fixed.
+
+Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+\param type Type of realization of the uncertainty
+\param discount Discount factor
+\param valuefunction Initial value function
+\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
+                 states in which policy = -1, otherwise the provided value is used. 
+\param iterations_pi Maximal number of policy iteration steps
+\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+\param iterations_vi Maximal number of inner loop value iterations
+\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+            This value should be smaller than maxresidual_pi
+\param print_progress Whether to report on progress during the computation
+\return Computed (approximate) solution
+ */
+template<class SType>
+inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, 
+                const numvec& valuefunction=numvec(0),const indvec& policy=indvec(0), 
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
+
+    const vector<SType>& states = mdp.get_states();
+
+    // quit if there are no states
+    if( mdp.state_count() == 0) return RSolution();
+
+    // check if the value function is a correct size, and if it is length 0
+    // then creates an appropriate size
+    if( !valuefunction.empty() && (valuefunction.size() != mdp.state_count()) ) throw invalid_argument("Incorrect size of value function.");
+
+
+    numvec oddvalue(0);        // set in even iterations (0 is even)
+    numvec evenvalue(0);       // set in odd iterations
+
+    if(valuefunction.size() > 0){
+        oddvalue = valuefunction;
+        evenvalue = valuefunction;
+    }else{
+        oddvalue.assign(states.size(),0);
+        evenvalue.assign(states.size(),0);
+    }
+
+    // construct working policies
+    indvec newpolicy(states.size());
+
+    // copy the provided policy
+    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
+    
+    numvec residuals(states.size());
+
+    // residual in the policy iteration part
+    prec_t residual_pi = numeric_limits<prec_t>::infinity();
+
+    size_t i; // defined here to be able to report the number of iterations
+
+    // use two vectors for value iteration and copy values back and forth
+    numvec * sourcevalue = & oddvalue;
+    numvec * targetvalue = & evenvalue;
+
+    for(i = 0; i < iterations_pi; i++){
+
+        if(print_progress)
+            cout << "Policy iteration " << i << "/" << iterations_pi << ":" << endl;
+
+        swap(targetvalue, sourcevalue);
+
+        prec_t residual_vi = numeric_limits<prec_t>::infinity();
+
+        // update policies
+        #pragma omp parallel for
+        for(auto s = 0l; s < (long) states.size(); s++){
+            const auto& state = states[s];
+
+            prec_t newvalue;
+
+            // check whether this state should only be evaluated
+            if(policy.empty() || policy[s] < 0){    // optimizing
+                tie(newpolicy[s],  newvalue) = value_max_state(state, valuefunction, discount);  
+            }else{ // evaluating (action copied earlier, no need to copy it again)
+                newvalue = value_fix_state(state, valuefunction, discount, policy[s]);
+            }
+
+            residuals[s] = abs((*sourcevalue)[s] - newvalue);
+            (*targetvalue)[s] = newvalue;
+        }
+
+        residual_pi = *max_element(residuals.begin(),residuals.end());
+
+        if(print_progress) cout << "    Bellman residual: " << residual_pi << endl;
+
+        // the residual is sufficiently small
+        if(residual_pi <= maxresidual_pi)
+            break;
+
+        if(print_progress) cout << "    Value iteration: ";
+        // compute values using value iteration
+
+        for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
+            if(print_progress) cout << ".";
+
+            swap(targetvalue, sourcevalue);
+
+            #pragma omp parallel for
+            for(auto s = 0l; s < (long) states.size(); s++){
+                prec_t newvalue = 0;
+                const auto& state = states[s];
+
+                newvalue = value_fix_state(state, valuefunction, discount, newpolicy[s]);
+
+                residuals[s] = abs((*sourcevalue)[s] - newvalue);
+                (*targetvalue)[s] = newvalue;
+            }
+            residual_vi = *max_element(residuals.begin(),residuals.end());
+        }
+        if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
+    }
+    numvec & valuenew = *targetvalue;
+    return Solution(valuenew,policy,residual_pi,i);
+}
+
 
 /**
-Modified policy iteration using Jacobi value iteration in the inner loop.
+*Robust* modified policy iteration using Jacobi value iteration in the inner loop.
 This method generalizes modified policy iteration to robust MDPs.
 In the value iteration step, both the action *and* the outcome are fixed.
 
