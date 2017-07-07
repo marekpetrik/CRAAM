@@ -536,9 +536,9 @@ Uncertainty type is ignored in these methods.
 typedef GRMDP<RegularState> MDP;
 
 /**
-An uncertain MDP with L1 constrained robustness. See craam::L1RobustState.
+An uncertain MDP with outcomes and weights. See craam::L1RobustState.
 */
-typedef GRMDP<L1RobustState> RMDP_L1;
+typedef GRMDP<WeightedRobustState> RMDP_L1;
 
 
 

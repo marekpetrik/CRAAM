@@ -118,8 +118,6 @@ pair<numvec,prec_t> worstcase_l1(numvec const& z, numvec const& q, prec_t t){
     return make_pair(move(o),r);
 }
 
-}
-
 
 #ifdef IS_DEBUG
 /** This is a useful functionality for debugging.  */
@@ -132,3 +130,5 @@ std::ostream & operator<<(std::ostream &os, const std::vector<T>& vec)
     return os;
 }
 #endif
+
+}

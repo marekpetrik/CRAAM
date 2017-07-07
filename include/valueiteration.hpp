@@ -27,16 +27,32 @@ typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p,
 
 
 /// L1 robust response
-inline vec_scal_t nature_l1_robust(const numvec& v, const numvec& p, prec_t threshold){
+inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
     return worstcase_l1(v,p,threshold);
 }
 /// L1 optimistic response
-inline vec_scal_t nature_l1_optimistic(const numvec& v, const numvec& p, prec_t threshold){
+inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
     //TODO: this could be faster without copying the vector and just modifying the function
     numvec minusv(v.size());
     transform(begin(v), end(v), begin(minusv), negate<prec_t>());
     auto&& result = worstcase_l1(minusv,p,threshold);
     return make_pair(result.first, -result.second);
+}
+
+/// worst outcome, threshold is ignored
+inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, prec_t threshold){
+    numvec dist(v.size(),0.0);
+    long index = min_element(begin(v), end(v)) - begin(v);
+    dist[index] = 1;
+    return make_pair(dist,v[index]);
+}
+
+/// best outcome, threshold is ignored
+inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, prec_t threshold){
+   numvec dist(v.size(),0.0);
+   long index = max_element(begin(v), end(v)) - begin(v);
+   dist[index] = 1;
+   return make_pair(dist,v[index]);
 }
 
 // *******************************************************
@@ -150,8 +166,6 @@ inline prec_t value_action(const WeightedOutcomeAction& action, numvec const& va
 
 /**
 Computes the maximal outcome distribution constraints on the nature's distribution.
-Template argument nature represents the function used to select the constrained distribution
-over the action.get_outcomes().
 Does not work when the number of outcomes is zero.
 
 \param action Action for which the value is computed
@@ -510,7 +524,7 @@ inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse 
             
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                assert(natpolicy[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
+                assert(natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
                 tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
             }else{ // evaluating (action copied earlier, no need to copy it again)
                 newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
@@ -741,7 +755,7 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
 
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                assert(natpolicy[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
+                assert(natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
                 tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
             }else{ // evaluating (action copied earlier, no need to copy it again)
                 newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);

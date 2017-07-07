@@ -139,7 +139,7 @@ public:
 /// Regular MDP state with no outcomes
 typedef SAState<RegularAction> RegularState;
 /// State with uncertain outcomes with L1 constraints on the distribution
-typedef SAState<WeightedOutcomeAction> L1RobustState;
+typedef SAState<WeightedOutcomeAction> WeightedRobustState;
 }
 
 

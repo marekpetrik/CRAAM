@@ -110,7 +110,7 @@ public:
     Transition mean_transition(OutcomeId) const {return outcome;};
 
     /** Returns a json representation of the action
-    \param actionid Includes also action id*/
+    \param actionid Whether to include action id*/
     string to_json(long actionid = -1) const{
         string result{"{"};
         result += "\"actionid\" : ";
@@ -272,13 +272,14 @@ public:
 
     /** Initializes outcomes to the provided vector */
     WeightedOutcomeAction(const vector<Transition>& outcomes)
-        : OutcomeManagement(outcomes), threshold(0), distribution(0) {};
+        : OutcomeManagement(outcomes), threshold(0), distribution(outcomes.size(), 
+            1.0 / prec_t(outcomes.size())) {};
 
 
     /**
     Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid
     to be a valid identifier. This override also properly resizing the nominal
-    outcome distribution and rewighs is accordingly.
+    outcome distribution and reweighs is accordingly.
 
     If the corresponding outcome already exists, then it just returns it.
 
