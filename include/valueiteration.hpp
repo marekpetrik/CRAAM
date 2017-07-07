@@ -553,7 +553,7 @@ inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
     const vector<SType>& states = mdp.get_states();
 
     // quit if there are no states
-    if( mdp.state_count() == 0) return RSolution();
+    if( mdp.state_count() == 0) return Solution();
 
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
