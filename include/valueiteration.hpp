@@ -22,8 +22,7 @@ to define and use a nature that computes and uses a deterministic response.
 The parameters are the q-values v, the reference distribution p, and the threshold.
 The function returns the worst-case solution and the objective value. 
 */
-typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p, 
-                                                prec_t threshold);
+typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p, prec_t threshold);
 
 
 /// L1 robust response
