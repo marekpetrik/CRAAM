@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+#include <utility>
 #include <assert.h>
 
 #ifdef IS_DEBUG
@@ -26,15 +27,17 @@ typedef vector<prec_t> numvec;
 /** Default index vector */
 typedef vector<long> indvec;
 
+/** Pair of a vector and a scalar */
+typedef pair<numvec, prec_t> vec_scal_t;
+
+/** Tuple of a index, vector and a scalar */
+typedef tuple<prec_t, numvec, prec_t> ind_vec_scal_t;
+
 /** Default solution precision */
 const prec_t SOLPREC = 0.0001;
 /** Default number of iterations */
 const unsigned long MAXITER = 100000;
 
-/** Function representing the constraints on nature. The inputs
-    are the q-values z, the reference distribution q, and the threshold t.
-    The function returns the worst-case solution and the objective value. */
-typedef pair<numvec,prec_t> (*NatureConstr)(numvec const& z, numvec const& q, prec_t t);
 
 
 /** \brief Sort indices by values in ascending order

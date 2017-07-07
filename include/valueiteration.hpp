@@ -1,235 +1,165 @@
 #pragma once
 
-#include "definitions.hpp"
-#include "Action.hpp"
-#include "State.hpp"
 #include "RMDP.hpp"
+
+#include "cpp11-range-master/range.hpp"
 
 namespace craam {
 
 using namespace std;
+using namespace util::lang;
+
+
+/** 
+Function representing the constraints on nature. The function computes
+the best response of nature and can be used in value iteration.
+
+This function represents a nature which computes (in general) a randomized
+policy (response). If the response is always deterministic, it may be better
+to define and use a nature that computes and uses a deterministic response.
+
+The parameters are the q-values v, the reference distribution p, and the threshold.
+The function returns the worst-case solution and the objective value. 
+*/
+typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p, 
+                                                prec_t threshold);
 
 // *******************************************************
 // RegularAction computation methods
 // *******************************************************
 
 /**
-Computes the value of the action.
+Computes the average value of the action. 
+
+\param action Action for which to compute the value
 \param valuefunction State value function to use
 \param discount Discount factor
 \return Action value
 */
-inline prec_t value(const RegularAction& action, const numvec& valuefunction, prec_t discount) 
-    {return action.get_outcome().compute_value(valuefunction, discount);}
-
-/**
-Computes a value of the action: see RegularAction::value. The
-purpose of this method is for the general robust MDP setting.
-*/
-inline prec_t average(const RegularAction& action, const numvec& valuefunction, prec_t discount) 
-    {return value(action,valuefunction, discount);}
-
-/**
-Computes a value of the action: see RegularAction::value. The
-purpose of this method is for the general robust MDP setting.
-*/
-inline std::pair<RegularAction::OutcomeId, prec_t>
-maximal(const RegularAction& action, const numvec& valuefunction, prec_t discount) 
-    {return make_pair(0, value(action,valuefunction, discount));}
-
-/**
-Computes a value of the action: see RegularAction::value. The
-purpose of this method is for the general robust MDP setting.
-*/
-inline std::pair<RegularAction::OutcomeId, prec_t>
-minimal(const RegularAction& action, const numvec& valuefunction, prec_t discount) 
-    {return make_pair(0,value(action, valuefunction, discount));}
-
-/**
-Computes a value of the action: see RegularAction::value. The
-purpose of this method is for the general robust MDP setting.
-*/
-inline prec_t fixed(const RegularAction& action, const numvec& valuefunction, prec_t discount, RegularAction::OutcomeId index) 
-    {return value(action, valuefunction, discount);}
-
-
-// *******************************************************
-// DiscreteOutcomeAction computation methods
-// *******************************************************
-
-/**
-Computes the maximal outcome for the value function.
-\param valuefunction Value function reference
-\param discount Discount factor
-\return The index and value of the maximal outcome
- */
-inline std::pair<typename DiscreteOutcomeAction::OutcomeId,prec_t>
-maximal(const DiscreteOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
-
-    if(action.get_outcomes().empty()) throw invalid_argument("Action with no action.get_outcomes().");
-    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-    long result = -1;
-    for(size_t i = 0; i < action.get_outcomes().size(); i++){
-        const auto& outcome = action.get_outcomes()[i];
-        auto value = outcome.compute_value(valuefunction, discount);
-        if(value > maxvalue){
-            maxvalue = value;
-            result = i;
-        }
-    }
-    return make_pair(result,maxvalue);
+inline prec_t value_action(const RegularAction& action, const numvec& valuefunction, 
+        prec_t discount) {
+    return action.get_outcome().value(valuefunction, discount);
 }
 
 /**
-Computes the minimal outcome for the value function
-\param valuefunction Value function reference
+Computes a value of the action for a given distribution. This function can be used
+to evaluate a robust solution which may modify the transition probabilities.
+
+The new distribution may be non-zero only for states for which the original distribution is 
+not zero.
+
+\param action Action for which to compute the value
+\param valuefunction State value function to use
 \param discount Discount factor
-\return The index and value of the maximal outcome
+\param distribution New distribution. The length must match the number of 
+            states to which the original transition probabilities are strictly greater than 0. 
+            The order of states is the same as in the underlying transition.
+\return Action value
 */
-inline pair<DiscreteOutcomeAction::OutcomeId,prec_t>
-minimal(const DiscreteOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
-    if(action.get_outcomes().empty())
-        throw invalid_argument("Action with no action.get_outcomes().");
-
-    prec_t minvalue = numeric_limits<prec_t>::infinity();
-    long result = -1;
-
-    for(size_t i = 0; i < action.get_outcomes().size(); i++){
-        const auto& outcome = action.get_outcomes()[i];
-
-        auto value = outcome.compute_value(valuefunction, discount);
-        if(value < minvalue){
-            minvalue = value;
-            result = i;
-        }
-    }
-    return make_pair(result,minvalue);
+inline prec_t value_action(const RegularAction& action, const numvec& valuefunction, 
+        prec_t discount, numvec distribution) {
+    return value_action(action, valuefunction, discount, distribution);
 }
 
 /**
-Computes the average outcome using a uniform distribution.
-\param valuefunction Updated value function
+Computes an ambiguous value (e.g. robust) of the action, depending on the type
+of nature that is provided. 
+
+\param action Action for which to compute the value
+\param valuefunction State value function to use
 \param discount Discount factor
-\return Mean value of the action
- */
-inline prec_t average(const DiscreteOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
-    if(action.get_outcomes().empty())
-        throw invalid_argument("Action with no action.get_outcomes().");
+\param nature Method used to compute the response of nature.
+\param threshold Threshold parameter for the nature
+*/
+inline vec_scal_t value_action(const RegularAction& action, const numvec& valuefunction, 
+                        prec_t discount, NatureResponse nature, prec_t threshold){
 
-    prec_t averagevalue = 0.0;
-    const prec_t weight = 1.0 / prec_t(action.get_outcomes().size());
-    for(size_t i = 0; i < action.get_outcomes().size(); ++i)
-        averagevalue += weight * action.get_outcomes()[i].compute_value(valuefunction, discount);
+    const numvec& rewards = action.get_outcome().get_rewards();
+    const indvec& nonzero_indices = action.get_outcome().get_indices();
 
-    return averagevalue;
+    numvec qvalues(rewards.size()); // values for individual states - used by nature.
+    #pragma omp simd
+    for(auto i : indices(rewards))
+        qvalues[i] = rewards[i] + discount * valuefunction[nonzero_indices[i]];
+
+    return nature(qvalues, action.get_outcome().get_probabilities(), threshold);
 }
-
-/**
-Computes the action value for a fixed index outcome.
-\param valuefunction Updated value function
-\param discount Discount factor
-\param index Index of the outcome used
-\return Value of the action
- */
-inline prec_t fixed(const DiscreteOutcomeAction& action, numvec const& valuefunction, prec_t discount,
-                   DiscreteOutcomeAction::OutcomeId index) {
-    assert(index >= 0l && index < (long) action.get_outcomes().size());
-    return action.get_outcomes()[index].compute_value(valuefunction, discount); 
-}
-
 
 
 // *******************************************************
 // WeightedOutcomeAction computation methods
 // *******************************************************
 
+/**
+Computes the average outcome using the provided distribution.
+
+\param action Action for which the value is computed
+\param valuefunction Updated value function
+\param discount Discount factor
+\return Mean value of the action
+ */
+inline prec_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction, 
+            prec_t discount) {
+    assert(action.get_distribution().size() == action.get_outcomes().size());
+
+    if(action.get_outcomes().empty())
+        throw invalid_argument("WeightedOutcomeAction with no outcomes");
+
+    prec_t averagevalue = 0.0;
+    const numvec& distribution = action.get_distribution();
+    for(size_t i = 0; i < action.get_outcomes().size(); i++)
+        averagevalue += distribution[i] * action[i].value(valuefunction, discount);
+    return averagevalue;
+}
+
+/**
+Computes the action value for a fixed index outcome.
+
+\param action Action for which the value is computed
+\param valuefunction Updated value function
+\param discount Discount factor
+\param distribution Custom distribution that is selected by nature.
+\return Value of the action
+ */
+inline prec_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction, 
+                    prec_t discount, const numvec& distribution) {
+
+    assert(distribution.size() == action.get_outcomes().size());
+    if(action.get_outcomes().empty()) throw invalid_argument("WeightedOutcomeAction with no outcomes");
+
+    prec_t averagevalue = 0.0;
+    for(size_t i = 0; i < action.get_outcomes().size(); i++)
+        averagevalue += distribution[i] * action[i].value(valuefunction, discount);
+    return averagevalue;
+}
 
 /**
 Computes the maximal outcome distribution constraints on the nature's distribution.
 Template argument nature represents the function used to select the constrained distribution
 over the action.get_outcomes().
 Does not work when the number of outcomes is zero.
+
+\param action Action for which the value is computed
 \param valuefunction Value function reference
 \param discount Discount factor
-\return Outcome distribution and the mean value for the maximal bounded solution
+\param nature Method used to compute the response of nature.
+\param threshold Threshold parameter for the nature
+
+\return Outcome distribution and the mean value for the choice of the nature
  */
-template<NatureConstr nature>
-inline pair<WeightedOutcomeAction::OutcomeId,prec_t> maximal(const WeightedOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
+inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction, 
+                                prec_t discount, NatureResponse nature, prec_t threshold) {
     assert(action.get_distribution().size() == action.get_outcomes().size());
+
     if(action.get_outcomes().empty())
         throw invalid_argument("Action with no action.get_outcomes().");
-    numvec outcomevalues(action.get_outcomes().size());
-    for(size_t i = 0; i < action.get_outcomes().size(); i++){
-        const auto& outcome = action.get_outcomes()[i];
-        outcomevalues[i] = - outcome.compute_value(valuefunction, discount);
+
+    numvec outcomevalues(action.size());
+    for(size_t i = 0; i < action.size(); i++){
+        outcomevalues[i] = action[i].value(valuefunction, discount);
+
+    return nature(outcomevalues, action.get_distribution(), threshold);
     }
-    auto result = nature(outcomevalues, action.get_distribution(), action.get_threshold());
-    result.second = -result.second;
-    return result;
-}
-
-/**
-Computes the minimal outcome distribution constraints on the nature's distribution
-Template argument nature represents the function used to select the constrained distribution
-over the action.get_outcomes().
-Does not work when the number of outcomes is zero.
-\param valuefunction Value function reference
-\param discount Discount factor
-\return Outcome distribution and the mean value for the minimal bounded solution
- */
-template<NatureConstr nature>
-inline std::pair<typename WeightedOutcomeAction::OutcomeId,prec_t> minimal(const WeightedOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
-    assert(action.get_distribution().size() == action.get_outcomes().size());
-    if(action.get_outcomes().empty())
-        throw invalid_argument("Action with no outcomes");
-    numvec outcomevalues(action.get_outcomes().size());
-    for(size_t i = 0; i < action.get_outcomes().size(); i++){
-        const auto& outcome = action.get_outcomes()[i];
-        outcomevalues[i] = outcome.compute_value(valuefunction, discount);
-    }
-    return nature(outcomevalues, action.get_distribution(), action.get_threshold());
-}
-
-/**
-Computes the average outcome using a uniform distribution.
-\param valuefunction Updated value function
-\param discount Discount factor
-\return Mean value of the action
- */
-prec_t average(const WeightedOutcomeAction& action, numvec const& valuefunction, prec_t discount) {
-    assert(action.get_distribution().size() == action.get_outcomes().size());
-
-    if(action.get_outcomes().empty())
-        throw invalid_argument("Action with no outcomes");
-
-    prec_t averagevalue = 0.0;
-    for(size_t i = 0; i < action.get_outcomes().size(); i++)
-        averagevalue += action.get_distribution()[i] * action.get_outcomes()[i].compute_value(valuefunction, discount);
-
-    return averagevalue;
-}
-
-/**
-Computes the action value for a fixed index outcome.
-\param valuefunction Updated value function
-\param discount Discount factor
-\param index Index of the outcome used
-\return Value of the action
- */
-prec_t fixed(const WeightedOutcomeAction& action, numvec const& valuefunction, prec_t discount, 
-                typename WeightedOutcomeAction::OutcomeId dist) {
-    assert(action.get_distribution().size() == action.get_outcomes().size());
-
-    if(action.get_outcomes().empty())
-        throw invalid_argument("Action with no outcomes");
-    if(dist.size() != action.get_outcomes().size())
-        throw invalid_argument("Distribution size does not match number of outcomes");
-
-    prec_t averagevalue = 0.0;
-    for(size_t i = 0; i < action.get_outcomes().size(); i++)
-        averagevalue += dist[i] * action.get_outcomes()[i].compute_value(valuefunction, discount);
-
-    return averagevalue;
 }
 
 // *******************************************************
@@ -237,301 +167,348 @@ prec_t fixed(const WeightedOutcomeAction& action, numvec const& valuefunction, p
 // *******************************************************
 
 /**
-Finds the maximal optimistic action.
-When there are no actions then the return is assumed to be 0.
-\return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
+Finds the action with the maximal average return. The return is 0 with no actions. Such
+state is assumed to be terminal.
+
+\param state State to compute the value for
+\param valuefunction Value function to use for the following states
+\param discount Discount factor
+
+\return (Index of best action, value), returns 0 if the state is terminal.
 */
-template<typename SType, NatureConstr nature>
-inline
-tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> 
-max_max(const SType& state, const numvec& valuefunction, prec_t discount) {
- 
-    if(state.is_terminal())
-        return make_tuple(-1,typename SType::OutcomeId(),0);
-
-    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-    long result = -1l;
-    typename SType::OutcomeId result_outcome;
-
-    for(size_t i = 0; i < state.get_actions().size(); i++){
-        const auto& action = state.get_actions()[i];
-
-        // skip invalid state.get_actions()
-        if(!action.is_valid()) continue;
-
-        auto value = maximal(action, valuefunction, discount);
-        if(value.second > maxvalue){
-            maxvalue = value.second;
-            result = i;
-            result_outcome = move(value.first);
-        }
-    }
-    return make_tuple(result,result_outcome,maxvalue);
-}
-
-/**
-Finds the maximal pessimistic action
-When there are no action then the return is assumed to be 0
-\return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
-*/
-template<class SType,NatureConstr nature>
-inline
-tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> 
-max_min(const SType& state, const numvec& valuefunction, prec_t discount) {
-    if(state.is_terminal())
-        return make_tuple(-1,typename SType::OutcomeId(),0);
-
-    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
-    long result = -1l;
-    typename SType::OutcomeId result_outcome;
-
-    for(size_t i = 0; i < state.get_actions().size(); i++){
-        const auto& action = state.get_actions()[i];
-
-        // skip invalid state.get_actions()
-        if(!action.is_valid()) continue;
-
-        auto value = minimal(action, valuefunction, discount);
-        if(value.second > maxvalue){
-            maxvalue = value.second;
-            result = i;
-            result_outcome = move(value.first);
-        }
-    }
-    return make_tuple(result,result_outcome,maxvalue);
-}
-
-/**
-Finds the action with the maximal average return
-When there are no actions then the return is assumed to be 0.
-\return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
-*/
-template<class SType,NatureConstr nature>
-inline
-pair<typename SType::ActionId,prec_t> 
-max_average(const SType& state, const numvec& valuefunction, prec_t discount) {
+template<class AType>
+inline pair<long,prec_t> value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
+                                     prec_t discount) {
     if(state.is_terminal())
         return make_pair(-1,0.0);
+
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    for(size_t i = 0; i < state.get_actions().size(); i++){
-        auto const& action = state.get_actions()[i];
+
+    for(size_t i = 0; i < state.size(); i++){
+        auto const& action = state[i];
+
         // skip invalid state.get_actions()
         if(!action.is_valid()) continue;
-        auto value = average(action, valuefunction, discount);
-        if(value > maxvalue){
+
+        auto value = value_action(action, valuefunction, discount);
+        if(value >= maxvalue){
             maxvalue = value;
             result = i;
         }
     }
+
+    // if the result has not been changed, that means that all actions are invalid
+    if(result == -1)
+        throw invalid_argument("all actions are invalid.");
+
     return make_pair(result, maxvalue);
 }
 
 /**
-Computes the value of a fixed action
+Computes the value of a fixed (and valid) action. Performs validity checks.
+
+\param state State to compute the value for
+\param valuefunction Value function to use for the following states
+\param discount Discount factor
+
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class SType, NatureConstr nature>
-inline
-prec_t fixed_average(const SType& state, numvec const& valuefunction, prec_t discount,
-                     typename SType::ActionId actionid) {
+template<class AType>
+inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefunction, 
+                              prec_t discount, long actionid) {
     // this is the terminal state, return 0
     if(state.is_terminal())
         return 0;
     if(actionid < 0 || actionid >= (long) state.get_actions().size())
         throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
-    const auto& action = state.get_actions()[actionid];
+
+    const auto& action = state[actionid];
     // cannot assume invalid state.get_actions()
     if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
-    return average(action, valuefunction, discount);
+
+    return value_action(action, valuefunction, discount);
 }
 
 /**
-Computes the value of a fixed action.
+Computes the value of a fixed action and fixed response of nature.
+
+\param state State to compute the value for
+\param valuefunction Value function to use in computing value of states.
+\param discount Discount factor
+\param distribution New distribution to use. Its use depends on the type of 
+                    action this function is used with. See value_action for more
+                    details. In general, this is a distribution over outcomes or
+                    over next states with *nonzero* baseline transition probabilities.
+
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class SType,NatureConstr nature>
-inline
-prec_t fixed_fixed(const SType& state, numvec const& valuefunction, prec_t discount,
-                   typename SType::ActionId actionid, typename SType::OutcomeId outcomeid) {
+template<class AType>
+inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
+                              long actionid, numvec distribution) {
    // this is the terminal state, return 0
-    if(state.is_terminal())
-        return 0;
-    if(actionid < 0 || actionid >= (long) state.get_actions().size())
-            throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
-    const auto& action = state.get_actions()[actionid];
-    // cannot assume invalid state.get_actions()
+    if(state.is_terminal()) return 0;
+    if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+    
+    const auto& action = state[actionid];
+    // cannot assume that the action is valid
     if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
-    return fixed(action, valuefunction, discount, outcomeid);
+
+    return value_action(action, valuefunction, discount, distribution);
 }
+
+/**
+Finds the greedy action and its value for the given value function. 
+This function assumes a robust or optimistic response by nature depending on the provided
+ambiguity.
+
+When there are no actions, the state is assumed to be terminal and the return is 0.
+
+\param state State to compute the value for
+\param valuefunction Value function to use in computing value of states.
+\param discount Discount factor
+\param nature Method used to compute the response of nature.
+\param threshold Threshold parameter for the nature
+
+\return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
+*/
+template<typename AType>
+inline ind_vec_scal_t value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
+                                        prec_t discount, NatureResponse nature, prec_t threshold) {
+ 
+    if(state.is_terminal())
+        return make_tuple(-1,numvec(),0);
+
+    prec_t maxvalue = -numeric_limits<prec_t>::infinity();
+
+    long result = -1;
+    numvec result_outcome;
+
+    for(size_t i = 0; i < state.get_actions().size(); i++){
+        const auto& action = state.get_actions()[i];
+
+        // skip invalid state.get_actions()
+        if(!action.is_valid()) continue;
+
+        auto value = value_action(action, valuefunction, discount, nature, threshold);
+        if(value.second > maxvalue){
+            maxvalue = value.second;
+            result = i;
+            result_outcome = move(value.first);
+        }
+    }
+
+    // if the result has not been changed, that means that all actions are invalid
+    if(result == -1)
+        throw invalid_argument("all actions are invalid.");
+    
+    return make_tuple(result,result_outcome,maxvalue);
+}
+
 // *******************************************************
 // RMDP computation methods
 // *******************************************************
 
+/** A solution to a plain MDP.  */
+class Solution {
+public:
+    numvec valuefunction;
+    /// index of the actions for each states
+    indvec policy;                         
+    prec_t residual;
+    long iterations;
+
+    Solution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {};
+
+    Solution(const numvec& valuefunction, const indvec& policy, prec_t residual = -1, long iterations = -1) :
+        valuefunction(valuefunction), policy(policy), residual(residual), iterations(iterations) {};
+
+    /**
+    Computes the total return of the solution given the initial
+    distribution.
+    \param initial The initial distribution
+     */
+    prec_t total_return(const Transition& initial) const{
+        if(initial.max_index() >= (long) valuefunction.size())
+            throw invalid_argument("Too many indexes in the initial distribution.");
+        return initial.value(valuefunction);
+    };
+};
+/** A solution to a robust MDP.  */
+class RSolution {
+public:
+    numvec valuefunction;
+    /// index of the action to take for each state
+    indvec policy;                         
+    /// index of the outcome for each state and action prescribed by the policy
+    vector<numvec> outcomes;                      
+    prec_t residual;
+    long iterations;
+
+    RSolution(): valuefunction(0), policy(0), outcomes(0), residual(-1),iterations(-1) {};
+
+    RSolution(numvec const& valuefunction, const indvec& policy,
+             const vector<numvec>& outcomes, prec_t residual = -1, long iterations = -1) :
+        valuefunction(valuefunction), policy(policy), outcomes(outcomes), residual(residual),iterations(iterations) {};
+
+    /**
+    Computes the total return of the solution given the initial
+    distribution.
+    \param initial The initial distribution
+     */
+    prec_t total_return(const Transition& initial) const{
+        if(initial.max_index() >= (long) valuefunction.size())
+            throw invalid_argument("Too many indexes in the initial distribution.");
+        return initial.value(valuefunction);
+    };
+};
 
 /**
 Gauss-Seidel variant of value iteration (not parallelized).
 
 This function is suitable for computing the value function of a finite state MDP. If
 the states are ordered correctly, one iteration is enough to compute the optimal value function.
-Since the value function is updated from the first state to the last, the states should be ordered
-in reverse temporal order.
+Since the value function is updated from the last state to the first one, the states should be ordered
+in the temporal order.
 
-Because this function updates the array value during the iteration, it may be
-difficult to paralelize easily.
-\param type Type of realization of the uncertainty
 \param discount Discount factor.
-\param valuefunction Initial value function. Passed by value, because it is modified.
+\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use 
+                    all zeros when not provided. Ignored when size is 0.
+\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
+                 states in which policy = -1, otherwise a fixed value is used. 
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
+
+\returns Solution that can be used to compute the total return, or the optimal policy.
  */
-template<class SType, NatureConstr nature>
-inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
-vi_gs(const GRMDP<SType>& mdp, Uncertainty type,
-              prec_t discount,
-              numvec valuefunction=numvec(0),
-              unsigned long iterations=MAXITER,
-              prec_t maxresidual=SOLPREC) {
+template<class SType>
+inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
+              numvec valuefunction=numvec(0), const indvec& policy=indvec(0),
+              unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) {
 
-    const vector<SType>& states = mdp.get_states();
-
+    const auto& states = mdp.get_states();
 
     // just quit if there are no states
-    if( mdp.state_count() == 0)
-        return GSolution<typename SType::ActionId, typename SType::OutcomeId>
-();
-
+    if( mdp.state_count() == 0) return Solution();
+    // check the dimensions of the policy
+    if(!policy.empty() && policy.size() != states.size()) throw invalid_argument("Incorrect dimensions of policy function.");
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
-    if(valuefunction.size() > 0){
-        if(valuefunction.size() != states.size())
-            throw invalid_argument("Incorrect dimensions of value function.");
-    }else
+    if(!valuefunction.empty()){
+        if(valuefunction.size() != states.size()) throw invalid_argument("Incorrect dimensions of value function.");
+    }else{
         valuefunction.assign(mdp.state_count(), 0.0);
+    }
+    indvec newpolicy(states.size());
 
-
-    typename GRMDP<SType>::ActionPolicy policy(states.size());
-    typename GRMDP<SType>::OutcomePolicy outcomes(states.size());
-
+    // copy the provided policy
+    if(!policy.empty())
+        copy(begin(policy), end(policy), begin(newpolicy));
+    
+    // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
-    size_t i;
+    size_t i;   // iterations defined outside to make them reportable
 
     for(i = 0; i < iterations && residual > maxresidual; i++){
         residual = 0;
 
         for(size_t s = 0l; s < states.size(); s++){
             const auto& state = states[s];
-
-            tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> newvalue;
-
-            switch(type){
-            case Uncertainty::Robust:
-                newvalue = max_min<SType,nature>(state,valuefunction,discount);
-                break;
-            case Uncertainty::Optimistic:
-                newvalue = max_max<SType,nature>(state,valuefunction,discount);
-                break;
-            case Uncertainty::Average:
-                pair<typename SType::ActionId,prec_t> avgvalue =
-                    max_average<SType,nature>(state, valuefunction,discount);
-                newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
-                break;
+            prec_t newvalue;
+            
+            // check whether this state should only be evaluated
+            if(policy.empty() || policy[s] < 0){    // optimizing
+                tie(newpolicy[s], newvalue) = value_max_state(state, valuefunction,discount);
+            }else{ // evaluating (action copied earlier, no need to copy it again)
+                newvalue = value_fix_state(state, valuefunction, discount, policy[s]);
             }
 
-            residual = max(residual, abs(valuefunction[s] - get<2>(newvalue)));
-            valuefunction[s] = get<2>(newvalue);
-
-            policy[s] = get<0>(newvalue);
-            outcomes[s] = get<1>(newvalue);
+            residual = max(residual, abs(valuefunction[s] - newvalue));
+            valuefunction[s] = newvalue;
         }
     }
-    return GSolution<typename SType::ActionId, typename SType::OutcomeId>
-(valuefunction,policy,outcomes,residual,i);
+    return Solution(valuefunction,newpolicy,residual,i);
 }
 
 /**
-Jacobi variant of value iteration. This method uses OpenMP to parallelize the computation.
+*Robust* (or ambiguous) Gauss-Seidel variant of value iteration (not parallelized).
+
+This function is suitable for computing the value function of a finite state MDP. If
+the states are ordered correctly, one iteration is enough to compute the optimal value function.
+Since the value function is updated from the last state to the first one, the states should be ordered
+in the temporal order.
+
 \param type Type of realization of the uncertainty
-\param valuefunction Initial value function.
 \param discount Discount factor.
+\param nature Method used to compute the response of nature.
+\param threshold Threshold parameter for the nature
+\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use 
+                    all zeros when not provided. Ignored when size is 0.
+\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
+                 states in which policy = -1, otherwise the provided value is used. 
+\param natpol Optional. Ignored when size is 0. Possibly a partial policy of nature. Nature is optimized only in 
+                 states in which size(natpol[s]) == 0, otherwise the provided value is used. If nature's response
+                 is fixed, then also the policy needs to be fixed for that state.
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
+
+\returns Solution that can be used to compute the total return, or the optimal policy.
  */
-template<class SType, NatureConstr nature>
-inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
-vi_jac(const GRMDP<SType>& mdp, Uncertainty type,
-               prec_t discount,
-               const numvec& valuefunction=numvec(0),
-                unsigned long iterations=MAXITER,
-                prec_t maxresidual=SOLPREC) {
 
-    const vector<SType>& states = mdp.get_states();
-    
-    // just quit if there are not states
-    if( mdp.state_count() == 0)
-        return GSolution<typename SType::ActionId, typename SType::OutcomeId> ();
+template<class SType>
+inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse nature, prec_t threshold,
+              numvec valuefunction=numvec(0), const indvec& policy=indvec(0), const vector<numvec>& natpol = vector<numvec>(0),
+              unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) {
 
+    const auto& states = mdp.get_states();
+
+  // just quit if there are no states
+    if( mdp.state_count() == 0) return RSolution();
+    // check the dimensions of the policy
+    if(!policy.empty() && policy.size() != states.size()) throw invalid_argument("Incorrect dimensions of policy function.");
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
-    if( (valuefunction.size() > 0) && (valuefunction.size() != states.size()) )
-        throw invalid_argument("Incorrect size of value function.");
-
-    numvec oddvalue(0);        // set in even iterations (0 is even)
-    numvec evenvalue(0);       // set in odd iterations
-
-    if(valuefunction.size() > 0){
-        oddvalue = valuefunction;
-        evenvalue = valuefunction;
+    if(!valuefunction.empty()){
+        if(valuefunction.size() != states.size()) throw invalid_argument("Incorrect dimensions of value function.");
     }else{
-        oddvalue.assign(states.size(),0);
-        evenvalue.assign(states.size(),0);
+        valuefunction.assign(mdp.state_count(), 0.0);
     }
+    indvec newpolicy(states.size());
+    vector<numvec> newnatpol(states.size());
 
-    typename GRMDP<SType>::ActionPolicy policy(states.size());
-    typename GRMDP<SType>::OutcomePolicy outcomes(states.size());
-
-    numvec residuals(states.size());
-
+    // copy the provided policy
+    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
+    
+    // copy the provided policy for nature
+    if(!natpol.empty()) copy(begin(natpol), end(natpol), begin(newnatpol));
+    
+    // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
-    size_t i;
+    size_t i;   // iterations defined outside to make them reportable
 
     for(i = 0; i < iterations && residual > maxresidual; i++){
-        numvec & sourcevalue = i % 2 == 0 ? oddvalue  : evenvalue;
-        numvec & targetvalue = i % 2 == 0 ? evenvalue : oddvalue;
+        residual = 0;
 
-        #pragma omp parallel for
-        for(auto s = 0l; s < (long) states.size(); s++){
+        for(size_t s = 0l; s < states.size(); s++){
             const auto& state = states[s];
-
-            tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> newvalue;
-
-            switch(type){
-            case Uncertainty::Robust:
-                newvalue = max_min<SType,nature>(state,sourcevalue,discount);
-                break;
-            case Uncertainty::Optimistic:
-                newvalue = max_max<SType,nature>(state,sourcevalue,discount);
-                break;
-            case Uncertainty::Average:
-                pair<typename SType::ActionId,prec_t> avgvalue =
-                    max_average<SType,nature>(state,sourcevalue,discount);
-                newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
-                break;
+            prec_t newvalue;
+            
+            // check whether this state should only be evaluated
+            if(policy.empty() || policy[s] < 0){    // optimizing
+                assert(natpolicy[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
+                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
+            }else{ // evaluating (action copied earlier, no need to copy it again)
+                newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
             }
 
-            residuals[s] = abs(sourcevalue[s] - get<2>(newvalue));
-            targetvalue[s] = get<2>(newvalue);
-
-            policy[s] = get<0>(newvalue);
-            outcomes[s] = get<1>(newvalue);
+            residual = max(residual, abs(valuefunction[s] - newvalue));
+            valuefunction[s] = newvalue;
         }
-        residual = *max_element(residuals.begin(),residuals.end());
     }
-    numvec & valuenew = i % 2 == 0 ? oddvalue : evenvalue;
-    return GSolution<typename SType::ActionId, typename SType::OutcomeId>
-(valuenew,policy,outcomes,residual,i);
-
+    return RSolution(valuefunction,policy,newnatpol,residual,i);
 }
+
+
 
 /**
 Modified policy iteration using Jacobi value iteration in the inner loop.
@@ -541,36 +518,38 @@ In the value iteration step, both the action *and* the outcome are fixed.
 Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 \param type Type of realization of the uncertainty
 \param discount Discount factor
+\param nature Method used to compute the response of nature.
+\param threshold Threshold parameter for the nature
 \param valuefunction Initial value function
+\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
+                 states in which policy = -1, otherwise the provided value is used. 
+\param natpol Optional. Ignored when size is 0. Possibly a partial policy of nature. Nature is optimized only in 
+                 states in which size(natpol[s]) == 0, otherwise the provided value is used. If nature's response
+                 is fixed, then also the policy needs to be fixed for that state.
 \param iterations_pi Maximal number of policy iteration steps
 \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
 \param iterations_vi Maximal number of inner loop value iterations
 \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
             This value should be smaller than maxresidual_pi
-\param show_progress Whether to report on progress during the computation
+\param print_progress Whether to report on progress during the computation
 \return Computed (approximate) solution
  */
-template<class SType, NatureConstr nature>
-inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
-mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
-                prec_t discount,
-                const numvec& valuefunction=numvec(0),
-                unsigned long iterations_pi=MAXITER,
-                prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER,
-                prec_t maxresidual_vi=SOLPREC/2,
-                bool show_progress=false) {
+template<class SType>
+inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureResponse nature, prec_t threshold,
+                const numvec& valuefunction=numvec(0),const indvec& policy=indvec(0), const vector<numvec>& natpol = vector<numvec>(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
 
     const vector<SType>& states = mdp.get_states();
 
-    // just quit if there are no states
-    if( mdp.state_count() == 0)
-        return GSolution<typename SType::ActionId, typename SType::OutcomeId>();
+    // quit if there are no states
+    if( mdp.state_count() == 0) return RSolution();
 
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
-    if( (valuefunction.size() > 0) && (valuefunction.size() != mdp.state_count()) )
-        throw invalid_argument("Incorrect size of value function.");
+    if( !valuefunction.empty() && (valuefunction.size() != mdp.state_count()) ) throw invalid_argument("Incorrect size of value function.");
+
 
     numvec oddvalue(0);        // set in even iterations (0 is even)
     numvec evenvalue(0);       // set in odd iterations
@@ -583,24 +562,33 @@ mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
         evenvalue.assign(states.size(),0);
     }
 
-    typename GRMDP<SType>::ActionPolicy policy(states.size());
-    typename GRMDP<SType>::OutcomePolicy outcomes(states.size());
+    // construct working policies
+    indvec newpolicy(states.size());
+    vector<numvec> newnatpol(states.size());
+
+    // copy the provided policy
+    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
+    
+    // copy the provided policy for nature
+    if(!natpol.empty()) copy(begin(natpol), end(natpol), begin(newnatpol));
 
     numvec residuals(states.size());
 
+    // residual in the policy iteration part
     prec_t residual_pi = numeric_limits<prec_t>::infinity();
 
     size_t i; // defined here to be able to report the number of iterations
 
+    // use two vectors for value iteration and copy values back and forth
     numvec * sourcevalue = & oddvalue;
     numvec * targetvalue = & evenvalue;
 
     for(i = 0; i < iterations_pi; i++){
 
-        if(show_progress)
+        if(print_progress)
             cout << "Policy iteration " << i << "/" << iterations_pi << ":" << endl;
 
-        std::swap<numvec*>(targetvalue, sourcevalue);
+        swap(targetvalue, sourcevalue);
 
         prec_t residual_vi = numeric_limits<prec_t>::infinity();
 
@@ -609,140 +597,54 @@ mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
         for(auto s = 0l; s < (long) states.size(); s++){
             const auto& state = states[s];
 
-            tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> newvalue;
+            prec_t newvalue;
 
-            switch(type){
-            case Uncertainty::Robust:
-                newvalue = max_min<SType,nature>(state,*sourcevalue,discount);
-                break;
-            case Uncertainty::Optimistic:
-                newvalue = max_max<SType,nature>(state,*sourcevalue,discount);
-                break;
-            case Uncertainty::Average:
-                pair<typename SType::ActionId,prec_t> avgvalue =
-                    max_average<SType,nature>(state,*sourcevalue,discount);
-                newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
-                break;
+            // check whether this state should only be evaluated
+            if(policy.empty() || policy[s] < 0){    // optimizing
+                assert(natpolicy[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
+                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
+            }else{ // evaluating (action copied earlier, no need to copy it again)
+                newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
             }
 
-            residuals[s] = abs((*sourcevalue)[s] - get<2>(newvalue));
-            (*targetvalue)[s] = get<2>(newvalue);
-
-            policy[s] = get<0>(newvalue);
-            outcomes[s] = get<1>(newvalue);
+            residuals[s] = abs((*sourcevalue)[s] - newvalue);
+            (*targetvalue)[s] = newvalue;
         }
 
         residual_pi = *max_element(residuals.begin(),residuals.end());
 
-        if(show_progress)
-            cout << "    Bellman residual: " << residual_pi << endl;
+        if(print_progress) cout << "    Bellman residual: " << residual_pi << endl;
 
         // the residual is sufficiently small
         if(residual_pi <= maxresidual_pi)
             break;
 
-        if(show_progress)
-            cout << "    Value iteration: ";
+        if(print_progress) cout << "    Value iteration: ";
         // compute values using value iteration
+
         for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
-            if(show_progress)
-                cout << ".";
+            if(print_progress) cout << ".";
 
             swap(targetvalue, sourcevalue);
 
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
                 prec_t newvalue = 0;
+                const auto& state = states[s];
 
-                switch(type){
-                case Uncertainty::Robust:
-                case Uncertainty::Optimistic:
-                    newvalue = fixed_fixed<SType,nature>(states[s], *sourcevalue,discount,policy[s],outcomes[s]);
-                    break;
-                case Uncertainty::Average:
-                    newvalue = fixed_average<SType,nature>(states[s],*sourcevalue,discount,policy[s]);
-                    break;
-                }
+                newvalue = value_fix_state(state, valuefunction, discount, newpolicy[s], newnatpol[s]);
 
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
             }
             residual_vi = *max_element(residuals.begin(),residuals.end());
         }
-        if(show_progress)
-            cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
+        if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     numvec & valuenew = *targetvalue;
-    return GSolution<typename SType::ActionId, typename SType::OutcomeId>(valuenew,policy,outcomes,residual_pi,i);
+    return RSolution(valuenew,policy,newnatpol,residual_pi,i);
 }
 
-/**
-Value function evaluation using Jacobi iteration for a fixed policy.
-and nature.
-
-\param valuefunction Initial value function
-\param discount Discount factor
-\param policy Decision-maker's policy
-\param natpolicy Nature's policy
-\param iterations Maximal number of inner loop value iterations
-\param maxresidual Stop the inner policy iteration when
-        the residual drops below this threshold.
-\return Computed (approximate) solution (value function)
- */
-template<class SType, NatureConstr nature>
-inline GSolution<typename SType::ActionId, typename SType::OutcomeId> vi_jac_fix(const GRMDP<SType>& mdp, prec_t discount,
-                    const typename GRMDP<SType>::ActionPolicy& policy,
-                    const typename GRMDP<SType>::OutcomePolicy& natpolicy,
-                    const numvec& valuefunction=numvec(0),
-                    unsigned long iterations=MAXITER,
-                    prec_t maxresidual=SOLPREC) {
-
-    const vector<SType>& states = mdp.get_states();
-
-    // just quit if there are not states
-    if( mdp.state_count() == 0)
-        return GSolution<typename SType::ActionId, typename SType::OutcomeId>();
-
-    if(policy.size() != mdp.state_count())
-        throw invalid_argument("Dimension of the policy must match the state count.");
-    if(natpolicy.size() != mdp.state_count())
-        throw invalid_argument("Dimension of the nature's policy must match the state count.");
-
-    numvec oddvalue(0);        // set in even iterations (0 is even)
-    numvec evenvalue(0);       // set in odd iterations
-
-    if(valuefunction.size() > 0){
-        oddvalue = valuefunction;
-        evenvalue = valuefunction;
-    }else{
-        oddvalue.assign(states.size(),0);
-        evenvalue.assign(states.size(),0);
-    }
-
-    numvec residuals(states.size());
-    prec_t residual = numeric_limits<prec_t>::infinity();
-
-    size_t j; // defined here to be able to report the number of iterations
-
-    numvec * sourcevalue = & oddvalue;
-    numvec * targetvalue = & evenvalue;
-
-    for(j = 0; j < iterations && residual > maxresidual; j++){
-
-        swap(targetvalue, sourcevalue);
-
-        #pragma omp parallel for
-        for(auto s = 0l; s < (long) states.size(); s++){
-            auto newvalue = fixed_fixed<SType,nature>(states[s],*sourcevalue,discount,policy[s],natpolicy[s]);
-
-            residuals[s] = abs((*sourcevalue)[s] - newvalue);
-            (*targetvalue)[s] = newvalue;
-        }
-        residual = *max_element(residuals.begin(),residuals.end());
-    }
-
-    return GSolution<typename SType::ActionId, typename SType::OutcomeId>(*targetvalue,policy,natpolicy,residual,j);
-}
 
 
 }

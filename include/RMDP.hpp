@@ -164,57 +164,9 @@ using namespace std;
 using namespace boost::numeric;
 using namespace util::lang;
 
-/**
-Describes the behavior of nature in the uncertain MDP. Robust corresponds to the
-worst-case behavior of nature, optimistic corresponds the best case, and average
-represents a weighted mean of the returns.
-*/
-enum class Uncertainty {
-    /// Treat uncertainty as a worst case
-    Robust = 0,
-    /// Treat uncertainty as a best case
-    Optimistic = 1,
-    /// Average over uncertain outcomes (type of average depends on the type)
-    Average = 2
-};
-
 // **************************************************************************************
 //  Generic MDP Class
 // **************************************************************************************
-
-/** A solution to a robust MDP.  */
-template<typename ActionId, typename OutcomeId>
-class GSolution {
-public:
-    numvec valuefunction;
-    vector<ActionId> policy;                        // index of the actions for each states
-    vector<OutcomeId> outcomes;                      // index of the outcome for each state
-    prec_t residual;
-    long iterations;
-
-    GSolution():
-        valuefunction(0), policy(0), outcomes(0),
-        residual(-1),iterations(-1) {};
-
-    GSolution(numvec const& valuefunction, const vector<ActionId>& policy,
-             const vector<OutcomeId>& outcomes, prec_t residual = -1, long iterations = -1) :
-        valuefunction(valuefunction), policy(policy), outcomes(outcomes),
-        residual(residual),iterations(iterations) {};
-
-    /**
-    Computes the total return of the solution given the initial
-    distribution.
-
-    Computes it based on the value function.
-
-    \param initial The initial distribution
-     */
-    prec_t total_return(const Transition& initial) const{
-        if(initial.max_index() >= (long) valuefunction.size())
-            throw invalid_argument("Too many indexes in the initial distribution.");
-        return initial.compute_value(valuefunction);
-    };
-};
 
 /**
 A general robust Markov decision process. Contains methods for constructing and solving RMDPs.
@@ -251,9 +203,6 @@ public:
     typedef vector<ActionId> ActionPolicy;
     /** Nature's policy: Which outcome to take in which state.  */
     typedef vector<OutcomeId> OutcomePolicy;
-    /** Solution type */
-    typedef GSolution<typename SType::ActionId, typename SType::OutcomeId>
-                SolType;
 
     /**
     Constructs the RMDP with a pre-allocated number of states. All
@@ -587,19 +536,10 @@ Uncertainty type is ignored in these methods.
 typedef GRMDP<RegularState> MDP;
 
 /**
-An uncertain MDP with discrete robustness. See craam::DiscreteRobustState
-*/
-typedef GRMDP<DiscreteRobustState> RMDP_D;
-
-/**
 An uncertain MDP with L1 constrained robustness. See craam::L1RobustState.
 */
 typedef GRMDP<L1RobustState> RMDP_L1;
 
-/// Solution with discrete action and outcome policies
-typedef GSolution<long, long> SolutionDscDsc;
-/// Solution with discrete action and randomized outcome policy
-typedef GSolution<long, numvec> SolutionDscProb;
 
 
 }

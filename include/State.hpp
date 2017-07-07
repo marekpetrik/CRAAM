@@ -47,8 +47,14 @@ public:
     /** Number of actions */
     size_t size() const { return action_count();};
 
-    /** Creates an action given by actionid if it does not exists.
-    Otherwise returns the existing one. */
+    /** 
+    Creates an action given by actionid if it does not exists.
+    Otherwise returns the existing one. 
+    
+    All newly created actions are invalid (action.get_valid() = false) and are 
+    skipped when computing the state value. Adding transitions to an action
+    will make it valid.
+    */
     AType& create_action(long actionid){
         assert(actionid >= 0);
 
@@ -132,8 +138,6 @@ public:
 
 /// Regular MDP state with no outcomes
 typedef SAState<RegularAction> RegularState;
-/// State with uncertain outcomes; unconstrained and now weights
-typedef SAState<DiscreteOutcomeAction> DiscreteRobustState;
 /// State with uncertain outcomes with L1 constraints on the distribution
 typedef SAState<WeightedOutcomeAction> L1RobustState;
 }

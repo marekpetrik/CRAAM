@@ -231,63 +231,6 @@ public:
     void set_validity(bool newvalidity){valid = newvalidity;};
 };
 
-// **************************************************************************************
-//  Discrete Outcome Action
-// **************************************************************************************
-
-/**
-An action in the robust MDP with discrete outcomes.
-
-An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid.
-Actions are constructed as valid by default.
-*/
-class DiscreteOutcomeAction : public OutcomeManagement {
-
-public:
-    /** Type of an identifier for an outcome. It is ignored for the simple action. */
-    typedef long OutcomeId;
-
-    /** Creates an empty action. */
-    DiscreteOutcomeAction() {};
-
-    /**
-    Initializes outcomes to the provided vector
-    */
-    DiscreteOutcomeAction(const vector<Transition>& outcomes)
-        : OutcomeManagement(outcomes){};
-
-     /** Whether the provided outcome is valid */
-    bool is_outcome_correct(OutcomeId oid) const
-        {return (oid >= 0) && ((size_t) oid < outcomes.size());};
-
-
-    /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId oid) const { return outcomes[oid].mean_reward();};
-
-    /** Returns the mean transition probabilities */
-    Transition mean_transition(OutcomeId oid) const {return outcomes[oid];};
-
-    /** Returns a json representation of action
-    \param actionid Includes also action id*/
-    string to_json(long actionid = -1) const{
-        string result{"{"};
-        result += "\"actionid\" : ";
-        result += std::to_string(actionid);
-        result += ",\"valid\" :";
-        result += std::to_string(valid);
-        result += ",\"outcomes\" : [";
-        for(auto oi : indices(outcomes)){
-            const auto& o = outcomes[oi];
-            result += o.to_json(oi);
-            result += ",";
-        }
-        if(!outcomes.empty()) result.pop_back(); // remove last comma
-        result += "]}";
-        return result;
-    }
-
-};
 
 // **************************************************************************************
 //  Weighted Outcome Action

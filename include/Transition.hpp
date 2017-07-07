@@ -196,27 +196,44 @@ public:
 
     \param valuefunction Value function, or an arbitrary vector of values
     \param discount Discount factor, optional (default value 1)
+    \param probabilities Custom probability distribution. It must be of the same length as
+                the number of *nonzero* transition probabilities. The length is NOT checked
+                in a release build.
      */
-    prec_t compute_value(numvec const& valuefunction, prec_t discount = 1.0) const{
-    
+    prec_t value(numvec const& valuefunction, prec_t discount, numvec probabilities) const{
+        assert(probabilities.size() == size());
         if(indices.empty())
             throw range_error("No transitions defined for the state action-pair. Cannot compute value.");
-
         prec_t value = 0.0;
 
-        for(size_t c : util::lang::indices(indices)){
+        //Note: in simple benchmarks, the simd statement seems to speed up the computation
+        // by a factor of 2-4 with -march=native on a computer with AVX support
+        #pragma omp simd reduction(+:value)
+        for(long c = 0; c < size(); c++){
             value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
         }
         return value;
     }
 
+    /**
+    Computes value for the transition and a value function.
+
+    When there are no target states, the function terminates with an error.
+
+    \param valuefunction Value function, or an arbitrary vector of values
+    \param discount Discount factor, optional (default value 1)
+     */
+    prec_t value(numvec const& valuefunction, prec_t discount = 1.0) const{
+        return value(valuefunction, discount, probabilities);
+    }   
+
+
+
     /** Computes the mean return from this transition */
     prec_t mean_reward() const{
         if(indices.empty())
             throw range_error("No transitions defined. Cannot compute mean reward.");
-
         prec_t value = 0.0;
-
         for(size_t c : util::lang::indices(indices)){
             value +=  probabilities[c] * rewards[c];
         }
