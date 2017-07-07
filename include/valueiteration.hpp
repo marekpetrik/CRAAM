@@ -238,18 +238,20 @@ prec_t fixed(const WeightedOutcomeAction& action, numvec const& valuefunction, p
 
 /**
 Finds the maximal optimistic action.
-When there are no action then the return is assumed to be 0.
+When there are no actions then the return is assumed to be 0.
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
-template<class AType,NatureConstr nature>
+template<typename SType, NatureConstr nature>
 inline
-tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t> max_max(const SAState<AType>& state, const numvec& valuefunction, prec_t discount) {
+tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> 
+max_max(const SType& state, const numvec& valuefunction, prec_t discount) {
+ 
     if(state.is_terminal())
-        return make_tuple(-1,typename AType::OutcomeId(),0);
+        return make_tuple(-1,typename SType::OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    typename AType::OutcomeId result_outcome;
+    typename SType::OutcomeId result_outcome;
 
     for(size_t i = 0; i < state.get_actions().size(); i++){
         const auto& action = state.get_actions()[i];
@@ -272,15 +274,16 @@ Finds the maximal pessimistic action
 When there are no action then the return is assumed to be 0
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
-template<class AType,NatureConstr nature>
+template<class SType,NatureConstr nature>
 inline
-tuple<typename SAState<AType>::ActionId,typename AType::OutcomeId,prec_t> max_min(const SAState<AType>& state, const numvec& valuefunction, prec_t discount) {
+tuple<typename SType::ActionId,typename SType::OutcomeId,prec_t> 
+max_min(const SType& state, const numvec& valuefunction, prec_t discount) {
     if(state.is_terminal())
-        return make_tuple(-1,typename AType::OutcomeId(),0);
+        return make_tuple(-1,typename SType::OutcomeId(),0);
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
     long result = -1l;
-    typename AType::OutcomeId result_outcome;
+    typename SType::OutcomeId result_outcome;
 
     for(size_t i = 0; i < state.get_actions().size(); i++){
         const auto& action = state.get_actions()[i];
@@ -303,9 +306,10 @@ Finds the action with the maximal average return
 When there are no actions then the return is assumed to be 0.
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
-template<class AType,NatureConstr nature>
+template<class SType,NatureConstr nature>
 inline
-pair<typename SAState<AType>::ActionId,prec_t> max_average(const SAState<AType>& state, const numvec& valuefunction, prec_t discount) {
+pair<typename SType::ActionId,prec_t> 
+max_average(const SType& state, const numvec& valuefunction, prec_t discount) {
     if(state.is_terminal())
         return make_pair(-1,0.0);
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
@@ -327,10 +331,10 @@ pair<typename SAState<AType>::ActionId,prec_t> max_average(const SAState<AType>&
 Computes the value of a fixed action
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class AType,NatureConstr nature>
+template<class SType, NatureConstr nature>
 inline
-prec_t fixed_average(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
-                     typename SAState<AType>::ActionId actionid) {
+prec_t fixed_average(const SType& state, numvec const& valuefunction, prec_t discount,
+                     typename SType::ActionId actionid) {
     // this is the terminal state, return 0
     if(state.is_terminal())
         return 0;
@@ -346,10 +350,10 @@ prec_t fixed_average(const SAState<AType>& state, numvec const& valuefunction, p
 Computes the value of a fixed action.
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class AType,NatureConstr nature>
+template<class SType,NatureConstr nature>
 inline
-prec_t fixed_fixed(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
-                   typename SAState<AType>::ActionId actionid, typename AType::OutcomeId outcomeid) {
+prec_t fixed_fixed(const SType& state, numvec const& valuefunction, prec_t discount,
+                   typename SType::ActionId actionid, typename SType::OutcomeId outcomeid) {
    // this is the terminal state, return 0
     if(state.is_terminal())
         return 0;
@@ -381,7 +385,7 @@ difficult to paralelize easily.
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
  */
-template<class SType>
+template<class SType, NatureConstr nature>
 inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
 vi_gs(const GRMDP<SType>& mdp, Uncertainty type,
               prec_t discount,
@@ -422,15 +426,15 @@ vi_gs(const GRMDP<SType>& mdp, Uncertainty type,
 
             switch(type){
             case Uncertainty::Robust:
-                newvalue = state.max_min(valuefunction,discount);
+                newvalue = max_min<SType,nature>(state,valuefunction,discount);
                 break;
             case Uncertainty::Optimistic:
-                newvalue = state.max_max(valuefunction,discount);
+                newvalue = max_max<SType,nature>(state,valuefunction,discount);
                 break;
             case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                    state.max_average(valuefunction,discount);
-                newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
+                    max_average(state,valuefunction,discount);
+                newvalue = make_tuple<SType,nature>(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
                 break;
             }
 
@@ -453,7 +457,7 @@ Jacobi variant of value iteration. This method uses OpenMP to parallelize the co
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
  */
-template<class SType>
+template<class SType, NatureConstr nature>
 inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
 vi_jac(const GRMDP<SType>& mdp, Uncertainty type,
                prec_t discount,
@@ -465,8 +469,7 @@ vi_jac(const GRMDP<SType>& mdp, Uncertainty type,
     
     // just quit if there are not states
     if( mdp.state_count() == 0)
-        return GSolution<typename SType::ActionId, typename SType::OutcomeId>
-();
+        return GSolution<typename SType::ActionId, typename SType::OutcomeId> ();
 
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
@@ -504,14 +507,14 @@ vi_jac(const GRMDP<SType>& mdp, Uncertainty type,
 
             switch(type){
             case Uncertainty::Robust:
-                newvalue = state.max_min(sourcevalue,discount);
+                newvalue = max_min<SType,nature>(state,sourcevalue,discount);
                 break;
             case Uncertainty::Optimistic:
-                newvalue = state.max_max(sourcevalue,discount);
+                newvalue = max_max<SType,nature>(state,sourcevalue,discount);
                 break;
             case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                    state.max_average(sourcevalue,discount);
+                    max_average<SType,nature>(state,sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
                 break;
             }
@@ -547,9 +550,9 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \param show_progress Whether to report on progress during the computation
 \return Computed (approximate) solution
  */
-template<class SType>
+template<class SType, NatureConstr nature>
 inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
-        mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
+mpi_jac(const GRMDP<SType>& mdp, Uncertainty type,
                 prec_t discount,
                 const numvec& valuefunction=numvec(0),
                 unsigned long iterations_pi=MAXITER,
@@ -610,14 +613,14 @@ inline GSolution<typename SType::ActionId, typename SType::OutcomeId>
 
             switch(type){
             case Uncertainty::Robust:
-                newvalue = state.max_min(*sourcevalue,discount);
+                newvalue = max_min<SType,nature>(state,*sourcevalue,discount);
                 break;
             case Uncertainty::Optimistic:
-                newvalue = state.max_max(*sourcevalue,discount);
+                newvalue = max_max<SType,nature>(state,*sourcevalue,discount);
                 break;
             case Uncertainty::Average:
                 pair<typename SType::ActionId,prec_t> avgvalue =
-                    state.max_average(*sourcevalue,discount);
+                    max_average<SType,nature>(state,*sourcevalue,discount);
                 newvalue = make_tuple(avgvalue.first,typename SType::OutcomeId(),avgvalue.second);
                 break;
             }
@@ -686,7 +689,7 @@ and nature.
         the residual drops below this threshold.
 \return Computed (approximate) solution (value function)
  */
-template<class SType>
+template<class SType, NatureConstr nature>
 inline GSolution<typename SType::ActionId, typename SType::OutcomeId> vi_jac_fix(const GRMDP<SType>& mdp, prec_t discount,
                     const typename GRMDP<SType>::ActionPolicy& policy,
                     const typename GRMDP<SType>::OutcomePolicy& natpolicy,
@@ -730,7 +733,7 @@ inline GSolution<typename SType::ActionId, typename SType::OutcomeId> vi_jac_fix
 
         #pragma omp parallel for
         for(auto s = 0l; s < (long) states.size(); s++){
-            auto newvalue = states[s].fixed_fixed(*sourcevalue,discount,policy[s],natpolicy[s]);
+            auto newvalue = fixed_fixed<SType,nature>(states[s],*sourcevalue,discount,policy[s],natpolicy[s]);
 
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
             (*targetvalue)[s] = newvalue;
