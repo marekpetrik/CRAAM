@@ -55,7 +55,6 @@ Getting Started
 The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The available specializations are:
 
 - craam::MDP : plain MDP with no explicit definition of uncertainty
-- craam::RMDP_D : a robust/uncertain with discrete outcomes with the best/worst one chosen
 - craam::RMDP_L1 : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
 
 
@@ -538,7 +537,7 @@ typedef GRMDP<RegularState> MDP;
 /**
 An uncertain MDP with outcomes and weights. See craam::L1RobustState.
 */
-typedef GRMDP<WeightedRobustState> RMDP_L1;
+typedef GRMDP<WeightedRobustState> RMDP;
 
 
 

@@ -177,17 +177,17 @@ Does not work when the number of outcomes is zero.
  */
 inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction, 
                                 prec_t discount, NatureResponse nature, prec_t threshold) {
+    
     assert(action.get_distribution().size() == action.get_outcomes().size());
 
     if(action.get_outcomes().empty())
         throw invalid_argument("Action with no action.get_outcomes().");
 
     numvec outcomevalues(action.size());
-    for(size_t i = 0; i < action.size(); i++){
+    for(size_t i = 0; i < action.size(); i++)
         outcomevalues[i] = action[i].value(valuefunction, discount);
 
     return nature(outcomevalues, action.get_distribution(), threshold);
-    }
 }
 
 // *******************************************************

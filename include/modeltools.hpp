@@ -306,7 +306,7 @@ GRMDP<SType> robustify(const MDP& mdp, bool allowzeros){
 }
 
 /// Instantiated version of robustify
-inline RMDP_L1 robustify_l1(const MDP& mdp, bool allowzeros){
+inline RMDP robustify_l1(const MDP& mdp, bool allowzeros){
     return robustify<WeightedRobustState>(mdp, allowzeros);
 }
 
