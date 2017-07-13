@@ -30,7 +30,7 @@ using NatureResponse = vec_scal_t(numvec const& v, numvec const& p, T threshold)
 Represents an instance of nature that can be used to directly compute the response.
 */
 template<class T>
-using NatureInstance = pair<NatureResponse<T>, T>
+using NatureInstance = pair<NatureResponse<T>, T>;
 
 /// L1 robust response
 inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
@@ -279,15 +279,13 @@ Computes the value of a fixed action and fixed response of nature.
 \param state State to compute the value for
 \param valuefunction Value function to use in computing value of states.
 \param discount Discount factor
-\param distribution New distribution to use. Its use depends on the type of 
-                    action this function is used with. See value_action for more
-                    details. In general, this is a distribution over outcomes or
-                    over next states with *nonzero* baseline transition probabilities.
+\param distribution New distribution over states with non-zero nominal probabilities 
 
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class AType>
-inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
+template<class AType, class T>
+inline prec_t 
+value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
                               long actionid, numvec distribution) {
    // this is the terminal state, return 0
     assert(actionid >= 0 && actionid < state.size());
@@ -300,6 +298,33 @@ inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefu
     if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
 
     return value_action(action, valuefunction, discount, distribution);
+}
+
+/**
+Computes the value of a fixed action and any response of nature.
+
+\param state State to compute the value for
+\param valuefunction Value function to use in computing value of states.
+\param discount Discount factor
+\param nature Instance of a nature optimizer
+
+\return Value of state, 0 if it's terminal regardless of the action index
+*/
+template<class AType, class T>
+inline vec_scal_t 
+value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
+                              long actionid, NatureInstance<T> nature) {
+   // this is the terminal state, return 0
+    assert(actionid >= 0 && actionid < state.size());
+
+    if(state.is_terminal()) return 0;
+    if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+    
+    const auto& action = state[actionid];
+    // cannot assume that the action is valid
+    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+
+    return value_action(action, valuefunction, discount, nature);
 }
 
 /**
@@ -317,7 +342,7 @@ When there are no actions, the state is assumed to be terminal and the return is
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
 template<typename AType, typename T>
-inline ind_vec_scal_t 
+inline prec_t
 value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
                 prec_t discount, const NatureInstance<T>& nature) {
  
@@ -335,7 +360,7 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
         // skip invalid state.get_actions()
         if(!action.is_valid()) continue;
 
-        auto value = value_action(action, valuefunction, discount, nature, threshold);
+        auto value = value_action(action, valuefunction, discount, nature);
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
@@ -355,18 +380,29 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
 // *******************************************************
 
 /** A solution to a plain MDP.  */
-class Solution {
-public:
+struct Solution {
+    /// Value function
     numvec valuefunction;
-    /// index of the actions for each states
-    indvec policy;                         
+    /// index of the action to take for each states
+    indvec policy;                 
+    /// Bellman residual of the computation        
     prec_t residual;
+    /// Number of iterations taken
     long iterations;
 
     Solution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {};
 
-    Solution(const numvec& valuefunction, const indvec& policy, prec_t residual = -1, long iterations = -1) :
-        valuefunction(valuefunction), policy(policy), residual(residual), iterations(iterations) {};
+    /// Empty solution for a problem with statecount states
+    Solution(long statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {};
+
+    /// Empty solution for a problem with statecount states
+    Solution(long statecount, numvec valuefunction, indvec policy): 
+                valuefunction(move(valuefunction)), 
+                policy(move(policy)), 
+                residual(-1),iterations(-1) {};
+
+    Solution(numvec valuefunction, indvec policy, prec_t residual = -1, long iterations = -1) :
+        valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {};
 
     /**
     Computes the total return of the solution given the initial
@@ -374,57 +410,162 @@ public:
     \param initial The initial distribution
      */
     prec_t total_return(const Transition& initial) const{
-        if(initial.max_index() >= (long) valuefunction.size())
-            throw invalid_argument("Too many indexes in the initial distribution.");
+        if(initial.max_index() >= (long) valuefunction.size()) throw invalid_argument("Too many indexes in the initial distribution.");
         return initial.value(valuefunction);
     };
 };
 /** A robust solution to a robust or regular MDP.  */
-class RSolution {
-public:
-    numvec valuefunction;
-    /// index of the action to take for each state
-    indvec policy;                         
-    /// index of the outcome for each state and action prescribed by the policy
-    vector<numvec> outcomes;                      
-    prec_t residual;
-    long iterations;
+struct RSolution : public Solution {
+    /// Randomized policy of nature, probabilities only for states that have
+    /// non-zero probability in the MDP model (or for outcomes)
+    vector<numvec> natpolicy;                      
 
-    RSolution(): valuefunction(0), policy(0), outcomes(0), residual(-1),iterations(-1) {};
+    /// Empty RSolution
+    RSolution() : Solution(), natpolicy(0) {};
 
-    RSolution(numvec const& valuefunction, const indvec& policy,
-             const vector<numvec>& outcomes, prec_t residual = -1, long iterations = -1) :
-        valuefunction(valuefunction), policy(policy), outcomes(outcomes), residual(residual),iterations(iterations) {};
+    /// Empty RSolution for a problem with statecount states
+    RSolution(size_t statecount): Solution(statecount), natpolicy(statecount, numvec(0)) {};
 
-    /**
-    Computes the total return of the solution given the initial
-    distribution.
-    \param initial The initial distribution
-     */
-    prec_t total_return(const Transition& initial) const{
-        if(initial.max_index() >= (long) valuefunction.size())
-            throw invalid_argument("Too many indexes in the initial distribution.");
-        return initial.value(valuefunction);
-    };
+    /// Empty RSolution for a problem with statecount states
+    RSolution(size_t statecount, numvec valuefunction, indvec policy): 
+            Solution(statecount, move(valuefunction), move(policy)), 
+            natpolicy(statecount, numvec(0)) {};
+
+    RSolution(numvec valuefunction, indvec policy,
+             vector<numvec> natpolicy, prec_t residual = -1, long iterations = -1) :
+        Solution(move(valuefunction), move(policy), residual, iterations), 
+        natpolicy(move(natpolicy)) {};
 };
 
-struct DecisionPolicy{
-    using solution_type = Solution;
+
+// **************************************************************************
+// Helper classes to handle computing of the best response
+// **************************************************************************
+
+/* 
+Regular solution to an MDP
+
+Field policy Ignored when size is 0. Otherwise a partial policy. Actions are optimized only in 
+                 states in which policy = -1, otherwise a fixed value is used. 
+*/
+class DecisionPolicy{
+public:
     indvec policy;
 
     DecisionPolicy(indvec policy) : policy(move(policy)) {};
-}
 
+    Solution new_solution(size_t statecount, numvec valuefunction) const { 
+        process_valuefunction(statecount, valuefunction);
+        Solution solution =  Solution(statecount,move(valuefunction), process_policy(statecount));
+        return solution;
+    }
+
+    /// Computed the Bellman update and updates the solution to the best response 
+    /// It does not update the value function
+    /// \returns New value for the state
+    template<class SType>
+    prec_t update_solution(Solution& solution, const SType& state, long stateid, 
+                            const numvec& valuefunction, prec_t discount) const{
+        prec_t newvalue;
+        // check whether this state should only be evaluated
+        if(policy.empty() || policy[stateid] < 0){    // optimizing
+            tie(solution.policy[stateid], newvalue) = value_max_state(state, valuefunction, discount);
+        }else{// fixed-action, do not copy
+            return value_fix_state(state, valuefunction, discount, policy[stateid]);
+        }
+        return newvalue;
+    }
+
+    /// Computes a fixed Bellman update using the current solution policy
+    /// \returns New value for the state
+    template<class SType>
+    prec_t update_value(const Solution& solution, const SType& state, long stateid, 
+                            const numvec& valuefunction, prec_t discount) const{
+
+        return value_fix_state(state, valuefunction, discount, solution.policy[stateid]);
+    }
+protected:
+    void process_valuefunction(size_t statecount, numvec& valuefunction) const{
+        // check if the value function is a correct size, and if it is length 0
+        // then creates an appropriate size
+        if(!valuefunction.empty()){
+            if(valuefunction.size() != statecount) throw invalid_argument("Incorrect dimensions of value function.");
+        }else{
+            valuefunction.assign(statecount, 0.0);
+        }
+    }
+    indvec process_policy(long statecount) const {
+        // check the dimensions of the policy
+        if(!policy.empty()){
+            if(policy.size() != statecount) throw invalid_argument("Incorrect dimensions of policy function.");
+            return policy;
+        }else{
+            return indvec(statecount, -1);
+        }
+    }
+};
+
+/** 
+Robust solution to an MDP
+
+The class abstracts some operations of value / policy iteration in order to generalize to 
+various types of robust MDPs.
+*/
 template<class T>
-struct NaturePolicy{
-    using solution_type = RSolution;
-    indvec policy;
-    vector<NatureInstance<T>> natpol;
+class NaturePolicy : public DecisionPolicy {
+public:
+    /// Specification of natures response (the function that nature computes, could be different for each state)
+    vector<NatureInstance<T>> natspec;
 
-    NaturePolicy(indvec policy, vector<NatureInstance<T>> natpol):
-        policy(move(policy)), natpol(move(natpol)) {};
-}
+    /// Constructs the object from a policy and a specification of nature
+    NaturePolicy(indvec policy, vector<NatureInstance<T>> natspec):
+        DecisionPolicy(move(policy)), natspec(move(natspec)) {};
 
+    /// Constructs a new robust solution
+    RSolution new_solution(size_t statecount, numvec valuefunction) const { 
+        if(natspec.size != statecount)
+            throw invalid_argument("Size of nature specification does not match the number of states.");
+
+        process_valuefunction(statecount, valuefunction);
+        Solution solution =  Solution(statecount,move(valuefunction), 
+                                process_policy(statecount));
+        return solution;
+    }
+
+    /// Computed the Bellman update and updates the solution to the best response 
+    /// It does not update the value function
+    /// \returns New value for the state
+    template<class SType>
+    prec_t update_solution(RSolution& solution, const SType& state, long stateid, 
+                            const numvec& valuefunction, prec_t discount) const{
+
+        prec_t newvalue;
+        // check whether this state should only be evaluated or also optimized
+        if(policy.empty() || policy[stateid] < 0){    // optimizing
+            tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) = value_max_state(state, valuefunction, discount, natspec[stateid]);
+        }else{// fixed-action, do not copy
+            prec_t newvalue; long ignore; 
+            tie(ignore, solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, policy[stateid], natspec[stateid]);
+        }
+        return newvalue;
+    }
+
+    /// Computes a fixed Bellman update using the current solution policy
+    /// \returns New value for the state
+    template<class SType>
+    prec_t update_value(const RSolution& solution, const SType& state, long stateid, 
+                            const numvec& valuefunction, prec_t discount) const{
+
+        return value_fix_state(state, valuefunction, discount, solution.policy[stateid], 
+                solution.natpolicy[stateid]);
+    }
+    
+};
+
+
+// **************************************************************************
+// Main solution methods
+// **************************************************************************
 
 /**
 Gauss-Seidel variant of value iteration (not parallelized).
@@ -434,40 +575,29 @@ the states are ordered correctly, one iteration is enough to compute the optimal
 Since the value function is updated from the last state to the first one, the states should be ordered
 in the temporal order.
 
+\param response Determines the type of solution method. Allows for customized algorithms 
+                that can solve various forms of robustness, and risk aversion
+\param mdp The mdp to solve
 \param discount Discount factor.
 \param valuefunction Initial value function. Passed by value, because it is modified. Optional, use 
                     all zeros when not provided. Ignored when size is 0.
-\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
-                 states in which policy = -1, otherwise a fixed value is used. 
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
 
+
 \returns Solution that can be used to compute the total return, or the optimal policy.
  */
-template<class SType>
-inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
-              numvec valuefunction=numvec(0), const indvec& policy=indvec(0),
-              unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) {
+template<class SType, class ResponseType>
+inline auto vi_gs(const ResponseType& response, const GRMDP<SType>& mdp, prec_t discount,
+                        numvec valuefunction=numvec(0),
+                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) 
+                        {
 
     const auto& states = mdp.get_states();
+    auto solution = response.new_solution(states.count(), move(valuefunction));
 
     // just quit if there are no states
-    if( mdp.state_count() == 0) return Solution();
-    // check the dimensions of the policy
-    if(!policy.empty() && policy.size() != states.size()) throw invalid_argument("Incorrect dimensions of policy function.");
-
-    // check if the value function is a correct size, and if it is length 0
-    // then creates an appropriate size
-    if(!valuefunction.empty()){
-        if(valuefunction.size() != states.size()) throw invalid_argument("Incorrect dimensions of value function.");
-    }else{
-        valuefunction.assign(mdp.state_count(), 0.0);
-    }
-    indvec newpolicy(states.size());
-
-    // copy the provided policy
-    if(!policy.empty())
-        copy(cbegin(policy), cend(policy), begin(newpolicy));
+    if( mdp.state_count() == 0) solution;
     
     // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -477,310 +607,52 @@ inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
         residual = 0;
 
         for(size_t s = 0l; s < states.size(); s++){
-            const auto& state = states[s];
-            prec_t newvalue;
-            
-            // check whether this state should only be evaluated
-            if(policy.empty() || policy[s] < 0){    // optimizing
-                tie(newpolicy[s], newvalue) = value_max_state(state, valuefunction, discount);
-            }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, valuefunction, discount, policy[s]);
-            }
+            prec_t newvalue = response.update_solution(solution, states[s], valuefunction, discount);
 
-            residual = max(residual, abs(valuefunction[s] - newvalue));
-            valuefunction[s] = newvalue;
+            residual = max(residual, abs(solution.valuefunction[s] - newvalue));
+            solution.valuefunction[s] = newvalue;
         }
     }
-    return Solution(valuefunction,newpolicy,residual,i);
+    solution.residual = residual;
+    solution.iterations = i;
+    return solution;
 }
 
+
 /**
-*Robust* (or ambiguous) Gauss-Seidel variant of value iteration (not parallelized).
+Modified policy iteration using Jacobi value iteration in the inner loop.
+This method generalizes modified policy iteration to robust MDPs.
+In the value iteration step, both the action *and* the outcome are fixed.
 
-This function is suitable for computing the value function of a finite state MDP. If
-the states are ordered correctly, one iteration is enough to compute the optimal value function.
-Since the value function is updated from the last state to the first one, the states should be ordered
-in the temporal order.
-
+Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 \param type Type of realization of the uncertainty
-\param discount Discount factor.
-\param nature Method used to compute the response of nature.
-\param threshold Threshold parameter for the nature
-\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use 
-                    all zeros when not provided. Ignored when size is 0.
+\param discount Discount factor
+\param valuefunction Initial value function
 \param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
                  states in which policy = -1, otherwise the provided value is used. 
-\param natpol Optional. Ignored when size is 0. Possibly a partial policy of nature. Nature is optimized only in 
-                 states in which size(natpol[s]) == 0, otherwise the provided value is used. If nature's response
-                 is fixed, then also the policy needs to be fixed for that state.
-\param iterations Maximal number of iterations to run
-\param maxresidual Stop when the maximal residual falls below this value.
-
-\returns Solution that can be used to compute the total return, or the optimal policy.
-*/
-
-template<class SType>
-inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse nature, prec_t threshold,
-              numvec valuefunction=numvec(0), const indvec& policy=indvec(0), const vector<numvec>& natpol = vector<numvec>(0),
-              unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) {
+\param iterations_pi Maximal number of policy iteration steps
+\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+\param iterations_vi Maximal number of inner loop value iterations
+\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+            This value should be smaller than maxresidual_pi
+\param print_progress Whether to report on progress during the computation
+\return Computed (approximate) solution
+ */
+template<class SType, class ResponseType>
+inline auto mpi_jac(const ResponseType& response,const GRMDP<SType>& mdp, prec_t discount, 
+                const numvec& valuefunction=numvec(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
 
     const auto& states = mdp.get_states();
+    auto solution = response.new_solution(states.count(), move(valuefunction));
 
-  // just quit if there are no states
-    if( mdp.state_count() == 0) return RSolution();
-    // check the dimensions of the policy
-    if(!policy.empty() && policy.size() != states.size()) throw invalid_argument("Incorrect dimensions of policy function.");
-    // check if the value function is a correct size, and if it is length 0
-    // then creates an appropriate size
-    if(!valuefunction.empty()){
-        if(valuefunction.size() != states.size()) throw invalid_argument("Incorrect dimensions of value function.");
-    }else{
-        valuefunction.assign(mdp.state_count(), 0.0);
-    }
-    indvec newpolicy(states.size());
-    vector<numvec> newnatpol(states.size());
+    // just quit if there are no states
+    if( mdp.state_count() == 0) solution;
 
-    // copy the provided policy
-    if(!policy.empty()) {
-        if(natpol.empty())
-            throw invalid_argument("Nature policy must be provided if a policy is provided");
-
-        // make sure nature is provided whenever policy is provided
-        for(auto s : indices(policy))
-            if(policy[s] >= 0 && (natpol.empty() || natpol[s].empty()))
-                throw invalid_argument("Nature must be provided for all states that a policy is given (not -1)");
-
-        copy(cbegin(policy), cend(policy), begin(newpolicy));
-    }
-
-    
-    // copy the provided policy for nature
-    if(!natpol.empty()) copy(cbegin(natpol), cend(natpol), begin(newnatpol));
-    
-    // initialize values
-    prec_t residual = numeric_limits<prec_t>::infinity();
-    size_t i;   // iterations defined outside to make them reportable
-
-    for(i = 0; i < iterations && residual > maxresidual; i++){
-        residual = 0;
-
-        for(size_t s = 0l; s < states.size(); s++){
-            const auto& state = states[s];
-            prec_t newvalue;
-            
-            // check whether this state should only be evaluated
-            if(policy.empty() || policy[s] < 0){    // optimizing
-                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
-            }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
-            }
-
-            residual = max(residual, abs(valuefunction[s] - newvalue));
-            valuefunction[s] = newvalue;
-        }
-    }
-    return RSolution(valuefunction,newpolicy,newnatpol,residual,i);
-}
-
-
-/**
-Regular modified policy iteration using Jacobi value iteration in the inner loop.
-This method generalizes modified policy iteration to robust MDPs.
-In the value iteration step, both the action *and* the outcome are fixed.
-
-Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-\param type Type of realization of the uncertainty
-\param discount Discount factor
-\param valuefunction Initial value function
-\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
-                 states in which policy = -1, otherwise the provided value is used. 
-\param iterations_pi Maximal number of policy iteration steps
-\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-\param iterations_vi Maximal number of inner loop value iterations
-\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-            This value should be smaller than maxresidual_pi
-\param print_progress Whether to report on progress during the computation
-\return Computed (approximate) solution
- */
-template<class SType>
-inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, 
-                const numvec& valuefunction=numvec(0),const indvec& policy=indvec(0), 
-                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
-                bool print_progress=false) {
-
-    const vector<SType>& states = mdp.get_states();
-
-    // quit if there are no states
-    if( mdp.state_count() == 0) return Solution();
-
-    // check if the value function is a correct size, and if it is length 0
-    // then creates an appropriate size
-    if( !valuefunction.empty() && (valuefunction.size() != mdp.state_count()) ) throw invalid_argument("Incorrect size of value function.");
-
-
-    numvec oddvalue(0);        // set in even iterations (0 is even)
-    numvec evenvalue(0);       // set in odd iterations
-
-    if(valuefunction.size() > 0){
-        oddvalue = valuefunction;
-        evenvalue = valuefunction;
-    }else{
-        oddvalue.assign(states.size(),0);
-        evenvalue.assign(states.size(),0);
-    }
-
-    // construct working policies
-    indvec newpolicy(states.size());
-
-    // copy the provided policy
-    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
-    
-    numvec residuals(states.size());
-
-    // residual in the policy iteration part
-    prec_t residual_pi = numeric_limits<prec_t>::infinity();
-
-    size_t i; // defined here to be able to report the number of iterations
-
-    // use two vectors for value iteration and copy values back and forth
-    numvec * sourcevalue = & oddvalue;
-    numvec * targetvalue = & evenvalue;
-
-    for(i = 0; i < iterations_pi; i++){
-
-        if(print_progress)
-            cout << "Policy iteration " << i << "/" << iterations_pi << ":" << endl;
-
-        swap(targetvalue, sourcevalue);
-
-        prec_t residual_vi = numeric_limits<prec_t>::infinity();
-
-        // update policies
-        #pragma omp parallel for
-        for(auto s = 0l; s < (long) states.size(); s++){
-            const auto& state = states[s];
-
-            prec_t newvalue;
-
-            // check whether this state should only be evaluated
-            if(policy.empty() || policy[s] < 0){    // optimizing
-                tie(newpolicy[s],  newvalue) = value_max_state(state, *sourcevalue, discount);  
-            }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s]);
-            }
-
-            residuals[s] = abs((*sourcevalue)[s] - newvalue);
-            (*targetvalue)[s] = newvalue;
-        }
-
-        residual_pi = *max_element(residuals.begin(),residuals.end());
-
-        if(print_progress) cout << "    Bellman residual: " << residual_pi << endl;
-
-        // the residual is sufficiently small
-        if(residual_pi <= maxresidual_pi)
-            break;
-
-        if(print_progress) cout << "    Value iteration: " << flush;
-        // compute values using value iteration
-
-        for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
-            if(print_progress) cout << "." << flush;
-
-            swap(targetvalue, sourcevalue);
-
-            #pragma omp parallel for
-            for(auto s = 0l; s < (long) states.size(); s++){
-                prec_t newvalue = 0;
-                const auto& state = states[s];
-
-                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s]);
-
-                residuals[s] = abs((*sourcevalue)[s] - newvalue);
-                (*targetvalue)[s] = newvalue;
-            }
-            residual_vi = *max_element(residuals.begin(),residuals.end());
-        }
-        if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
-    }
-    numvec & valuenew = *targetvalue;
-    return Solution(valuenew,newpolicy,residual_pi,i);
-}
-
-
-/**
-*Robust* modified policy iteration using Jacobi value iteration in the inner loop.
-This method generalizes modified policy iteration to robust MDPs.
-In the value iteration step, both the action *and* the outcome are fixed.
-
-Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
-\param type Type of realization of the uncertainty
-\param discount Discount factor
-\param nature Method used to compute the response of nature.
-\param threshold Threshold parameter for the nature
-\param valuefunction Initial value function
-\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
-                 states in which policy = -1, otherwise the provided value is used. 
-\param natpol Optional. Ignored when size is 0. Possibly a partial policy of nature. Nature is optimized only in 
-                 states in which size(natpol[s]) == 0, otherwise the provided value is used. If nature's response
-                 is fixed, then also the policy needs to be fixed for that state.
-\param iterations_pi Maximal number of policy iteration steps
-\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
-\param iterations_vi Maximal number of inner loop value iterations
-\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-            This value should be smaller than maxresidual_pi
-\param print_progress Whether to report on progress during the computation
-\return Computed (approximate) solution
- */
-template<class SType>
-inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureResponse nature, prec_t threshold,
-                const numvec& valuefunction=numvec(0),const indvec& policy=indvec(0), const vector<numvec>& natpol = vector<numvec>(0),
-                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
-                bool print_progress=false) {
-
-    const vector<SType>& states = mdp.get_states();
-
-    // quit if there are no states
-    if( mdp.state_count() == 0) return RSolution();
-
-    // check if the value function is a correct size, and if it is length 0
-    // then creates an appropriate size
-    if( !valuefunction.empty() && (valuefunction.size() != mdp.state_count()) ) throw invalid_argument("Incorrect size of value function.");
-
-
-    numvec oddvalue(0);        // set in even iterations (0 is even)
-    numvec evenvalue(0);       // set in odd iterations
-
-    if(valuefunction.size() > 0){
-        oddvalue = valuefunction;
-        evenvalue = valuefunction;
-    }else{
-        oddvalue.assign(states.size(),0);
-        evenvalue.assign(states.size(),0);
-    }
-
-    // construct working policies
-    indvec newpolicy(states.size());
-    vector<numvec> newnatpol(states.size());
-
-    // copy the provided policy
-    if(!policy.empty()) {
-        if(natpol.empty())
-            throw invalid_argument("Nature policy must be provided if a policy is provided");
-        
-
-        // make sure nature is provided whenever policy is provided
-        for(auto s : indices(policy))
-            if(policy[s] >= 0 && (natpol.empty() || natpol[s].empty()))
-                throw invalid_argument("Nature policy must be provided for all states that a policy is given");
-
-        copy(cbegin(policy), cend(policy), begin(newpolicy));
-    }
-    
-    // copy the provided policy for nature
-    if(!natpol.empty()) copy(cbegin(natpol), cend(natpol), begin(newnatpol));
+    numvec oddvalue = solution.valuefunction;   // set in even iterations (0 is even)
+    numvec evenvalue = oddvalue;                // set in odd iterations
 
     numvec residuals(states.size());
 
@@ -805,22 +677,11 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
         // update policies
         #pragma omp parallel for
         for(auto s = 0l; s < (long) states.size(); s++){
-            const auto& state = states[s];
-
-            prec_t newvalue;
-            // check whether this state should only be evaluated
-            if(policy.empty() || policy[s] < 0){    // optimizing
-                assert(natpol.empty() || natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
-                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, *sourcevalue, discount, nature, threshold);  
-            }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s], newnatpol[s]);
-            }
-
+            prec_t newvalue = response.update_solution(solution, states[s], valuefunction, discount);
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
             (*targetvalue)[s] = newvalue;
         }
-
-        residual_pi = *max_element(residuals.begin(),residuals.end());
+        residual_pi = *max_element(residuals.cbegin(),residuals.cend());
 
         if(print_progress) cout << "    Bellman residual: " << residual_pi << endl;
 
@@ -838,11 +699,7 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
 
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
-                prec_t newvalue = 0;
-                const auto& state = states[s];
-
-                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s], newnatpol[s]);
-
+                prec_t newvalue = response.update_value(solution, states[s], valuefunction, discount);
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
             }
@@ -851,7 +708,8 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     numvec & valuenew = *targetvalue;
-    return RSolution(valuenew,newpolicy,newnatpol,residual_pi,i);
+    return solution;
 }
+
 
 }}
