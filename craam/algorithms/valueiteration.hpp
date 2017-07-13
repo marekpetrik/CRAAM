@@ -2,7 +2,7 @@
 
 #include "../RMDP.hpp"
 #include <functional>
-
+#include <type_traits>
 #include "../cpp11-range-master/range.hpp"
 
 namespace craam {namespace algorithms{
@@ -24,7 +24,7 @@ The function returns the worst-case solution and the objective value. The thresh
 be used to determine the desired robustness of the solution.
 */
 template<class T>
-using NatureResponse = vec_scal_t(numvec const& v, numvec const& p, T threshold);
+using NatureResponse = vec_scal_t (*)(numvec const& v, numvec const& p, T threshold);
 
 /**
 Represents an instance of nature that can be used to directly compute the response.
@@ -342,7 +342,7 @@ When there are no actions, the state is assumed to be terminal and the return is
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
 template<typename AType, typename T>
-inline prec_t
+inline ind_vec_scal_t
 value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
                 prec_t discount, const NatureInstance<T>& nature) {
  
@@ -450,8 +450,17 @@ Field policy Ignored when size is 0. Otherwise a partial policy. Actions are opt
 */
 class PolicyDeterministic{
 public:
+    using solution_type = Solution;
+
+
     indvec policy;
 
+    /// All actions will be optimized
+    PolicyDeterministic() : policy(0) {};
+
+    /// A partial policy that can be used to fix some actions
+    /// policy[s] = -1 means that the action should be optimized in the state
+    /// policy of length 0 means that all actions will be optimized
     PolicyDeterministic(indvec policy) : policy(move(policy)) {};
 
     Solution new_solution(size_t statecount, numvec valuefunction) const { 
@@ -514,6 +523,8 @@ various types of robust MDPs.
 template<class T>
 class PolicyNature : public PolicyDeterministic {
 public:
+    using solution_type = RSolution;
+
     /// Specification of natures response (the function that nature computes, could be different for each state)
     vector<NatureInstance<T>> natspec;
 
@@ -591,14 +602,15 @@ in the temporal order.
 
 \returns Solution that can be used to compute the total return, or the optimal policy.
  */
-template<class SType, class ResponseType>
+template<class SType, class ResponseType = PolicyDeterministic>
 inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const ResponseType& response = PolicyDeterministic(), 
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) 
                         {
 
     const auto& states = mdp.get_states();
-    auto solution = response.new_solution(states.count(), move(valuefunction));
+    typename ResponseType::solution_type solution = 
+            response.new_solution(states.size(), move(valuefunction));
 
     // just quit if there are no states
     if( mdp.state_count() == 0) solution;
@@ -611,7 +623,7 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
         residual = 0;
 
         for(size_t s = 0l; s < states.size(); s++){
-            prec_t newvalue = response.update_solution(solution, states[s], valuefunction, discount);
+            prec_t newvalue = response.update_solution(solution, states[s], s, valuefunction, discount);
 
             residual = max(residual, abs(solution.valuefunction[s] - newvalue));
             solution.valuefunction[s] = newvalue;
@@ -641,7 +653,7 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \param print_progress Whether to report on progress during the computation
 \return Computed (approximate) solution
  */
-template<class SType, class ResponseType>
+template<class SType, class ResponseType = PolicyDeterministic>
 inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount, 
                 const numvec& valuefunction=numvec(0), const ResponseType& response = PolicyDeterministic(),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
@@ -649,7 +661,8 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
                 bool print_progress=false) {
 
     const auto& states = mdp.get_states();
-    auto solution = response.new_solution(states.count(), move(valuefunction));
+    typename ResponseType::solution_type solution = 
+            response.new_solution(states.size(), move(valuefunction));
 
     // just quit if there are no states
     if( mdp.state_count() == 0) solution;
@@ -680,7 +693,7 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         // update policies
         #pragma omp parallel for
         for(auto s = 0l; s < (long) states.size(); s++){
-            prec_t newvalue = response.update_solution(solution, states[s], valuefunction, discount);
+            prec_t newvalue = response.update_solution(solution, states[s], s, valuefunction, discount);
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
             (*targetvalue)[s] = newvalue;
         }
@@ -702,7 +715,7 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
-                prec_t newvalue = response.update_value(solution, states[s], valuefunction, discount);
+                prec_t newvalue = response.update_value(solution, states[s], s, valuefunction, discount);
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
             }

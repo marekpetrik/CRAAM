@@ -19,19 +19,19 @@ namespace craam {
 using namespace std;
 
 /** Default precision used throughout the code.*/
-typedef double prec_t;
+using prec_t = double;
 
 /** Default numerical vector */
-typedef vector<prec_t> numvec;
+using numvec = vector<prec_t>;
 
 /** Default index vector */
-typedef vector<long> indvec;
+using indvec = vector<long>;
 
 /** Pair of a vector and a scalar */
-typedef pair<numvec, prec_t> vec_scal_t;
+using vec_scal_t = pair<numvec, prec_t> ;
 
 /** Tuple of a index, vector and a scalar */
-typedef tuple<prec_t, numvec, prec_t> ind_vec_scal_t;
+using ind_vec_scal_t = tuple<prec_t, numvec, prec_t> ;
 
 /** Default solution precision */
 constexpr prec_t SOLPREC = 0.0001;

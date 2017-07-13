@@ -7,6 +7,8 @@
 #include <sstream>
 #include <cmath>
 #include <numeric>
+#include <utility>
+
 
 using namespace std;
 using namespace craam;
@@ -127,14 +129,14 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
 
     BOOST_CHECK_CLOSE(value_action(a1, valuefunction, 0.9), 0.5*(t1.value(valuefunction, 0.9)+
                                                                  t2.value(valuefunction, 0.9)), 1e-3);
-    BOOST_CHECK_CLOSE(value_action(a1, valuefunction, 0.9, robust_unbounded,0).second,
+    BOOST_CHECK_CLOSE(value_action(a1, valuefunction, 0.9, make_pair(robust_unbounded<prec_t>,0.0)).second,
                                 min(t1.value(valuefunction, 0.9), t2.value(valuefunction, 0.9)), 1e-3);
-    BOOST_CHECK_CLOSE(value_action(a1, valuefunction, 0.9, optimistic_unbounded,0).second,
+    BOOST_CHECK_CLOSE(value_action(a1, valuefunction, 0.9, make_pair(optimistic_unbounded<prec_t>,0.0)).second,
                                 max(t1.value(valuefunction, 0.9), t2.value(valuefunction, 0.9)), 1e-3);
 
     WeightedRobustState s1({a1,a2,a3});
-    auto v1 = get<2>(value_max_state(s1,valuefunction,0.9,optimistic_unbounded, 0));
-    auto v2 = get<2>(value_max_state(s1,valuefunction,0.9,robust_unbounded, 0));
+    auto v1 = get<2>(value_max_state(s1,valuefunction,0.9,make_pair(optimistic_unbounded<prec_t>, 0.0)));
+    auto v2 = get<2>(value_max_state(s1,valuefunction,0.9,make_pair(robust_unbounded<prec_t>, 0.0)));
     BOOST_CHECK_CLOSE (v1, 2.13, 1e-3);
     BOOST_CHECK_CLOSE (v2, 1.75, 1e-3);
 }
@@ -158,13 +160,13 @@ void test_simple_vi(){
 
     // small number of iterations (not the true value function)
     numvec val_rob{7.68072,8.67072,9.77072};
-    auto re = vi_gs(rmdp,0.9,initial,indvec(0),20,0);
+    auto re = vi_gs(rmdp,0.9,initial,PolicyDeterministic(indvec(0)),20,0);
 
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
     // test jac value iteration with small number of iterations ( not the true value function)
-    auto re2 = mpi_jac(rmdp, 0.9, initial, indvec(0), 20,0,0);
+    auto re2 = mpi_jac(rmdp, 0.9, initial, PolicyDeterministic(indvec(0)), 20,0,0);
 
     numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
