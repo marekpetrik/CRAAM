@@ -68,6 +68,7 @@ inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T thres
     return make_pair(dist,v[index]);
 }
 
+
 // *******************************************************
 // RegularAction computation methods
 // *******************************************************
@@ -283,7 +284,7 @@ Computes the value of a fixed action and fixed response of nature.
 
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class AType, class T>
+template<class AType>
 inline prec_t 
 value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
                               long actionid, numvec distribution) {
@@ -313,11 +314,11 @@ Computes the value of a fixed action and any response of nature.
 template<class AType, class T>
 inline vec_scal_t 
 value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
-                              long actionid, NatureInstance<T> nature) {
+                              long actionid, const NatureInstance<T>& nature) {
    // this is the terminal state, return 0
     assert(actionid >= 0 && actionid < state.size());
 
-    if(state.is_terminal()) return 0;
+    if(state.is_terminal()) return make_pair(numvec(0),0);
     if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
     
     const auto& action = state[actionid];
@@ -538,11 +539,11 @@ public:
 
     /// Constructs a new robust solution
     RSolution new_solution(size_t statecount, numvec valuefunction) const { 
-        if(natspec.size != statecount)
+        if(natspec.size() != statecount)
             throw invalid_argument("Size of nature specification does not match the number of states.");
 
         process_valuefunction(statecount, valuefunction);
-        Solution solution =  Solution(statecount,move(valuefunction), 
+        RSolution solution =  RSolution(statecount,move(valuefunction), 
                                 process_policy(statecount));
         return solution;
     }
@@ -559,8 +560,8 @@ public:
         if(policy.empty() || policy[stateid] < 0){    // optimizing
             tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) = value_max_state(state, valuefunction, discount, natspec[stateid]);
         }else{// fixed-action, do not copy
-            prec_t newvalue; long ignore; 
-            tie(ignore, solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, policy[stateid], natspec[stateid]);
+            prec_t newvalue; 
+            tie(solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, policy[stateid], natspec[stateid]);
         }
         return newvalue;
     }
@@ -727,5 +728,13 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
     return solution;
 }
 
+
+/// A helper function that simply copies a nature specification across all states
+/// 
+template<class T>
+PolicyNature<T> uniform_nature(size_t statecount, NatureResponse<T> nature, 
+                            T threshold){
+    return PolicyNature<T>(vector<NatureInstance<T>>(statecount, make_pair(nature, threshold)));
+}
 
 }}
