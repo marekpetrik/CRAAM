@@ -34,7 +34,6 @@ protected:
     vector<AType> actions;
 
 public:
-    static const bool requires_nature = AType::requires_nature;
 
     SAState() : actions(0) {};
     SAState(const vector<AType>& actions) : actions(actions) {};
@@ -178,7 +177,6 @@ namespace internal{
     /// checks state that does not require nature
     template<class SType> 
     bool is_action_correct(const SType& state, long stateid, const indvec& policy){
-        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
         return state.is_action_correct(policy[stateid]);
     }
 }

@@ -139,8 +139,8 @@ public:
             }
             else{
                 // find the closest existing index to the new one
-                auto fiter = lower_bound(indices.begin(),indices.end(),stateid);
-                findex = fiter - indices.begin();
+                auto fiter = lower_bound(indices.cbegin(),indices.cend(),stateid);
+                findex = fiter - indices.cbegin();
                 present = (*fiter == stateid);
             }
             // there is a transition to this element already
@@ -153,16 +153,16 @@ public:
                 rewards[findex] = new_reward;
             // the transition is not there, the element needs to be inserted
             }else{
-                indices.insert(indices.begin()+findex,stateid);
-                probabilities.insert(probabilities.begin()+findex,probability);
-                rewards.insert(rewards.begin()+findex,reward);
+                indices.insert(indices.cbegin()+findex,stateid);
+                probabilities.insert(probabilities.cbegin()+findex,probability);
+                rewards.insert(rewards.cbegin()+findex,reward);
             }
         }
 
     }
 
     prec_t sum_probabilities() const{
-        return accumulate(probabilities.begin(),probabilities.end(),0.0);
+        return accumulate(probabilities.cbegin(),probabilities.cend(),0.0);
     }
 
     /**
@@ -233,7 +233,7 @@ public:
         if(indices.empty())
             throw range_error("No transitions defined. Cannot compute mean reward.");
 
-        return inner_product(begin(probabilities), end(probabilities), begin(rewards), 0.0);
+        return inner_product(cbegin(probabilities), end(probabilities), cbegin(rewards), 0.0);
     }
 
    

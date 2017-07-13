@@ -6,10 +6,6 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
-# add cotire support (speed up compilation via precompiled headers)
-#set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
-#include(cotire)
-
 set(VERSION "1.0.0")
 project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
@@ -79,19 +75,19 @@ endif()
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/craam/config.hpp.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/craam/config.hpp
 )
 
 # **** SOURCE FILES ****
-include_directories (include)
+include_directories (craam)
 set (SRCS 
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/Action.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/definitions.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/RMDP.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/State.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/modeltools.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/definitions.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/RMDP.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
           )
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
@@ -100,14 +96,14 @@ set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 if (BUILD_ADVANCED)
     # whether to build the simulation component of the library
     set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Samples.hpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
                     )
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
 
     # whether to build the implementable component of the library
     set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/ImMDP.hpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
     set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_implementable.cpp)
 endif (BUILD_ADVANCED)
 

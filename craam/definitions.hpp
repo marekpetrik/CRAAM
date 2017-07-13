@@ -34,9 +34,9 @@ typedef pair<numvec, prec_t> vec_scal_t;
 typedef tuple<prec_t, numvec, prec_t> ind_vec_scal_t;
 
 /** Default solution precision */
-const prec_t SOLPREC = 0.0001;
+constexpr prec_t SOLPREC = 0.0001;
 /** Default number of iterations */
-const unsigned long MAXITER = 100000;
+constexpr unsigned long MAXITER = 100000;
 
 
 

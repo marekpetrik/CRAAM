@@ -20,17 +20,27 @@ policy (response). If the response is always deterministic, it may be better
 to define and use a nature that computes and uses a deterministic response.
 
 The parameters are the q-values v, the reference distribution p, and the threshold.
-The function returns the worst-case solution and the objective value. 
+The function returns the worst-case solution and the objective value. The threshold can
+be used to determine the desired robustness of the solution.
 */
-typedef vec_scal_t (*NatureResponse)(numvec const& v, numvec const& p, prec_t threshold);
+template<class T>
+using NatureResponse = vec_scal_t(numvec const& v, numvec const& p, T threshold);
 
+/**
+Represents an instance of nature that can be used to directly compute the response.
+*/
+template<class T>
+using NatureInstance = pair<NatureResponse<T>, T>
 
 /// L1 robust response
 inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
+    assert(v.size() == p.size());
     return worstcase_l1(v,p,threshold);
 }
+
 /// L1 optimistic response
 inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
+    assert(v.size() == p.size());
     //TODO: this could be faster without copying the vector and just modifying the function
     numvec minusv(v.size());
     transform(begin(v), end(v), begin(minusv), negate<prec_t>());
@@ -39,7 +49,9 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
 }
 
 /// worst outcome, threshold is ignored
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, prec_t threshold){
+template<class T>
+inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T threshold){
+    assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = min_element(begin(v), end(v)) - begin(v);
     dist[index] = 1;
@@ -47,11 +59,13 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, prec_t thre
 }
 
 /// best outcome, threshold is ignored
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, prec_t threshold){
-   numvec dist(v.size(),0.0);
-   long index = max_element(begin(v), end(v)) - begin(v);
-   dist[index] = 1;
-   return make_pair(dist,v[index]);
+template<class T>
+inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T threshold){
+    assert(v.size() == p.size());
+    numvec dist(v.size(),0.0);
+    long index = max_element(begin(v), end(v)) - begin(v);
+    dist[index] = 1;
+    return make_pair(dist,v[index]);
 }
 
 // *******************************************************
@@ -88,7 +102,7 @@ not zero.
 */
 inline prec_t value_action(const RegularAction& action, const numvec& valuefunction, 
         prec_t discount, numvec distribution) {
-    return value_action(action, valuefunction, discount, distribution);
+    return action.get_outcome().value(valuefunction, discount, distribution);
 }
 
 /**
@@ -99,10 +113,10 @@ of nature that is provided.
 \param valuefunction State value function to use
 \param discount Discount factor
 \param nature Method used to compute the response of nature.
-\param threshold Threshold parameter for the nature
 */
+template<class T>
 inline vec_scal_t value_action(const RegularAction& action, const numvec& valuefunction, 
-                        prec_t discount, NatureResponse nature, prec_t threshold){
+                        prec_t discount, const NatureInstance<T>& nature){
 
     const numvec& rewards = action.get_outcome().get_rewards();
     const indvec& nonzero_indices = action.get_outcome().get_indices();
@@ -112,7 +126,7 @@ inline vec_scal_t value_action(const RegularAction& action, const numvec& valuef
     for(auto i : indices(rewards))
         qvalues[i] = rewards[i] + discount * valuefunction[nonzero_indices[i]];
 
-    return nature(qvalues, action.get_outcome().get_probabilities(), threshold);
+    return nature.first(qvalues, action.get_outcome().get_probabilities(), nature.second);
 }
 
 
@@ -158,6 +172,7 @@ inline prec_t value_action(const WeightedOutcomeAction& action, numvec const& va
     if(action.get_outcomes().empty()) throw invalid_argument("WeightedOutcomeAction with no outcomes");
 
     prec_t averagevalue = 0.0;
+    // TODO: simd?
     for(size_t i = 0; i < action.get_outcomes().size(); i++)
         averagevalue += distribution[i] * action[i].value(valuefunction, discount);
     return averagevalue;
@@ -171,12 +186,12 @@ Does not work when the number of outcomes is zero.
 \param valuefunction Value function reference
 \param discount Discount factor
 \param nature Method used to compute the response of nature.
-\param threshold Threshold parameter for the nature
 
 \return Outcome distribution and the mean value for the choice of the nature
  */
+template<class T>
 inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction, 
-                                prec_t discount, NatureResponse nature, prec_t threshold) {
+                                prec_t discount, const NatureInstance<T> nature) {
     
     assert(action.get_distribution().size() == action.get_outcomes().size());
 
@@ -187,7 +202,7 @@ inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const
     for(size_t i = 0; i < action.size(); i++)
         outcomevalues[i] = action[i].value(valuefunction, discount);
 
-    return nature(outcomevalues, action.get_distribution(), threshold);
+    return nature.first(outcomevalues, action.get_distribution(), nature.second);
 }
 
 // *******************************************************
@@ -275,6 +290,8 @@ template<class AType>
 inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
                               long actionid, numvec distribution) {
    // this is the terminal state, return 0
+    assert(actionid >= 0 && actionid < state.size());
+
     if(state.is_terminal()) return 0;
     if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
     
@@ -296,14 +313,13 @@ When there are no actions, the state is assumed to be terminal and the return is
 \param valuefunction Value function to use in computing value of states.
 \param discount Discount factor
 \param nature Method used to compute the response of nature.
-\param threshold Threshold parameter for the nature
 
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
-template<typename AType>
+template<typename AType, typename T>
 inline ind_vec_scal_t 
 value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
-                prec_t discount, NatureResponse nature, prec_t threshold) {
+                prec_t discount, const NatureInstance<T>& nature) {
  
     if(state.is_terminal())
         return make_tuple(-1,numvec(),0);
@@ -363,7 +379,7 @@ public:
         return initial.value(valuefunction);
     };
 };
-/** A solution to a robust MDP.  */
+/** A robust solution to a robust or regular MDP.  */
 class RSolution {
 public:
     numvec valuefunction;
@@ -391,6 +407,24 @@ public:
         return initial.value(valuefunction);
     };
 };
+
+struct DecisionPolicy{
+    using solution_type = Solution;
+    indvec policy;
+
+    DecisionPolicy(indvec policy) : policy(move(policy)) {};
+}
+
+template<class T>
+struct NaturePolicy{
+    using solution_type = RSolution;
+    indvec policy;
+    vector<NatureInstance<T>> natpol;
+
+    NaturePolicy(indvec policy, vector<NatureInstance<T>> natpol):
+        policy(move(policy)), natpol(move(natpol)) {};
+}
+
 
 /**
 Gauss-Seidel variant of value iteration (not parallelized).
@@ -421,6 +455,7 @@ inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
     if( mdp.state_count() == 0) return Solution();
     // check the dimensions of the policy
     if(!policy.empty() && policy.size() != states.size()) throw invalid_argument("Incorrect dimensions of policy function.");
+
     // check if the value function is a correct size, and if it is length 0
     // then creates an appropriate size
     if(!valuefunction.empty()){
@@ -432,7 +467,7 @@ inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
 
     // copy the provided policy
     if(!policy.empty())
-        copy(begin(policy), end(policy), begin(newpolicy));
+        copy(cbegin(policy), cend(policy), begin(newpolicy));
     
     // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -447,7 +482,7 @@ inline Solution vi_gs(const GRMDP<SType>& mdp, prec_t discount,
             
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                tie(newpolicy[s], newvalue) = value_max_state(state, valuefunction,discount);
+                tie(newpolicy[s], newvalue) = value_max_state(state, valuefunction, discount);
             }else{ // evaluating (action copied earlier, no need to copy it again)
                 newvalue = value_fix_state(state, valuefunction, discount, policy[s]);
             }
@@ -482,7 +517,7 @@ in the temporal order.
 \param maxresidual Stop when the maximal residual falls below this value.
 
 \returns Solution that can be used to compute the total return, or the optimal policy.
- */
+*/
 
 template<class SType>
 inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse nature, prec_t threshold,
@@ -506,10 +541,21 @@ inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse 
     vector<numvec> newnatpol(states.size());
 
     // copy the provided policy
-    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
+    if(!policy.empty()) {
+        if(natpol.empty())
+            throw invalid_argument("Nature policy must be provided if a policy is provided");
+
+        // make sure nature is provided whenever policy is provided
+        for(auto s : indices(policy))
+            if(policy[s] >= 0 && (natpol.empty() || natpol[s].empty()))
+                throw invalid_argument("Nature must be provided for all states that a policy is given (not -1)");
+
+        copy(cbegin(policy), cend(policy), begin(newpolicy));
+    }
+
     
     // copy the provided policy for nature
-    if(!natpol.empty()) copy(begin(natpol), end(natpol), begin(newnatpol));
+    if(!natpol.empty()) copy(cbegin(natpol), cend(natpol), begin(newnatpol));
     
     // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -524,7 +570,6 @@ inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse 
             
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                assert(natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
                 tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
             }else{ // evaluating (action copied earlier, no need to copy it again)
                 newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
@@ -534,7 +579,7 @@ inline RSolution vi_gs(const GRMDP<SType>& mdp, prec_t discount, NatureResponse 
             valuefunction[s] = newvalue;
         }
     }
-    return RSolution(valuefunction,policy,newnatpol,residual,i);
+    return RSolution(valuefunction,newpolicy,newnatpol,residual,i);
 }
 
 
@@ -620,9 +665,9 @@ inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                tie(newpolicy[s],  newvalue) = value_max_state(state, valuefunction, discount);  
+                tie(newpolicy[s],  newvalue) = value_max_state(state, *sourcevalue, discount);  
             }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, valuefunction, discount, policy[s]);
+                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s]);
             }
 
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
@@ -637,11 +682,11 @@ inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         if(residual_pi <= maxresidual_pi)
             break;
 
-        if(print_progress) cout << "    Value iteration: ";
+        if(print_progress) cout << "    Value iteration: " << flush;
         // compute values using value iteration
 
         for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
-            if(print_progress) cout << ".";
+            if(print_progress) cout << "." << flush;
 
             swap(targetvalue, sourcevalue);
 
@@ -650,7 +695,7 @@ inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
                 prec_t newvalue = 0;
                 const auto& state = states[s];
 
-                newvalue = value_fix_state(state, valuefunction, discount, newpolicy[s]);
+                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s]);
 
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
@@ -660,7 +705,7 @@ inline Solution mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     numvec & valuenew = *targetvalue;
-    return Solution(valuenew,policy,residual_pi,i);
+    return Solution(valuenew,newpolicy,residual_pi,i);
 }
 
 
@@ -721,10 +766,21 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
     vector<numvec> newnatpol(states.size());
 
     // copy the provided policy
-    if(!policy.empty()) copy(begin(policy), end(policy), begin(newpolicy));
+    if(!policy.empty()) {
+        if(natpol.empty())
+            throw invalid_argument("Nature policy must be provided if a policy is provided");
+        
+
+        // make sure nature is provided whenever policy is provided
+        for(auto s : indices(policy))
+            if(policy[s] >= 0 && (natpol.empty() || natpol[s].empty()))
+                throw invalid_argument("Nature policy must be provided for all states that a policy is given");
+
+        copy(cbegin(policy), cend(policy), begin(newpolicy));
+    }
     
     // copy the provided policy for nature
-    if(!natpol.empty()) copy(begin(natpol), end(natpol), begin(newnatpol));
+    if(!natpol.empty()) copy(cbegin(natpol), cend(natpol), begin(newnatpol));
 
     numvec residuals(states.size());
 
@@ -752,13 +808,12 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
             const auto& state = states[s];
 
             prec_t newvalue;
-
             // check whether this state should only be evaluated
             if(policy.empty() || policy[s] < 0){    // optimizing
-                assert(natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
-                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, valuefunction, discount, nature, threshold);  
+                assert(natpol.empty() || natpol[s].empty());   // cannot have a policy for nature if the policy is not provided for the state
+                tie(newpolicy[s], newnatpol[s], newvalue) = value_max_state(state, *sourcevalue, discount, nature, threshold);  
             }else{ // evaluating (action copied earlier, no need to copy it again)
-                newvalue = value_fix_state(state, valuefunction, discount, policy[s], natpol[s]);
+                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s], newnatpol[s]);
             }
 
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
@@ -773,11 +828,11 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
         if(residual_pi <= maxresidual_pi)
             break;
 
-        if(print_progress) cout << "    Value iteration: ";
+        if(print_progress) cout << "    Value iteration: " << flush;
         // compute values using value iteration
 
         for(size_t j = 0; j < iterations_vi && residual_vi > maxresidual_vi; j++){
-            if(print_progress) cout << ".";
+            if(print_progress) cout << "." << flush;
 
             swap(targetvalue, sourcevalue);
 
@@ -786,7 +841,7 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
                 prec_t newvalue = 0;
                 const auto& state = states[s];
 
-                newvalue = value_fix_state(state, valuefunction, discount, newpolicy[s], newnatpol[s]);
+                newvalue = value_fix_state(state, *sourcevalue, discount, newpolicy[s], newnatpol[s]);
 
                 residuals[s] = abs((*sourcevalue)[s] - newvalue);
                 (*targetvalue)[s] = newvalue;
@@ -796,7 +851,7 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     numvec & valuenew = *targetvalue;
-    return RSolution(valuenew,policy,newnatpol,residual_pi,i);
+    return RSolution(valuenew,newpolicy,newnatpol,residual_pi,i);
 }
 
 }}

@@ -39,6 +39,7 @@ Model create_test_mdp(){
 
     // nonrobust and deterministic
     // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
+    // action 0 has a transition matrix [[1,0,0],[1,0,0], [0,1,0]] and rewards [0,1.0,1.0]
     add_transition<Model>(rmdp,0,1,1,1.0,0.0);
     add_transition<Model>(rmdp,1,1,2,1.0,0.0);
     add_transition<Model>(rmdp,2,1,2,1.0,1.1);
@@ -153,17 +154,17 @@ void test_simple_vi(){
 
     numvec initial{0,0,0};
 
-    numvec val_rob{7.68072,8.67072,9.77072};
     indvec pol_rob{1,1,1};
 
     // small number of iterations (not the true value function)
+    numvec val_rob{7.68072,8.67072,9.77072};
     auto re = vi_gs(rmdp,0.9,initial,indvec(0),20,0);
 
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
-    // test jac value iteration
-    auto re2 = mpi_jac(rmdp, 0.9, initial,indvec(0),20,0);
+    // test jac value iteration with small number of iterations ( not the true value function)
+    auto re2 = mpi_jac(rmdp, 0.9, initial, indvec(0), 20,0,0);
 
     numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
@@ -172,27 +173,27 @@ void test_simple_vi(){
     // many iterations
     const numvec val_rob3{8.91,9.9,11.0};
     const numvec occ_freq3{0.333333333,0.6333333333,9.03333333333333};
-    const prec_t ret_true = 9.93666666;
+    const prec_t ret_true = inner_product(val_rob3.cbegin(), val_rob3.cend(), init_d.get_probabilities().cbegin(),0.0);
 
     // robust
-    auto&& re3 = vi_gs(rmdp,0.9,initial);
+    auto&& re3 = vi_gs(rmdp,0.9,robust_l1,0,initial);
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    auto&& re4 = mpi_jac(rmdp,0.9,initial);
+    auto&& re4 = mpi_jac(rmdp,0.9,robust_l1, 0, initial, indvec(0), vector<numvec>(0), 1000, 0.0, 1000, 0.0, true);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
     // optimistic
-    auto&& re5 = vi_gs(rmdp,0.9, initial);
+    auto&& re5 = vi_gs(rmdp,0.9, optimistic_l1, 0, initial);
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    auto&& re6 = mpi_jac(rmdp,0.9, initial);
+    auto&& re6 = mpi_jac(rmdp,0.9, optimistic_l1, 0, initial);
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 
-    // average
+    // plain
     auto&& re7 = vi_gs(rmdp, 0.9, initial);
     CHECK_CLOSE_COLLECTION(val_rob3,re7.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re7.policy.begin(),re7.policy.end());
@@ -202,11 +203,11 @@ void test_simple_vi(){
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
     // fixed evaluation
-    auto&& re9 = mpi_jac(rmdp,0.9,initial,pol_rob,10000,0.0);
+    auto&& re9 = mpi_jac(rmdp,0.9,initial,pol_rob, 10000,0.0, 0);
     CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
 
     // check the computed returns
-    BOOST_CHECK_CLOSE (re3.total_return(init_d), ret_true, 1e-3);
+    BOOST_CHECK_CLOSE (re8.total_return(init_d), ret_true, 1e-2);
 
     // check if we get the same return from the solution as from the
     // occupancy frequencies

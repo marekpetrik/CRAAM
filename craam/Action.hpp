@@ -41,7 +41,6 @@ protected:
     bool valid = true;
 
 public:
-    static const bool requires_nature = false;
 
     /** Creates an empty action. */
     RegularAction(){};
@@ -281,7 +280,6 @@ protected:
     numvec distribution;
 
 public:
-    static const bool requires_nature = true;
 
     /** Creates an empty action. */
     WeightedOutcomeAction()
@@ -453,8 +451,8 @@ public:
         result.append(std::to_string(get_distribution().size()));
     }
 
-    /** Returns the mean reward from the transition. */
-    prec_t mean_reward(numvec outcomedist) const{
+    /** Returns the mean reward from the transition for the provided nature action. */
+    prec_t mean_reward(const numvec& outcomedist) const{
         assert(outcomedist.size() == outcomes.size());
         prec_t result = 0;
         for(size_t i = 0; i < outcomes.size(); i++){
@@ -463,13 +461,13 @@ public:
         return result;
     }
 
+    /**  Returns the mean reward from the transition using the nominal distribution on outcomes.*/
     prec_t mean_reward(){
-        //TODO: change to compilation error
-        throw invalid_argument("Mean reward not supported without policy of nature.");
+        return mean_reward(distribution);
     }
 
-    /** Returns the mean transition probabilities */
-    Transition mean_transition(numvec outcomedist) const{
+    /** Returns the mean transition probabilities for the provided nature action. */
+    Transition mean_transition(const numvec& outcomedist) const{
         assert(outcomedist.size() == outcomes.size());
         Transition result;
         for(size_t i = 0; i < outcomes.size(); i++)
@@ -477,9 +475,9 @@ public:
         return result;
     }
 
+    /** Returns the mean transition probabilities using the nominal distribution on outcomes. */
     Transition mean_transition(){
-        //TODO: change to compilation error
-        throw invalid_argument("Mean transition not supported without policy of nature.");
+        return mean_transition(distribution);
     }
     /** Returns a json representation of action
     \param actionid Includes also action id*/

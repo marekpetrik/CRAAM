@@ -25,7 +25,6 @@ namespace internal{
     /// Helper function to deal with variable indexing
     template<class SType>
     inline Transition mean_transition_state(const SType& state, long index, const indvec& policy){
-        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
         return state.mean_transition(policy[index]);
     }
 
@@ -38,7 +37,6 @@ namespace internal{
     /// Helper function to deal with variable indexing
     template<class SType>
     inline prec_t mean_reward_state(const SType& state, long index, const indvec& policy){
-        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
         return state.mean_reward(policy[index]);
     }
 }
