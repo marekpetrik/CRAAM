@@ -227,17 +227,19 @@ public:
         return value(valuefunction, discount, probabilities);
     }   
 
-
-
-    /** Computes the mean return from this transition */
-    prec_t mean_reward() const{
+    /** Computes the mean return from this transition with custom transition probabilities */
+    prec_t mean_reward(const numvec& probabilities) const{
+        assert(size(probabilities) === size());
         if(indices.empty())
             throw range_error("No transitions defined. Cannot compute mean reward.");
-        prec_t value = 0.0;
-        for(size_t c : util::lang::indices(indices)){
-            value +=  probabilities[c] * rewards[c];
-        }
-        return value;
+
+        return inner_product(probabilities, rewards, 0.0);
+    }
+
+   
+    /** Computes the mean return from this transition */
+    prec_t mean_reward() const{
+        return mean_reward(probabilities);
     }
 
     /** Returns the number of target states with non-zero transition probabilities.  */
@@ -314,10 +316,12 @@ public:
         return result;
     }
 
-    /**
-    Indices with positive probabilities.
-    */
+    /** Indices with positive probabilities.  */
     const indvec& get_indices() const {return indices;};
+
+    /** Index of the k-th state with non-zero probability */
+    long get_index(long k){assert(k>=0 && k < size()); return indices[k];}
+
     /**
     Returns list of positive probabilities for indexes returned by
     get_indices. See also probabilities_vector.
@@ -331,8 +335,9 @@ public:
 
     /** Sets the reward for a transition to a particular state */
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
+
     /** Gets the reward for a transition to a particular state */
-    prec_t get_reward(long sampleid) const {return rewards[sampleid];};
+    prec_t get_reward(long sampleid) const {assert(sampleid >= 0 && sampleid < size()); return rewards[sampleid];};
 
     /** Returns a json representation of transition probabilities
     \param outcomeid Includes also outcome id*/

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "RMDP.hpp"
+#include "../RMDP.hpp"
 #include <functional>
 
-#include "cpp11-range-master/range.hpp"
+#include "../cpp11-range-master/range.hpp"
 
-namespace craam {
+namespace craam {namespace algorithms{
 
 using namespace std;
 using namespace util::lang;
@@ -301,8 +301,9 @@ When there are no actions, the state is assumed to be terminal and the return is
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
 template<typename AType>
-inline ind_vec_scal_t value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
-                                        prec_t discount, NatureResponse nature, prec_t threshold) {
+inline ind_vec_scal_t 
+value_max_state(const SAState<AType>& state, const numvec& valuefunction, 
+                prec_t discount, NatureResponse nature, prec_t threshold) {
  
     if(state.is_terminal())
         return make_tuple(-1,numvec(),0);
@@ -798,6 +799,4 @@ inline RSolution mpi_jac(const GRMDP<SType>& mdp, prec_t discount, NatureRespons
     return RSolution(valuenew,policy,newnatpol,residual_pi,i);
 }
 
-
-
-}
+}}

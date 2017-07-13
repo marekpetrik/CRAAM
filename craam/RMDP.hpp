@@ -15,15 +15,7 @@
 #include <utility>
 #include <iostream>
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/lu.hpp>
-
 #include "cpp11-range-master/range.hpp"
-#ifdef IS_DEBUG
-#include <boost/numeric/ublas/io.hpp>
-#endif
-
 
 /** \mainpage
 
@@ -281,43 +273,6 @@ public:
     }
 
     /**
-    Computes occupancy frequencies using matrix representation of transition
-    probabilities. This method may not scale well
-
-    \param init Initial distribution (alpha)
-    \param discount Discount factor (gamma)
-    \param policy Policy of the decision maker
-    \param nature Policy of nature
-    */
-    numvec ofreq_mat(const Transition& init, prec_t discount,
-                     const ActionPolicy& policy, const OutcomePolicy& nature) const{
-        const auto n = state_count();
-
-        // initial distribution
-        auto&& initial_svec = init.probabilities_vector(n);
-        ublas::vector<prec_t> initial_vec(n);
-        // TODO: this is a wasteful copy operation
-        copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
-
-        // get transition matrix
-        unique_ptr<ublas::matrix<prec_t>> t_mat(transition_mat_t(policy,nature));
-
-        // construct main matrix
-        (*t_mat) *= -discount;
-        (*t_mat) += ublas::identity_matrix<prec_t>(n);
-
-        // solve set of linear equations
-        ublas::permutation_matrix<prec_t> P(n);
-        ublas::lu_factorize(*t_mat,P);
-        ublas::lu_substitute(*t_mat,P,initial_vec);
-
-        // copy the solution back to a vector
-        copy(initial_vec.begin(), initial_vec.end(), initial_svec.begin());
-
-        return initial_svec;
-    }
-
-    /**
     Constructs the rewards vector for each state for the RMDP.
     \param policy Policy of the decision maker
     \param nature Policy of nature
@@ -355,60 +310,6 @@ public:
                 return si;
         }
         return -1;
-    }
-
-    
-    /**
-    Constructs the transition matrix for the policy.
-    \param policy Policy of the decision maker
-    \param nature Policy of the nature
-    */
-    unique_ptr<ublas::matrix<prec_t>>
-        transition_mat(const ActionPolicy& policy,
-                       const OutcomePolicy& nature) const{
-        const size_t n = state_count();
-        unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
-        *result = ublas::zero_matrix<prec_t>(n,n);
-
-        #pragma omp parallel for
-        for(size_t s=0; s < n; s++){
-            const Transition&& t = states[s].mean_transition(policy[s],nature[s]);
-            const auto& indexes = t.get_indices();
-            const auto& probabilities = t.get_probabilities();
-
-            for(size_t j=0; j < t.size(); j++){
-                (*result)(s,indexes[j]) = probabilities[j];
-            }
-        }
-        return result;
-    }
-
-    /**
-    Constructs a transpose of the transition matrix for the policy.
-    \param policy Policy of the decision maker
-    \param nature Policy of the nature
-    */
-    unique_ptr<ublas::matrix<prec_t>>
-        transition_mat_t(const ActionPolicy& policy,
-                         const OutcomePolicy& nature) const{
-    
-        const size_t n = state_count();
-        unique_ptr<ublas::matrix<prec_t>> result(new ublas::matrix<prec_t>(n,n));
-        *result = ublas::zero_matrix<prec_t>(n,n);
-
-        #pragma omp parallel for
-        for(size_t s = 0; s < n; s++){
-            // if this is a terminal state, then just go with zero probabilities
-            if(states[s].is_terminal())  continue;
-
-            const Transition&& t = states[s].mean_transition(policy[s],nature[s]);
-            const auto& indexes = t.get_indices();
-            const auto& probabilities = t.get_probabilities();
-
-            for(size_t j=0; j < t.size(); j++)
-                (*result)(indexes[j],s) = probabilities[j];
-        }
-        return result;
     }
 
     // ----------------------------------------------

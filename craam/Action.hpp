@@ -41,9 +41,6 @@ protected:
     bool valid = true;
 
 public:
-    /** Type of an identifier for an outcome. It is ignored for the simple action. */
-    typedef long OutcomeId;
-
     /** Creates an empty action. */
     RegularAction(){};
 
@@ -100,14 +97,29 @@ public:
         result.append("1(reg)");
     };
 
+    // TODO: check whether this function can be removed from all actions
     /** Whether the provided outcome is valid */
-    bool is_outcome_correct(OutcomeId oid) const {return oid == 0;};
+    bool is_outcome_correct(long oid) const {return oid == 0;};
 
     /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId) const { return outcome.mean_reward();};
+    prec_t mean_reward() const { return outcome.mean_reward();};
+
+    /** 
+    Returns the mean reward from the transition. 
+    \param natpolicy Nature can choose the probability distribution
+    */
+    prec_t mean_reward(numvec natpolicy) const { return outcome.get_reward(natpolicy)};
 
     /** Returns the mean transition probabilities. Ignore rewards. */
-    Transition mean_transition(OutcomeId) const {return outcome;};
+    Transition mean_transition() const {return outcome;};
+
+
+    /** Returns the mean transition probabilities. Ignore rewards. 
+    \param natpolicy Nature can choose a non-zero state to go to
+    */
+    Transition mean_transition(numvec natpolicy) const {
+        return Transition(outcome.get_indices,narpolicy,numvec(outcome.size(),0.0));
+    };
 
     /** Returns a json representation of the action
     \param actionid Whether to include action id*/
@@ -213,6 +225,10 @@ public:
             t.normalize();
     }
 
+    /** Whether the provided outcome is valid */
+    bool is_outcome_correct(numvec oid) const
+        {return (oid.size() == outcomes.size());};
+
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
         result.append(std::to_string(get_outcomes().size()));
@@ -263,9 +279,6 @@ protected:
     numvec distribution;
 
 public:
-    /** Type of the outcome identification */
-    typedef numvec OutcomeId;
-
     /** Creates an empty action. */
     WeightedOutcomeAction()
         : OutcomeManagement(), threshold(0), distribution(0) {};
@@ -436,12 +449,8 @@ public:
         result.append(std::to_string(get_distribution().size()));
     }
 
-    /** Whether the provided outcome is valid */
-    bool is_outcome_correct(OutcomeId oid) const
-        {return (oid.size() == outcomes.size());};
-
     /** Returns the mean reward from the transition. */
-    prec_t mean_reward(OutcomeId outcomedist) const{
+    prec_t mean_reward(numvec outcomedist) const{
         assert(outcomedist.size() == outcomes.size());
         prec_t result = 0;
         for(size_t i = 0; i < outcomes.size(); i++){
@@ -450,8 +459,13 @@ public:
         return result;
     }
 
+    prec_t mean_reward(){
+        //TODO: change to compilation error
+        throw invalid_argument("Mean reward not supported without policy of nature.");
+    }
+
     /** Returns the mean transition probabilities */
-    Transition mean_transition(OutcomeId outcomedist) const{
+    Transition mean_transition(numvec outcomedist) const{
         assert(outcomedist.size() == outcomes.size());
         Transition result;
         for(size_t i = 0; i < outcomes.size(); i++)
@@ -459,6 +473,10 @@ public:
         return result;
     }
 
+    Transition mean_transition(){
+        //TODO: change to compilation error
+        throw invalid_argument("Mean transition not supported without policy of nature.");
+    }
     /** Returns a json representation of action
     \param actionid Includes also action id*/
     string to_json(long actionid = -1) const{

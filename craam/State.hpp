@@ -108,11 +108,22 @@ public:
         return get_action(actionid).mean_reward(outcomeid);
     }
 
-    /** Returns the mean transition probabilities following the action and outcome. */
-    Transition mean_transition(ActionId actionid, OutcomeId outcomeid) const{
-        return move(get_action(actionid).mean_transition(outcomeid));
+    /** Returns the mean transition probabilities following the action and outcome. 
+    This class assumes a deterministic policy of the decision maker and
+    a randomized policy of nature.
+    
+    \param action Deterministic action of the decision maker 
+    \param nataction Randomized action of nature */
+    Transition mean_transition(long action, numvec> nataction) const{
+        return get_action(action).mean_transition(nataction);
     }
 
+    /** Returns the mean transition probabilities following the action and outcome. 
+    
+    \param action Deterministic action of decision maker */
+    Transition mean_transition(long action) const{
+        return get_action(action).mean_transition();
+    }
 
     /** Returns json representation of the state
     \param stateid Includes also state id*/
