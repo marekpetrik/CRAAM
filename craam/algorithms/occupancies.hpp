@@ -13,18 +13,33 @@ namespace craam{namespace algorithms{
 using namespace std;
 using namespace boost::numeric;
 
+/// Internal helper functions
 namespace internal{
 
     /// Helper function to deal with variable indexing
     template<class SType>
-    Transition mean_transition_state(const SType& states, long index, const pair<indvec,vector<numvec>>& policies){
-        return states[index].mean_transition(policies.first[index], policies.second[index]);
+    inline Transition mean_transition_state(const SType& state, long index, const pair<indvec,vector<numvec>>& policies){
+        return state.mean_transition(policies.first[index], policies.second[index]);
     }
 
     /// Helper function to deal with variable indexing
     template<class SType>
-    Transition mean_transition_state(const SType& states, long index, const indvec& policy){
-        return states[index].mean_transition(policy);
+    inline Transition mean_transition_state(const SType& state, long index, const indvec& policy){
+        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
+        return state.mean_transition(policy[index]);
+    }
+
+    /// Helper function to deal with variable indexing
+    template<class SType>
+    inline prec_t mean_reward_state(const SType& state, long index, const pair<indvec,vector<numvec>>& policies){
+        return state.mean_reward(policies.first[index], policies.second[index]);
+    }
+
+    /// Helper function to deal with variable indexing
+    template<class SType>
+    inline prec_t mean_reward_state(const SType& state, long index, const indvec& policy){
+        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
+        return state.mean_reward(policy[index]);
     }
 }
 
@@ -51,7 +66,7 @@ transition_mat(const GRMDP<SType>& rmdp, const Policies& policies, bool transpos
     const auto& states = rmdp.get_states();
     #pragma omp parallel for
     for(size_t s = 0; s < n; s++){
-        const Transition&& t = internal::mean_transition_state(states,s, policies);
+        const Transition&& t = internal::mean_transition_state(states[s], s, policies);
 
         const auto& indexes = t.get_indices();
         const auto& probabilities = t.get_probabilities();
@@ -65,6 +80,34 @@ transition_mat(const GRMDP<SType>& rmdp, const Policies& policies, bool transpos
         }
     }
     return result;
+}
+
+/**
+Constructs the rewards vector for each state for the RMDP.
+
+\tparam Policy Type of the policy. Either a single policy for
+                the standard MDP evaluation, or a pair of a deterministic 
+                policy and a randomized policy of the nature
+\param rmdp Regular or robust MDP
+\param policies The policy (indvec) or the pair of the policy and the policy
+        of nature (pair<indvec,vector<numvec> >). The nature is typically 
+        a randomized policy
+ */
+template<typename SType, typename Policy>
+inline numvec rewards_vec(const GRMDP<SType>& rmdp, const Policy& policies){
+    
+    const auto n = rmdp.state_count();
+    numvec rewards(n);
+
+    #pragma omp parallel for
+    for(size_t s=0; s < n; s++){
+        const SType& state = rmdp[s];
+        if(state.is_terminal())
+            rewards[s] = 0;
+        else
+            rewards[s] = internal::mean_reward_state(state, s, policies);
+    }
+    return rewards;
 }
 
 /**
@@ -84,7 +127,7 @@ probabilities. This method may not scale well
 */
 template<typename SType, typename Policies>
 inline numvec 
-ofreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
+occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
                  const Policies& policies) {
     const auto n = rmdp.state_count();
 
@@ -96,7 +139,7 @@ ofreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
 
     // get transition matrix
-    ublas::matrix<prec_t> t_mat = rmdp.transition_mat(policies,true);
+    ublas::matrix<prec_t> t_mat = transition_mat(rmdp, policies,true);
 
     // construct main matrix
     t_mat *= -discount;

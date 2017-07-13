@@ -1,6 +1,7 @@
 #include "../craam/RMDP.hpp"
 #include "../craam/modeltools.hpp"
-#include "../craam/valueiteration.hpp"
+#include "../craam/algorithms/valueiteration.hpp"
+#include "../craam/algorithms/occupancies.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -9,6 +10,7 @@
 
 using namespace std;
 using namespace craam;
+using namespace craam::algorithms;
 
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MAIN
@@ -208,10 +210,10 @@ void test_simple_vi(){
 
     // check if we get the same return from the solution as from the
     // occupancy frequencies
-    auto&& occupancy_freq = rmdp.ofreq_mat(init_d,0.9,re.policy);
+    auto&& occupancy_freq = occfreq_mat(rmdp, init_d,0.9,re.policy);
     CHECK_CLOSE_COLLECTION(occupancy_freq, occ_freq3, 1e-3);
 
-    auto&& rewards = rmdp.rewards_state(re3.policy);
+    auto&& rewards = rewards_vec(rmdp, re3.policy);
     auto cmp_tr = inner_product(rewards.begin(), rewards.end(), occupancy_freq.begin(), 0.0);
     BOOST_CHECK_CLOSE (cmp_tr, ret_true, 1e-3);
 }
@@ -220,6 +222,6 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
     test_simple_vi<MDP>();
 }
 
-BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
-    test_simple_vi<RMDP>();
-}
+//BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
+//    test_simple_vi<RMDP>();
+//}

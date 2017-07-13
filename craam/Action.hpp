@@ -41,6 +41,8 @@ protected:
     bool valid = true;
 
 public:
+    static const bool requires_nature = false;
+
     /** Creates an empty action. */
     RegularAction(){};
 
@@ -97,9 +99,9 @@ public:
         result.append("1(reg)");
     };
 
-    // TODO: check whether this function can be removed from all actions
-    /** Whether the provided outcome is valid */
-    bool is_outcome_correct(long oid) const {return oid == 0;};
+    /** Whether the provided outcome is valid. Check only size, not that the distribution
+    sums to any particular number. */
+    bool is_nature_correct(numvec oid) const {return oid.size() == outcome.size();};
 
     /** Returns the mean reward from the transition. */
     prec_t mean_reward() const { return outcome.mean_reward();};
@@ -226,7 +228,7 @@ public:
     }
 
     /** Whether the provided outcome is valid */
-    bool is_outcome_correct(numvec oid) const
+    bool is_nature_correct(numvec oid) const
         {return (oid.size() == outcomes.size());};
 
     /** Appends a string representation to the argument */
@@ -279,6 +281,8 @@ protected:
     numvec distribution;
 
 public:
+    static const bool requires_nature = true;
+
     /** Creates an empty action. */
     WeightedOutcomeAction()
         : OutcomeManagement(), threshold(0), distribution(0) {};

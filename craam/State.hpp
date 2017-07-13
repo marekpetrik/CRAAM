@@ -16,6 +16,8 @@ namespace craam {
 
 using namespace std;
 
+
+
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
 // **************************************************************************************
@@ -32,11 +34,7 @@ protected:
     vector<AType> actions;
 
 public:
-
-    /** An identifier for an action for a fixed solution */
-    typedef long ActionId;
-    /** OutcomeId which comes from outcome*/
-    typedef typename AType::OutcomeId OutcomeId;
+    static const bool requires_nature = AType::requires_nature;
 
     SAState() : actions(0) {};
     SAState(const vector<AType>& actions) : actions(actions) {};
@@ -96,16 +94,29 @@ public:
     }
 
     /** Checks whether the prescribed action and outcome are correct */
-    bool is_action_outcome_correct(ActionId aid, OutcomeId oid) const{
+    bool is_action_correct(long aid, numvec nataction) const{
         if( (aid < 0) || ((size_t)aid >= actions.size()))
             return false;
 
-        return actions[aid].is_outcome_correct(oid);
+        return actions[aid].is_nature_correct(nataction);
+    }
+
+   /** Checks whether the prescribed action correct */
+    bool is_action_correct(long aid) const{
+        if( (aid < 0) || ((size_t)aid >= actions.size()))
+            return false;
+        else
+            return true;
     }
 
     /** Returns the mean reward following the action (and outcome). */
-    prec_t mean_reward(ActionId actionid, OutcomeId outcomeid) const{
-        return get_action(actionid).mean_reward(outcomeid);
+    prec_t mean_reward(long actionid, numvec nataction) const{
+        return get_action(actionid).mean_reward(nataction);
+    }
+
+    /** Returns the mean reward following the action. */
+    prec_t mean_reward(long actionid) const{
+        return get_action(actionid).mean_reward();
     }
 
     /** Returns the mean transition probabilities following the action and outcome. 
@@ -154,3 +165,20 @@ typedef SAState<WeightedOutcomeAction> WeightedRobustState;
 }
 
 
+/// helper functions
+namespace internal{
+    using namespace craam;
+
+    /// checks state and policy with a policy of nature
+    template<class SType> 
+    bool is_action_correct(const SType& state, long stateid, const std::pair<indvec,vector<numvec>>& policies){
+        return state.is_action_correct(policies.first[stateid], policies.second[stateid]);
+    }
+    
+    /// checks state that does not require nature
+    template<class SType> 
+    bool is_action_correct(const SType& state, long stateid, const indvec& policy){
+        static_assert(!SType::requires_nature, "The type of state requires that the policy of nature is also provided.");
+        return state.is_action_correct(policy[stateid]);
+    }
+}

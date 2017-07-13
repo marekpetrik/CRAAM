@@ -184,15 +184,10 @@ protected:
 
 public:
 
-    /** Action identifier in a policy. Copies type from state type. */
-    typedef typename SType::ActionId ActionId;
-    /** Action identifier in a policy. Copies type from state type. */
-    typedef typename SType::OutcomeId OutcomeId;
-
     /** Decision-maker's policy: Which action to take in which state.  */
-    typedef vector<ActionId> ActionPolicy;
+    typedef indvec policy_det;
     /** Nature's policy: Which outcome to take in which state.  */
-    typedef vector<OutcomeId> OutcomePolicy;
+    typedef vector<numvec> policy_rand;
 
     /**
     Constructs the RMDP with a pre-allocated number of states. All
@@ -272,40 +267,27 @@ public:
     }
 
     /**
-    Constructs the rewards vector for each state for the RMDP.
-    \param policy Policy of the decision maker
-    \param nature Policy of nature
-     */
-    numvec rewards_state(const ActionPolicy& policy, const OutcomePolicy& nature) const{
-        const auto n = state_count();
-        numvec rewards(n);
-
-        #pragma omp parallel for
-        for(size_t s=0; s < n; s++){
-            const SType& state = get_state(s);
-            if(state.is_terminal())
-                rewards[s] = 0;
-            else
-                rewards[s] = state.mean_reward(policy[s], nature[s]);
-        }
-        return rewards;
-    }
-
-    /**
     Checks if the policy and nature's policy are both correct.
     Action and outcome can be arbitrary for terminal states.
+
+    \tparam Policy Type of the policy. Either a single policy for
+                the standard MDP evaluation, or a pair of a deterministic 
+                policy and a randomized policy of the nature
+    \param policies The policy (indvec) or the pair of the policy and the policy
+        of nature (pair<indvec,vector<numvec> >). The nature is typically 
+        a randomized policy
     \return If incorrect, the function returns the first state with an incorrect
             action and outcome. Otherwise the function return -1.
     */
-    long is_policy_correct(const ActionPolicy& policy,
-                           const OutcomePolicy& natpolicy) const{
+    template<typename Policy>
+    long is_policy_correct(const Policy& policies) const{
         for(auto si : indices(states) ){
             // ignore terminal states
             if(states[si].is_terminal())
                 continue;
 
             // call function of the state
-            if(!states[si].is_action_outcome_correct(policy[si], natpolicy[si]))
+            if(!states[si].is_action_correct(policies))
                 return si;
         }
         return -1;
@@ -423,14 +405,6 @@ public:
 
 /**
 Regular MDP with discrete actions and one outcome per action
-
-    ActionId = long
-    OutcomeId = long
-
-    ActionPolicy = vector<ActionId>
-    OutcomePolicy = vector<OutcomeId>
-
-Uncertainty type is ignored in these methods.
 */
 typedef GRMDP<RegularState> MDP;
 
