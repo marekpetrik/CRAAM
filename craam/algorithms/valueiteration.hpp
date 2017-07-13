@@ -448,11 +448,11 @@ Regular solution to an MDP
 Field policy Ignored when size is 0. Otherwise a partial policy. Actions are optimized only in 
                  states in which policy = -1, otherwise a fixed value is used. 
 */
-class DecisionPolicy{
+class PolicyDeterministic{
 public:
     indvec policy;
 
-    DecisionPolicy(indvec policy) : policy(move(policy)) {};
+    PolicyDeterministic(indvec policy) : policy(move(policy)) {};
 
     Solution new_solution(size_t statecount, numvec valuefunction) const { 
         process_valuefunction(statecount, valuefunction);
@@ -512,14 +512,18 @@ The class abstracts some operations of value / policy iteration in order to gene
 various types of robust MDPs.
 */
 template<class T>
-class NaturePolicy : public DecisionPolicy {
+class PolicyNature : public PolicyDeterministic {
 public:
     /// Specification of natures response (the function that nature computes, could be different for each state)
     vector<NatureInstance<T>> natspec;
 
     /// Constructs the object from a policy and a specification of nature
-    NaturePolicy(indvec policy, vector<NatureInstance<T>> natspec):
-        DecisionPolicy(move(policy)), natspec(move(natspec)) {};
+    PolicyNature(indvec policy, vector<NatureInstance<T>> natspec):
+        PolicyDeterministic(move(policy)), natspec(move(natspec)) {};
+
+    /// Constructs the object from a policy and a specification of nature
+    PolicyNature(vector<NatureInstance<T>> natspec):
+        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {};
 
     /// Constructs a new robust solution
     RSolution new_solution(size_t statecount, numvec valuefunction) const { 
@@ -575,12 +579,12 @@ the states are ordered correctly, one iteration is enough to compute the optimal
 Since the value function is updated from the last state to the first one, the states should be ordered
 in the temporal order.
 
-\param response Determines the type of solution method. Allows for customized algorithms 
-                that can solve various forms of robustness, and risk aversion
 \param mdp The mdp to solve
 \param discount Discount factor.
 \param valuefunction Initial value function. Passed by value, because it is modified. Optional, use 
                     all zeros when not provided. Ignored when size is 0.
+\param response Determines the type of solution method. Allows for customized algorithms 
+                that can solve various forms of robustness, and risk aversion
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
 
@@ -588,8 +592,8 @@ in the temporal order.
 \returns Solution that can be used to compute the total return, or the optimal policy.
  */
 template<class SType, class ResponseType>
-inline auto vi_gs(const ResponseType& response, const GRMDP<SType>& mdp, prec_t discount,
-                        numvec valuefunction=numvec(0),
+inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
+                        numvec valuefunction=numvec(0), const ResponseType& response = PolicyDeterministic(), 
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC) 
                         {
 
@@ -618,7 +622,6 @@ inline auto vi_gs(const ResponseType& response, const GRMDP<SType>& mdp, prec_t 
     return solution;
 }
 
-
 /**
 Modified policy iteration using Jacobi value iteration in the inner loop.
 This method generalizes modified policy iteration to robust MDPs.
@@ -628,8 +631,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \param type Type of realization of the uncertainty
 \param discount Discount factor
 \param valuefunction Initial value function
-\param policy Optional. Ignored when size is 0. Possibly a partial policy. Actions are optimized only in 
-                 states in which policy = -1, otherwise the provided value is used. 
+\param response Determines the type of solution method. Allows for customized algorithms 
+                that can solve various forms of robustness, and risk aversion
 \param iterations_pi Maximal number of policy iteration steps
 \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
 \param iterations_vi Maximal number of inner loop value iterations
@@ -639,8 +642,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType, class ResponseType>
-inline auto mpi_jac(const ResponseType& response,const GRMDP<SType>& mdp, prec_t discount, 
-                const numvec& valuefunction=numvec(0),
+inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount, 
+                const numvec& valuefunction=numvec(0), const ResponseType& response = PolicyDeterministic(),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
