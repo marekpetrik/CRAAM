@@ -152,7 +152,6 @@ References
 namespace craam {
 
 using namespace std;
-using namespace boost::numeric;
 using namespace util::lang;
 
 // **************************************************************************************

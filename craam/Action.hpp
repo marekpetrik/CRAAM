@@ -108,7 +108,7 @@ public:
     Returns the mean reward from the transition. 
     \param natpolicy Nature can choose the probability distribution
     */
-    prec_t mean_reward(numvec natpolicy) const { return outcome.get_reward(natpolicy)};
+    prec_t mean_reward(numvec natpolicy) const { return outcome.mean_reward(natpolicy);};
 
     /** Returns the mean transition probabilities. Ignore rewards. */
     Transition mean_transition() const {return outcome;};
@@ -118,7 +118,7 @@ public:
     \param natpolicy Nature can choose a non-zero state to go to
     */
     Transition mean_transition(numvec natpolicy) const {
-        return Transition(outcome.get_indices,narpolicy,numvec(outcome.size(),0.0));
+        return Transition(outcome.get_indices(),natpolicy,numvec(outcome.size(),0.0));
     };
 
     /** Returns a json representation of the action

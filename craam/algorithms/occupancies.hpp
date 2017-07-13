@@ -6,10 +6,12 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 
-#include ".../cpp11-range-master/range.hpp"
+#include "../cpp11-range-master/range.hpp"
 
 namespace craam{namespace algorithms{
 
+using namespace std;
+using namespace boost::numeric;
 
 namespace internal{
 
@@ -42,8 +44,8 @@ Constructs the transition (or its transpose) matrix for the policy.
 */
 template<typename SType, typename Policies> 
 inline ublas::matrix<prec_t>
-transition_mat(const RMDP<SType> rmdp&, const Policies& policies, bool transpose = false) const{
-    const size_t n = state_count();
+transition_mat(const GRMDP<SType>& rmdp, const Policies& policies, bool transpose = false) {
+    const size_t n = rmdp.state_count();
     ublas::matrix<prec_t> result = ublas::zero_matrix<prec_t>(n,n);
 
     const auto& states = rmdp.get_states();
@@ -81,9 +83,10 @@ probabilities. This method may not scale well
         a randomized policy
 */
 template<typename SType, typename Policies>
-numvec ofreq_mat(const GRMDP<SType>& mdp, const Transition& init, prec_t discount,
-                 const Policies& policies) const{
-    const auto n = state_count();
+inline numvec 
+ofreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
+                 const Policies& policies) {
+    const auto n = rmdp.state_count();
 
     // initial distribution
     auto&& initial_svec = init.probabilities_vector(n);
@@ -93,7 +96,7 @@ numvec ofreq_mat(const GRMDP<SType>& mdp, const Transition& init, prec_t discoun
     copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
 
     // get transition matrix
-    <ublas::matrix<prec_t> t_mat = mdp.transition_mat(policies,true);
+    ublas::matrix<prec_t> t_mat = rmdp.transition_mat(policies,true);
 
     // construct main matrix
     t_mat *= -discount;

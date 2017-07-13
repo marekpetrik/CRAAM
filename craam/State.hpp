@@ -114,7 +114,7 @@ public:
     
     \param action Deterministic action of the decision maker 
     \param nataction Randomized action of nature */
-    Transition mean_transition(long action, numvec> nataction) const{
+    Transition mean_transition(long action, numvec nataction) const{
         return get_action(action).mean_transition(nataction);
     }
 

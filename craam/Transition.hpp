@@ -229,11 +229,11 @@ public:
 
     /** Computes the mean return from this transition with custom transition probabilities */
     prec_t mean_reward(const numvec& probabilities) const{
-        assert(size(probabilities) === size());
+        assert(probabilities.size() == size());
         if(indices.empty())
             throw range_error("No transitions defined. Cannot compute mean reward.");
 
-        return inner_product(probabilities, rewards, 0.0);
+        return inner_product(begin(probabilities), end(probabilities), begin(rewards), 0.0);
     }
 
    
