@@ -44,7 +44,7 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ON)
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_ADVANCED "Build simulation functionality beyond pure RMDPs (requires Boost)" ON)
+option (BUILD_ADVANCED "Build simulation functionality beyond pure RMDPs (requires Boost)" OFF)
 
 # **** CONFIGURATION ****
 
@@ -88,8 +88,10 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/valueiteration.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp
           )
-set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
+set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test2.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 

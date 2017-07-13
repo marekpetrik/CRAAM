@@ -49,7 +49,7 @@ Model create_test_mdp(){
     add_transition<Model>(rmdp,0,0,0,1.0,0.0);
     add_transition<Model>(rmdp,1,0,0,1.0,1.0);
     add_transition<Model>(rmdp,2,0,1,1.0,1.0);
-    
+
 
     return rmdp;
 }
@@ -104,8 +104,9 @@ BOOST_AUTO_TEST_CASE(test_l1_worst_case){
 
 BOOST_AUTO_TEST_CASE( empty_test ){
     MDP m(0);
-    mpi_jac(m, 0.9);
+
     vi_gs(m, 0.9);
+    mpi_jac(m, 0.9);
 }
 
 BOOST_AUTO_TEST_CASE( basic_tests ) {
@@ -151,11 +152,9 @@ void test_simple_vi(){
     auto rmdp = create_test_mdp<Model>();
 
     indvec natpol_rob{0,0,0};
-
     Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
 
     numvec initial{0,0,0};
-
     indvec pol_rob{1,1,1};
 
     // small number of iterations (not the true value function)
@@ -182,7 +181,7 @@ void test_simple_vi(){
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    auto&& re4 = mpi_jac(rmdp,0.9, initial,uniform_nature(rmdp.state_count(), robust_l1, 0.0), 
+    auto&& re4 = mpi_jac(rmdp,0.9, initial,uniform_nature(rmdp.state_count(), robust_l1, 0.0),
                             1000, 0.0, 1000, 0.0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());

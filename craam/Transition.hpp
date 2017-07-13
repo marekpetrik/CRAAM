@@ -201,7 +201,10 @@ public:
                 in a release build.
      */
     prec_t value(numvec const& valuefunction, prec_t discount, numvec probabilities) const{
-        assert(probabilities.size() == size());
+        assert(valuefunction.size() >= probabilities.size());
+        assert(rewards.size() == probabilities.size());
+        assert(probabilities.size() == indices.size());
+
         if(indices.empty())
             throw range_error("No transitions defined for the state action-pair. Cannot compute value.");
         prec_t value = 0.0;
@@ -209,7 +212,7 @@ public:
         //Note: in simple benchmarks, the simd statement seems to speed up the computation
         // by a factor of 2-4 with -march=native on a computer with AVX support
         #pragma omp simd reduction(+:value)
-        for(long c = 0; c < size(); c++){
+        for(size_t c = 0; c < size(); c++){
             value +=  probabilities[c] * (rewards[c] + discount * valuefunction[indices[c]]);
         }
         return value;
@@ -224,8 +227,9 @@ public:
     \param discount Discount factor, optional (default value 1)
      */
     prec_t value(numvec const& valuefunction, prec_t discount = 1.0) const{
+
         return value(valuefunction, discount, probabilities);
-    }   
+    }
 
     /** Computes the mean return from this transition with custom transition probabilities */
     prec_t mean_reward(const numvec& probabilities) const{
@@ -236,7 +240,7 @@ public:
         return inner_product(cbegin(probabilities), end(probabilities), cbegin(rewards), 0.0);
     }
 
-   
+
     /** Computes the mean return from this transition */
     prec_t mean_reward() const{
         return mean_reward(probabilities);
