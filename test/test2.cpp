@@ -506,39 +506,250 @@ BOOST_AUTO_TEST_CASE(test_string_mdp){
     BOOST_CHECK_EQUAL(s.length(), 42);
 }
 
-BOOST_AUTO_TEST_CASE(test_string_rmdpd){
-    RMDP_D rmdp;
-
-    add_transition(rmdp,0,0,0,0,1,1);
-    add_transition(rmdp,0,0,1,0,1,2);
-
-    add_transition(rmdp,1,0,0,0,1,1);
-    add_transition(rmdp,1,0,1,0,1,2);
-
-    auto s = rmdp.to_string();
-    BOOST_CHECK_EQUAL(s.length(), 32);
-}
 
 
 BOOST_AUTO_TEST_CASE(test_string_rmdpl1){
-    RMDP_L1 rmdp;
+    RMDP rmdp;
 
     numvec dist{0.5,0.5};
 
     add_transition(rmdp,0,0,0,0,1,1);
     add_transition(rmdp,0,0,1,0,1,2);
-    //rmdp.get_state(0).get_action(0).set_distribution(dist);
-    //rmdp.get_state(0).get_action(0).set_threshold(2);
 
     add_transition(rmdp,1,0,0,0,1,1);
     add_transition(rmdp,1,0,1,0,1,2);
-    //rmdp.get_state(1).get_action(0).set_distribution(dist);
-    //rmdp.get_state(1).get_action(0).set_threshold(2);
 
     set_outcome_thresholds(rmdp, 2);
     set_uniform_outcome_dst(rmdp);
 
     auto s = rmdp.to_string();
     BOOST_CHECK_EQUAL(s.length(), 40);
+}
+
+// ********************************************************************************
+// ***** Normalization ************************************************************
+// ********************************************************************************
+
+
+BOOST_AUTO_TEST_CASE(test_normalization) {
+    RMDP rmdp;
+
+    // nonrobust
+    add_transition(rmdp,0,0,0,1.0,0.1);
+    add_transition(rmdp,0,0,1,1.0,0.5);
+
+    // the freshly constructed one should be normalized
+    BOOST_CHECK(is_outcome_dst_normalized(rmdp));
+
+    // denormalize and make sure it works
+    rmdp.get_state(0).get_action(0).set_distribution(0, 0.8);
+    BOOST_CHECK(!is_outcome_dst_normalized(rmdp));
+
+    // make sure that the normalization works
+    normalize_outcome_dst(rmdp);
+    BOOST_CHECK(is_outcome_dst_normalized(rmdp));
+
+    // check and normalize outcome probabilities
+    BOOST_CHECK(!rmdp.is_normalized());
+    rmdp.normalize();
+    BOOST_CHECK(rmdp.is_normalized());
+
+    // solve and check value function
+    //set_outcome_thresholds(rmdp, 2.0);
+    numvec initial{0,0};
+    auto&& re = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,robust_unbounded,2.0), 2000,0);
+
+    numvec val{0.545454545455, 0.0};
+
+    CHECK_CLOSE_COLLECTION(val,re.valuefunction,1e-3);
+}
+
+// ********************************************************************************
+// ***** Stochastic transition probabilities (L1) *********************************
+// ********************************************************************************
+
+void test_randomized_threshold_average(const RMDP& rmdp, double threshold, const numvec& desired){
+
+    const prec_t gamma = 0.9;
+    numvec value(0);
+    auto&& sol2 = vi_gs(rmdp,gamma,value,PolicyDeterministic(),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, desired, 0.001);
+    auto&& sol3 = mpi_jac(rmdp,gamma,value,PolicyDeterministic(),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, desired, 0.001);
+}
+
+
+
+void test_randomized_threshold_robust(const RMDP& rmdp, double threshold, const numvec& desired){
+
+    const prec_t gamma = 0.9;
+    numvec value(0);
+    auto&& sol2 = vi_gs(rmdp,gamma,value,uniform_nature(rmdp,robust_l1,threshold),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, desired, 0.001);
+    auto&& sol3 = mpi_jac(rmdp,gamma,value,uniform_nature(rmdp,robust_l1,threshold),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, desired, 0.001);
+
+}
+
+void test_randomized_threshold_optimistic(const RMDP& rmdp, double threshold, const numvec& desired){
+
+    const prec_t gamma = 0.9;
+    numvec value(0);
+    auto&& sol2 = vi_gs(rmdp,gamma,value,uniform_nature(rmdp,optimistic_l1,threshold),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol2.valuefunction, desired, 0.001);
+    auto&& sol3 = mpi_jac(rmdp,gamma,value,uniform_nature(rmdp,optimistic_l1,threshold),1000,1e-5);
+    CHECK_CLOSE_COLLECTION(sol3.valuefunction, desired, 0.001);
+
+}
+
+BOOST_AUTO_TEST_CASE(test_randomized_mdp){
+    RMDP rmdp;
+
+    // define the MDP representation
+    // format: idstatefrom, idaction, idoutcome, idstateto, probability, reward
+    string string_representation{
+        "1,0,0,1,1.0,2.0 \
+         2,0,0,2,1.0,3.0 \
+         3,0,0,3,1.0,1.0 \
+         4,0,0,4,1.0,4.0 \
+         0,0,0,1,1.0,0.0 \
+         0,0,1,2,1.0,0.0 \
+         0,1,0,3,1.0,0.0 \
+         0,1,1,4,1.0,0.0\n"};
+
+    // initialize desired outcomes
+    numvec robust_2_0 {0.9*20,20,30,10,40};
+    numvec robust_1_0 {0.9*20,20,30,10,40};
+    numvec robust_0_5 {0.9*90.0/4.0,20,30,10,40};
+    numvec robust_0_0 {0.9*25.0,20,30,10,40};
+    numvec optimistic_2_0 {0.9*40,20,30,10,40};
+    numvec optimistic_1_0 {0.9*40,20,30,10,40};
+    numvec optimistic_0_5 {0.9*130.0/4.0,20,30,10,40};
+    numvec optimistic_0_0 {0.9*25.0,20,30,10,40};
+
+    stringstream store(string_representation);
+
+    store.seekg(0);
+    from_csv(rmdp,store,false);
+
+    // print the problem definition for debugging
+    //cout << string_representation << endl;
+    //cout << rmdp->state_count() << endl;
+    //stringstream store2;
+    //rmdp->to_csv(store2);
+    //cout << store2.str() << endl;
+
+
+    // *** ROBUST ******************
+    // *** 2.0 ***
+    test_randomized_threshold_robust(rmdp, 2.0, robust_2_0);
+
+    // *** 1.0 ***
+    test_randomized_threshold_robust(rmdp, 1.0, robust_1_0);
+
+    // *** 0.5 ***
+    test_randomized_threshold_robust(rmdp, 0.5, robust_0_5);
+
+    // *** 0.0 ***
+    test_randomized_threshold_robust(rmdp, 0.0, robust_0_0);
+
+    // *** average ***
+    // should be the same for the average
+    test_randomized_threshold_average(rmdp, 0.0, robust_0_0);
+
+
+    // *** OPTIMISTIC ******************
+
+    // *** 2.0 ***
+    test_randomized_threshold_optimistic(rmdp, 2.0, optimistic_2_0);
+
+    // *** 1.0 ***
+    test_randomized_threshold_optimistic(rmdp, 1.0, optimistic_1_0);
+
+    // *** 0.5 ***
+    test_randomized_threshold_optimistic(rmdp, 0.5, optimistic_0_5);
+
+    // *** 0.0 ***
+    test_randomized_threshold_optimistic(rmdp, 0.0, optimistic_0_0);
+
+}
+
+
+// ********************************************************************************
+// ***** Test terminal state ******************************************************
+// ********************************************************************************
+
+BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
+    RMDP rmdp;
+
+    // define the MDP representation
+    // format: idstatefrom, idaction, idoutcome, idstateto, probability, reward
+    string string_representation{
+        "1,0,0,5,1.0,20.0 \
+         2,0,0,5,1.0,30.0 \
+         3,0,0,5,1.0,10.0 \
+         4,0,0,5,1.0,40.0 \
+         0,0,0,1,1.0,0.0 \
+         0,0,1,2,1.0,0.0 \
+         0,1,0,3,1.0,0.0 \
+         0,1,1,4,1.0,0.0\n"};
+
+    // the last state is terminal
+
+    // initialize desired outcomes
+    numvec robust_2_0 {0.9*20,20,30,10,40,0};
+    numvec robust_1_0 {0.9*20,20,30,10,40,0};
+    numvec robust_0_5 {0.9*90.0/4.0,20,30,10,40,0};
+    numvec robust_0_0 {0.9*25.0,20,30,10,40,0};
+    numvec optimistic_2_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_1_0 {0.9*40,20,30,10,40,0};
+    numvec optimistic_0_5 {0.9*130.0/4.0,20,30,10,40,0};
+    numvec optimistic_0_0 {0.9*25.0,20,30,10,40,0};
+
+    stringstream store(string_representation);
+
+    store.seekg(0);
+    from_csv(rmdp,store,false);
+
+    // print the problem definition for debugging
+    //cout << string_representation << endl;
+    //cout << rmdp->state_count() << endl;
+    //stringstream store2;
+    //rmdp->to_csv(store2);
+    //cout << store2.str() << endl;
+
+
+    // *** ROBUST ******************
+    // *** 2.0 ***
+    test_randomized_threshold_robust(rmdp, 2.0, robust_2_0);
+
+    // *** 1.0 ***
+    test_randomized_threshold_robust(rmdp, 1.0, robust_1_0);
+
+    // *** 0.5 ***
+    test_randomized_threshold_robust(rmdp, 0.5, robust_0_5);
+
+    // *** 0.0 ***
+    test_randomized_threshold_robust(rmdp, 0.0, robust_0_0);
+
+    // *** average ***
+    // should be the same for the average
+    test_randomized_threshold_average(rmdp, 0.0, robust_0_0);
+
+
+    // *** OPTIMISTIC ******************
+
+    // *** 2.0 ***
+    test_randomized_threshold_optimistic(rmdp, 2.0, optimistic_2_0);
+
+    // *** 1.0 ***
+    test_randomized_threshold_optimistic(rmdp, 1.0, optimistic_1_0);
+
+    // *** 0.5 ***
+    test_randomized_threshold_optimistic(rmdp, 0.5, optimistic_0_5);
+
+    // *** 0.0 ***
+    test_randomized_threshold_optimistic(rmdp, 0.0, optimistic_0_0);
+
 }
 

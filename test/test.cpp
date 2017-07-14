@@ -472,11 +472,9 @@ void test_value_function() {
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 }
 
-
 BOOST_AUTO_TEST_CASE(test_value_function_rmdpd){
     test_value_function<RMDP_D>();
 }
-
 
 // ********************************************************************************
 // ***** L1 value function ********************************************************

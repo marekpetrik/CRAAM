@@ -291,9 +291,10 @@ inline prec_t
 value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
                               long actionid, numvec distribution) {
    // this is the terminal state, return 0
+    if(state.is_terminal()) return 0;
+
     assert(actionid >= 0 && actionid < state.size());
 
-    if(state.is_terminal()) return 0;
     if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
@@ -318,9 +319,10 @@ inline vec_scal_t
 value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
                               long actionid, const NatureInstance<T>& nature) {
    // this is the terminal state, return 0
+    if(state.is_terminal()) return make_pair(numvec(0),0);
+
     assert(actionid >= 0 && actionid < state.size());
 
-    if(state.is_terminal()) return make_pair(numvec(0),0);
     if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
