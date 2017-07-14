@@ -1,7 +1,7 @@
-#include "../craam/RMDP.hpp"
-#include "../craam/modeltools.hpp"
-#include "../craam/algorithms/valueiteration.hpp"
-#include "../craam/algorithms/occupancies.hpp"
+#include "craam/RMDP.hpp"
+#include "craam/modeltools.hpp"
+#include "craam/algorithms/valueiteration.hpp"
+#include "craam/algorithms/occupancies.hpp"
 
 #include <iostream>
 #include <sstream>
