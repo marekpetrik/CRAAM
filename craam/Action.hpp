@@ -462,7 +462,7 @@ public:
     }
 
     /**  Returns the mean reward from the transition using the nominal distribution on outcomes.*/
-    prec_t mean_reward(){
+    prec_t mean_reward() const {
         return mean_reward(distribution);
     }
 
@@ -476,7 +476,7 @@ public:
     }
 
     /** Returns the mean transition probabilities using the nominal distribution on outcomes. */
-    Transition mean_transition(){
+    Transition mean_transition() const{
         return mean_transition(distribution);
     }
     /** Returns a json representation of action

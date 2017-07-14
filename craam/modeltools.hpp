@@ -256,19 +256,15 @@ the \f$ k \f$-th state with a non-zero transition probability from state \f$ s \
 - Nominal outcome probabilities are:
     \f$ d(s,a,b_k) = P(s,a,z_k(s,a)) \f$
 
-\tparam SType State type for the RMDP being constructed. The actions must support methods:
-    - set_distribution(long outcomeid, prec_t weight)
-
 \param mdp MDP \f$ \mathcal{M} \f$ used as the input
 \param allowzeros Whether to allow outcomes to states with zero 
                     transition probability
 \returns RMDP with nominal probabilities
 */
-template<class SType>
 inline
-GRMDP<SType> robustify(const MDP& mdp, bool allowzeros){
+RMDP robustify(const MDP& mdp, bool allowzeros = false){
     // construct the result first
-    GRMDP<SType> rmdp;
+    RMDP rmdp;
     // iterate over all starting states (at t)
     for(size_t si : indices(mdp)){
         const auto& s = mdp[si];
@@ -305,10 +301,6 @@ GRMDP<SType> robustify(const MDP& mdp, bool allowzeros){
     return rmdp;
 }
 
-/// Instantiated version of robustify
-inline RMDP robustify_l1(const MDP& mdp, bool allowzeros){
-    return robustify<WeightedRobustState>(mdp, allowzeros);
-}
 
 }
 

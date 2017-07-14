@@ -147,9 +147,8 @@ BOOST_AUTO_TEST_CASE( basic_tests ) {
 // ********************************************************************************
 
 template<class Model>
-void test_simple_vi(){
+void test_simple_vi(const Model& rmdp){
     // Tests simple non-robust value iteration with the various models
-    auto rmdp = create_test_mdp<Model>();
 
     indvec natpol_rob{0,0,0};
     Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
@@ -222,9 +221,273 @@ void test_simple_vi(){
 }
 
 BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
-    test_simple_vi<MDP>();
+    auto rmdp = create_test_mdp<MDP>();
+    test_simple_vi<MDP>(rmdp);
 }
 
-//BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
-//    test_simple_vi<RMDP>();
-//}
+BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
+    auto rmdp = create_test_mdp<MDP>();
+    test_simple_vi<RMDP>(robustify(rmdp));
+}
+
+// ********************************************************************************
+// ***** Model resize *************************************************************
+// ********************************************************************************
+
+
+BOOST_AUTO_TEST_CASE(test_check_add_transition_m){
+
+    MDP rmdp;
+
+    // check adding to the end
+    add_transition(rmdp,0,0,0,5,0.1,1);
+    add_transition(rmdp,0,0,0,7,0.1,2);
+
+    Transition&& transition = rmdp.get_state(0).mean_transition(0);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
+
+    // check updating the last element
+    add_transition(rmdp,0,0,0,7,0.4,4);
+    transition = rmdp.get_state(0).mean_transition(0);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
+    vector<double> tr{1.0,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    vector<double> tp{0.1,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
+    // check inserting an element into the middle
+    add_transition(rmdp,0,0,0,6,0.1,0.5);
+    transition = rmdp.get_state(0).mean_transition(0);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
+    tr = vector<double>{1.0,0.5,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    tp = vector<double>{0.1,0.1,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
+    // check updating an element in the middle
+    add_transition(rmdp,0,0,0,6,0.1,1.5);
+    transition = rmdp.get_state(0).mean_transition(0);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
+    tr = vector<double>{1.0,1.0,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    tp = vector<double>{0.1,0.2,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+}
+
+
+BOOST_AUTO_TEST_CASE(test_check_add_transition_r){
+
+    RMDP rmdp;
+
+    numvec firstoutcome = numvec{1.0};
+    // check adding to the end
+    add_transition(rmdp,0,0,0,5,0.1,1);
+    add_transition(rmdp,0,0,0,7,0.1,2);
+
+    Transition&& transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
+
+    // check updating the last element
+    add_transition(rmdp,0,0,0,7,0.4,4);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 2);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 2);
+    vector<double> tr{1.0,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    vector<double> tp{0.1,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
+    // check inserting an element into the middle
+    add_transition(rmdp,0,0,0,6,0.1,0.5);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
+    tr = vector<double>{1.0,0.5,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    tp = vector<double>{0.1,0.1,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
+    // check updating an element in the middle
+    add_transition(rmdp,0,0,0,6,0.1,1.5);
+    transition = rmdp.get_state(0).mean_transition(0,firstoutcome);
+
+    BOOST_CHECK(is_sorted(transition.get_indices().begin(), transition.get_indices().end()) );
+    BOOST_CHECK_EQUAL(transition.get_indices().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_probabilities().size(), 3);
+    BOOST_CHECK_EQUAL(transition.get_rewards().size(), 3);
+    tr = vector<double>{1.0,1.0,3.6};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
+    tp = vector<double>{0.1,0.2,0.5};
+    BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+}
+
+// ********************************************************************************
+// ***** Save and load ************************************************************
+// ********************************************************************************
+
+template<class Model>
+void test_simple_mdp_save_load(){
+
+    auto rmdp1 = create_test_mdp<Model>();
+
+    stringstream store;
+
+    rmdp1.to_csv(store);
+    store.seekg(0);
+
+    Model rmdp2;
+    from_csv(rmdp2,store);
+
+    numvec initial{0,0,0};
+
+    auto&& re = vi_gs(rmdp2,0.9,initial,uniform_nature(rmdp2,robust_l1,0.0),20l,0);
+
+    numvec val_rob{7.68072,8.67072,9.77072};
+    indvec pol_rob{1,1,1};
+
+    CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
+    BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
+}
+
+BOOST_AUTO_TEST_CASE(simple_mdp_save_load_mdp) {
+    test_simple_mdp_save_load<MDP>();
+}
+ 
+BOOST_AUTO_TEST_CASE(simple_mdp_save_load_rmdpd) {
+    test_simple_mdp_save_load<RMDP>();
+}
+
+
+template<class Model>
+void test_simple_mdp_save_load_save_load() {
+    Model rmdp1 = create_test_mdp<Model>();
+
+    stringstream store;
+
+    rmdp1.to_csv(store);
+    store.seekg(0);
+
+    auto string1 = store.str();
+
+    Model rmdp2;
+    from_csv(rmdp2,store);
+
+    stringstream store2;
+
+    rmdp2.to_csv(store2);
+
+    auto string2 = store2.str();
+
+    BOOST_CHECK_EQUAL(string1, string2);
+}
+
+BOOST_AUTO_TEST_CASE(simple_mdp_save_load_save_load){
+    test_simple_mdp_save_load_save_load<MDP>();
+}
+
+// ********************************************************************************
+// ***** Value function ***********************************************************
+// ********************************************************************************
+
+
+template<class Model>
+void test_value_function(const Model& rmdp) {
+    numvec initial{0};
+
+    // gauss-seidel
+    auto&& result1 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp,robust_unbounded,0.0), 1000, 0);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
+
+    auto&& result2 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_unbounded,0.0), 1000, 0);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+
+    auto&& result3 = vi_gs(rmdp,0.9,initial,PolicyDeterministic(), 1000, 0);
+    BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
+
+    // mpi
+    result1 = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,robust_unbounded,0.0), 1000, 0);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0], 10.0, 1e-3);
+
+    result2 = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_unbounded,0.0), 1000, 0);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
+
+    result3 = mpi_jac(rmdp,0.9,initial,PolicyDeterministic(), 1000, 0);
+    BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
+}
+
+
+BOOST_AUTO_TEST_CASE(test_value_function_rmdp){
+    RMDP rmdp;
+
+    add_transition(rmdp,0,0,0,0,1,1);
+    add_transition(rmdp,0,0,1,0,1,2);
+    test_value_function<RMDP>(rmdp);
+}
+
+// ********************************************************************************
+// ***** L1 value function ********************************************************
+// ********************************************************************************
+
+
+void test_value_function_thr(double threshold, numvec expected) {
+    RMDP rmdp;
+
+    add_transition(rmdp,0,0,0,0,1,1);
+    add_transition(rmdp,0,0,1,0,1,2);
+    numvec initial{0};
+
+    numvec d{0.5,0.5};
+    CHECK_CLOSE_COLLECTION(rmdp.get_state(0).get_action(0).get_distribution(), d, 1e-6);
+
+
+    // *** 2.0 ***
+    // gauss-seidel
+    auto&& result1 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp,robust_l1,threshold), 1000, 0);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0], expected[0], 1e-3);
+
+    auto&& result2 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_l1,threshold), 1000, 0);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], expected[1], 1e-3);
+
+    // mpi
+    result1 = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,robust_l1,threshold), 1000, 0);
+    BOOST_CHECK_CLOSE(result1.valuefunction[0], expected[0], 1e-3);
+
+    result2 = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_l1,threshold), 1000, 0);
+    BOOST_CHECK_CLOSE(result2.valuefunction[0], expected[1], 1e-3);
+}
+
+
+BOOST_AUTO_TEST_CASE(test_value_function_rmdpl1){
+    test_value_function_thr(2.0, numvec{10.0,20.0});
+    test_value_function_thr(1.0, numvec{10.0, 20.0});
+    test_value_function_thr(0.5, numvec{12.5, 17.5});
+    test_value_function_thr(0.0, numvec{15.0, 15.0});
+}
+
+

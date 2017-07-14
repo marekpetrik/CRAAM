@@ -735,11 +735,17 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
 
 /// A helper function that simply copies a nature specification across all states
-///
 template<class T>
 PolicyNature<T> uniform_nature(size_t statecount, NatureResponse<T> nature,
                             T threshold){
     return PolicyNature<T>(vector<NatureInstance<T>>(statecount, make_pair(nature, threshold)));
+}
+
+/// A helper function that simply copies a nature specification across all states
+template<class Model, class T>
+PolicyNature<T> uniform_nature(const Model& m, NatureResponse<T> nature,
+                            T threshold){
+    return PolicyNature<T>(vector<NatureInstance<T>>(m.state_count(), make_pair(nature, threshold)));
 }
 
 }}
