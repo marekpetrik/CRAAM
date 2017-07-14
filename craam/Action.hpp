@@ -43,7 +43,7 @@ protected:
 public:
 
     /** Creates an empty action. */
-    RegularAction(){};
+    RegularAction() : outcome() {};
 
     /** Initializes outcomes to the provided transition vector */
     RegularAction(const Transition& outcome) : outcome(outcome) {};
@@ -159,7 +159,7 @@ protected:
     bool valid = true;
 public:
     /** Empty list of outcomes */
-    OutcomeManagement() {};
+    OutcomeManagement() : outcomes() {};
 
     /** Initializes with a list of outcomes */
     OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {};
@@ -290,6 +290,7 @@ public:
         : OutcomeManagement(outcomes), threshold(0), distribution(outcomes.size(), 
             1.0 / prec_t(outcomes.size())) {};
 
+    using OutcomeManagement::create_outcome;
 
     /**
     Adds a sufficient number (or 0) of empty outcomes/transitions for the provided outcomeid

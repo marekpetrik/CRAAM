@@ -31,7 +31,7 @@ const prec_t tolerance = 1e-5;
 class Transition {
 
 public:
-    Transition(){};
+    Transition() : indices(0), probabilities(0), rewards(0) {};
 
     /**
     Creates a single transition from raw data.
@@ -45,14 +45,13 @@ public:
     */
     Transition(const indvec& indices,
                 const numvec& probabilities,
-                const numvec& rewards){
+                const numvec& rewards) : Transition() {
 
         if(indices.size() != probabilities.size() || indices.size() != rewards.size())
             throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
         auto sorted = sort_indexes(indices);
         for(auto k : sorted)
             add_sample(indices[k],probabilities[k],rewards[k]);
-
     }
 
     /**
@@ -65,7 +64,7 @@ public:
     \param probabilities The probabilities of transitions
     */
     Transition(const indvec& indices,
-                const numvec& probabilities){
+                const numvec& probabilities) : Transition() {
 
         if(indices.size() != probabilities.size())
             throw invalid_argument("All parameters for the constructor of Transition must have the same size.");
@@ -80,7 +79,7 @@ public:
 
     \param probabilities The probabilities of transitions; indexes are implicit.
     */
-    Transition(const numvec& probabilities){
+    Transition(const numvec& probabilities) : Transition() {
         for(auto k : util::lang::indices(probabilities))
             add_sample(k, probabilities[k], 0.0);
     }
@@ -175,11 +174,11 @@ public:
             return;
 
         prec_t sp = sum_probabilities();
-        if(sp != 0.0){
+        if(sp > tolerance){
             for(auto& p : probabilities)
                 p /= sp;
         }else{
-            throw invalid_argument("Probabilities sum to 0 and cannot be normalized.");
+            throw invalid_argument("Probabilities sum to 0 (or close) and cannot be normalized.");
         }
     }
 
@@ -324,7 +323,7 @@ public:
     const indvec& get_indices() const {return indices;};
 
     /** Index of the k-th state with non-zero probability */
-    long get_index(long k){assert(k>=0 && k < size()); return indices[k];}
+    long get_index(long k){assert(k>=0 && k < long(size())); return indices[k];}
 
     /**
     Returns list of positive probabilities for indexes returned by
@@ -341,7 +340,10 @@ public:
     void set_reward(long sampleid, prec_t reward) {rewards[sampleid] = reward;};
 
     /** Gets the reward for a transition to a particular state */
-    prec_t get_reward(long sampleid) const {assert(sampleid >= 0 && sampleid < size()); return rewards[sampleid];};
+    prec_t get_reward(long sampleid) const {
+        assert(sampleid >= 0 && sampleid < long(size())); 
+        return rewards[sampleid];
+    };
 
     /** Returns a json representation of transition probabilities
     \param outcomeid Includes also outcome id*/

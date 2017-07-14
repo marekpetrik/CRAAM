@@ -318,13 +318,13 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
     sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
 }
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){
@@ -339,11 +339,11 @@ BOOST_AUTO_TEST_CASE(test_return_of_implementable){
                 initial3(numvec({0.0, 0.0, 1.0}));
 
     MDPI mdpi1(mdp, observations, initial1);
-    BOOST_CHECK_CLOSE(mdpi1.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,2)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi1.total_return(gamma, 1e-5), 1.1*pow(gamma,2)/(1-gamma), 1e-3);
     MDPI mdpi2(mdp, observations, initial2);
-    BOOST_CHECK_CLOSE(mdpi2.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,1)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi2.total_return(gamma, 1e-5), 1.1*pow(gamma,1)/(1-gamma), 1e-3);
     MDPI mdpi3(mdp, observations, initial3);
-    BOOST_CHECK_CLOSE(mdpi3.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,0)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi3.total_return(gamma, 1e-5), 1.1*pow(gamma,0)/(1-gamma), 1e-3);
 }
 
 

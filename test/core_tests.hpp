@@ -551,7 +551,7 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
 // ***** Stochastic transition probabilities (L1) *********************************
 // ********************************************************************************
 
-void test_randomized_threshold_average(const RMDP& rmdp, double threshold, const numvec& desired){
+void test_randomized_threshold_average(const RMDP& rmdp, const numvec& desired){
 
     const prec_t gamma = 0.9;
     numvec value(0);
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp){
 
     // *** average ***
     // should be the same for the average
-    test_randomized_threshold_average(rmdp, 0.0, robust_0_0);
+    test_randomized_threshold_average(rmdp, robust_0_0);
 
 
     // *** OPTIMISTIC ******************
@@ -717,7 +717,7 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
     // *** average ***
     // should be the same for the average
-    test_randomized_threshold_average(rmdp, 0.0, robust_0_0);
+    test_randomized_threshold_average(rmdp, robust_0_0);
 
 
     // *** OPTIMISTIC ******************

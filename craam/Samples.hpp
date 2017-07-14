@@ -96,6 +96,9 @@ template <class State, class Action>
 class Samples {
 public:
 
+   Samples(): states_from(), actions(), states_to(), rewards(), weights(), runs(), steps(), initial() {};
+    
+
     /** Adds an initial state */
     void add_initial(const State& decstate){
         this->initial.push_back(decstate);
@@ -247,7 +250,8 @@ class SampleDiscretizerSI{
 public:
 
     /** Constructs new internal discrete samples*/
-    SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()){};
+    SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()),
+        action_map(), state_map() {};
 
     /** Adds samples to the discrete samples */
     void add_samples(const Samples<State,Action>& samples){
@@ -349,7 +353,8 @@ class SampleDiscretizerSD{
 public:
 
     /** Constructs new internal discrete samples*/
-    SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()){};
+    SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()), action_map(),
+                            action_count(), state_map() {};
 
     /** Adds samples to the discrete samples */
     void add_samples(const Samples<State,Action>& samples){
@@ -454,7 +459,7 @@ class SampledMDP{
 public:
 
     /** Constructs an empty MDP from discrete samples */
-    SampledMDP(): mdp(make_shared<MDP>()) {}
+    SampledMDP(): mdp(make_shared<MDP>()), initial(), state_action_weights() {}
 
 
     /**

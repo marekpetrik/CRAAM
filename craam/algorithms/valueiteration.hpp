@@ -50,7 +50,7 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
 
 /// worst outcome, threshold is ignored
 template<class T>
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T threshold){
+inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = min_element(begin(v), end(v)) - begin(v);
@@ -60,7 +60,7 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T threshold
 
 /// best outcome, threshold is ignored
 template<class T>
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T threshold){
+inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = max_element(begin(v), end(v)) - begin(v);
@@ -293,9 +293,9 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
    // this is the terminal state, return 0
     if(state.is_terminal()) return 0;
 
-    assert(actionid >= 0 && actionid < state.size());
+    assert(actionid >= 0 && actionid < long(state.size()));
 
-    if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+    if(actionid < 0 || actionid >= long(state.size())) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
     // cannot assume that the action is valid
@@ -321,7 +321,7 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
    // this is the terminal state, return 0
     if(state.is_terminal()) return make_pair(numvec(0),0);
 
-    assert(actionid >= 0 && actionid < state.size());
+    assert(actionid >= 0 && actionid < long(state.size()));
 
     if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
@@ -400,12 +400,7 @@ struct Solution {
     /// Empty solution for a problem with statecount states
     Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {};
 
-    /// Empty solution for a problem with statecount states
-    Solution(size_t statecount, numvec valuefunction, indvec policy):
-                valuefunction(move(valuefunction)),
-                policy(move(policy)),
-                residual(-1),iterations(-1) {};
-
+    /// Empty solution for a problem with a given value function and policy
     Solution(numvec valuefunction, indvec policy, prec_t residual = -1, long iterations = -1) :
         valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {};
 
@@ -431,10 +426,10 @@ struct RSolution : public Solution {
     /// Empty RSolution for a problem with statecount states
     RSolution(size_t statecount): Solution(statecount), natpolicy(statecount, numvec(0)) {};
 
-    /// Empty RSolution for a problem with statecount states
-    RSolution(size_t statecount, numvec valuefunction, indvec policy):
-            Solution(statecount, move(valuefunction), move(policy)),
-            natpolicy(statecount, numvec(0)) {};
+    /// Empty RSolution for a problem with policy and value function
+    RSolution(numvec valuefunction, indvec policy):
+            Solution(move(valuefunction), move(policy)),
+            natpolicy(this->valuefunction.size(), numvec(0)) {};
 
     RSolution(numvec valuefunction, indvec policy,
              vector<numvec> natpolicy, prec_t residual = -1, long iterations = -1) :
@@ -471,7 +466,7 @@ public:
     Solution new_solution(size_t statecount, numvec valuefunction) const {
         process_valuefunction(statecount, valuefunction);
         assert(valuefunction.size() == statecount);
-        Solution solution =  Solution(statecount,move(valuefunction), process_policy(statecount));
+        Solution solution =  Solution(move(valuefunction), process_policy(statecount));
         return solution;
     }
 
@@ -481,7 +476,7 @@ public:
     template<class SType>
     prec_t update_solution(Solution& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
-        assert(stateid < solution.policy.size());
+        assert(stateid < long(solution.policy.size()));
 
         prec_t newvalue;
         // check whether this state should only be evaluated
@@ -550,8 +545,7 @@ public:
             throw invalid_argument("Size of nature specification does not match the number of states.");
 
         process_valuefunction(statecount, valuefunction);
-        RSolution solution =  RSolution(statecount,move(valuefunction),
-                                process_policy(statecount));
+        RSolution solution =  RSolution(move(valuefunction), process_policy(statecount));
         return solution;
     }
 
@@ -562,7 +556,7 @@ public:
     prec_t update_solution(RSolution& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
 
-        prec_t newvalue;
+        prec_t newvalue = 0;
         // check whether this state should only be evaluated or also optimized
         if(policy.empty() || policy[stateid] < 0){    // optimizing
             tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) = value_max_state(state, valuefunction, discount, natspec[stateid]);
@@ -700,7 +694,7 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
         // update policies
         #pragma omp parallel for
-        for(auto s = 0l; s < (long) states.size(); s++){
+        for(auto s = 0l; s < long(states.size()); s++){
             prec_t newvalue = response.update_solution(solution, states[s], s, *sourcevalue, discount);
             residuals[s] = abs((*sourcevalue)[s] - newvalue);
             (*targetvalue)[s] = newvalue;

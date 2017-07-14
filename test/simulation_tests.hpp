@@ -22,8 +22,7 @@ using namespace util::lang;
 struct TestState{
     int index;
 
-    TestState(int i){
-        this->index = i;
+    TestState(int i) : index(i){
     };
 };
 
@@ -101,11 +100,11 @@ public:
         return make_pair((double) pos, nextpos);
     }
 
-    bool end_condition(const int state){
+    bool end_condition(const int){
         return false;
     }
 
-    int action(State state, long index) const{
+    int action(State , long index) const{
         return actions_list[index];
     }
 
@@ -241,7 +240,7 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
-    for(auto i = 0; i <  mdp->state_count(); i++){
+    for(size_t i = 0; i < mdp->state_count(); i++){
         if(mdp->get_state(i).action_count() > 0)
             BOOST_CHECK_EQUAL(mdp->get_state(i).action_count(), 2);
     }

@@ -165,15 +165,11 @@ public:
     /**
     Computes a return of an observation policy.
 
-    \param obspol Policy in terms of observations
     \param discount Discount factor
     \return Discounted return of the policy
     */
-    prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC) const{
-        indvec&& statepol = obspol2statepol(obspol);
-
+    prec_t total_return(prec_t discount, prec_t precision=SOLPREC) const{
         auto&& sol = mpi_jac(*mdp, discount, numvec(0), PolicyDeterministic(), MAXITER, precision);
-
         return sol.total_return(initial);
     }
 
@@ -356,7 +352,7 @@ public:
     robust MDP
      */
     MDPI_R(const shared_ptr<const MDP>& mdp, const indvec& state2observ, const Transition& initial) 
-        : MDPI(mdp, state2observ, initial),state2outcome(mdp->state_count(),-1){
+        : MDPI(mdp, state2observ, initial), robust_mdp(), state2outcome(mdp->state_count(),-1){
         initialize_robustmdp();
     }
 
@@ -365,7 +361,7 @@ public:
     robust MDP.
     */
     MDPI_R(const MDP& mdp, const indvec& state2observ, const Transition& initial)
-        : MDPI(mdp, state2observ, initial), state2outcome(mdp.state_count(),-1){
+        : MDPI(mdp, state2observ, initial), robust_mdp(), state2outcome(mdp.state_count(),-1){
         initialize_robustmdp();
     }
 

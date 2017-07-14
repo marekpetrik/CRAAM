@@ -1,3 +1,5 @@
+// compilation:
+// g++ -fopenmp -Wall -Weffc++ -pedantic -pedantic-errors  -I ../  --std=c++14 test.cpp -lboost_unit_test_framework
 
 #include <iostream>
 #include <sstream>

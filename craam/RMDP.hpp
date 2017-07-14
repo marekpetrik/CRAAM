@@ -199,7 +199,7 @@ public:
     GRMDP(long state_count) : states(state_count){};
 
     /** Constructs an empty RMDP. */
-    GRMDP(){};
+    GRMDP() : states() {};
 
     /**
     Assures that the MDP state exists and if it does not, then it is created.
