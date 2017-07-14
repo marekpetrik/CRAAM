@@ -491,3 +491,54 @@ BOOST_AUTO_TEST_CASE(test_value_function_rmdpl1){
 }
 
 
+// ********************************************************************************
+// ***** String output ************************************************************
+// ********************************************************************************
+
+
+
+BOOST_AUTO_TEST_CASE(test_string_mdp){
+    MDP rmdp;
+    add_transition(rmdp,0,0,0,0,1,1);
+    add_transition(rmdp,1,0,0,0,1,1);
+
+    auto s = rmdp.to_string();
+    BOOST_CHECK_EQUAL(s.length(), 42);
+}
+
+BOOST_AUTO_TEST_CASE(test_string_rmdpd){
+    RMDP_D rmdp;
+
+    add_transition(rmdp,0,0,0,0,1,1);
+    add_transition(rmdp,0,0,1,0,1,2);
+
+    add_transition(rmdp,1,0,0,0,1,1);
+    add_transition(rmdp,1,0,1,0,1,2);
+
+    auto s = rmdp.to_string();
+    BOOST_CHECK_EQUAL(s.length(), 32);
+}
+
+
+BOOST_AUTO_TEST_CASE(test_string_rmdpl1){
+    RMDP_L1 rmdp;
+
+    numvec dist{0.5,0.5};
+
+    add_transition(rmdp,0,0,0,0,1,1);
+    add_transition(rmdp,0,0,1,0,1,2);
+    //rmdp.get_state(0).get_action(0).set_distribution(dist);
+    //rmdp.get_state(0).get_action(0).set_threshold(2);
+
+    add_transition(rmdp,1,0,0,0,1,1);
+    add_transition(rmdp,1,0,1,0,1,2);
+    //rmdp.get_state(1).get_action(0).set_distribution(dist);
+    //rmdp.get_state(1).get_action(0).set_threshold(2);
+
+    set_outcome_thresholds(rmdp, 2);
+    set_uniform_outcome_dst(rmdp);
+
+    auto s = rmdp.to_string();
+    BOOST_CHECK_EQUAL(s.length(), 40);
+}
+
