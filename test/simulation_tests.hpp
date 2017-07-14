@@ -18,23 +18,6 @@ using namespace craam::algorithms;
 using namespace util::lang;
 
 
-#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
-
-#define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
-    using std::distance; \
-    using std::begin; \
-    using std::end; \
-    auto a = begin(aa), ae = end(aa); \
-    auto b = begin(bb); \
-    BOOST_REQUIRE_EQUAL(distance(a, ae), distance(b, end(bb))); \
-    for(; a != ae; ++a, ++b) { \
-        BOOST_CHECK_CLOSE(*a, *b, tolerance); \
-    } \
-}
-
-//#define BOOST_TEST_MODULE MainModule
-#include <boost/test/unit_test.hpp>
 
 struct TestState{
     int index;
@@ -79,6 +62,7 @@ BOOST_AUTO_TEST_CASE(basic_simulation) {
     auto samples = simulate<TestSim>(sim,test_policy,10,5);
     BOOST_CHECK_EQUAL(samples.size(), 50);
 }
+
 
 
 /**
@@ -150,6 +134,7 @@ namespace std{
         };
     };
 }
+
 
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);

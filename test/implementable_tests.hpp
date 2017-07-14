@@ -17,25 +17,6 @@ using namespace craam::impl;
 using namespace util::lang;
 
 
-#define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
-    using std::distance; \
-    using std::begin; \
-    using std::end; \
-    auto a = begin(aa), ae = end(aa); \
-    auto b = begin(bb); \
-    BOOST_REQUIRE_EQUAL(distance(a, ae), distance(b, end(bb))); \
-    for(; a != ae; ++a, ++b) { \
-        BOOST_CHECK_CLOSE(*a, *b, tolerance); \
-    } \
-}
-
-#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
-
-//#define BOOST_TEST_MODULE MainModule
-#include <boost/test/unit_test.hpp>
-
-
 /**
 Creates a simple chain problem.
 Actions:   0 - left
@@ -261,80 +242,6 @@ BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
     BOOST_CHECK_EQUAL(string13, string23);
 }
 
-/**
-A simple simulator class. The state represents a position in a chain
-and actions move it up and down. The reward is equal to the position.
-
-Representation
-~~~~~~~~~~~~~~
-- Decision state: position (int)
-- Action: change (int)
-- Expectation state: position, action (int,int)
-*/
-class Counter{
-private:
-    default_random_engine gen;
-    bernoulli_distribution d;
-    const vector<int> actions_list = {1,-1};
-    const int initstate;
-
-public:
-    typedef int State;
-    typedef int Action;
-
-    /**
-    Define the success of each action
-    \param success The probability that the action is actually applied
-    */
-    Counter(double success, int initstate, random_device::result_type seed = random_device{}())
-        : gen(seed), d(success), initstate(initstate) {};
-
-    int init_state() const {
-        return initstate;
-    }
-
-    pair<double,int> transition(State pos, Action act) {
-
-        int nextpos = d(gen) ? pos + act : pos;
-        return make_pair((double) pos, nextpos);
-    }
-
-    bool end_condition(const State& state){
-        return false;
-    }
-
-    size_t action_count(State) const{
-        return actions_list.size();
-    }
-
-    Action action(State,long index) const{
-        return actions_list[index];
-    }
-
-};
-
-/** A counter that terminates at either end as defined by the end state */
-class CounterTerminal : public Counter {
-public:
-    int endstate;
-
-    CounterTerminal(double success, int initstate, int endstate, random_device::result_type seed = random_device{}())
-        : Counter(success, initstate, seed), endstate(endstate) {};
-
-    bool end_condition(const int state){
-        return (abs(state) >= endstate);
-    }
-};
-// Hash function for the Counter / CounterTerminal EState above
-namespace std{
-    template<> struct hash<pair<int,int>>{
-        size_t operator()(pair<int,int> const& s) const{
-            boost::hash<pair<int,int>> h;
-            return h(s);
-        };
-    };
-}
-
 using namespace craam::msen;
 
 /*
@@ -442,3 +349,4 @@ BOOST_AUTO_TEST_CASE(test_return_of_implementable){
 
 // TODO: make sure there is a test that checks that the return of the implementable policy with
 // the true weights has the same return as the true MDP.
+
