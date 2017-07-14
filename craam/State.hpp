@@ -44,11 +44,11 @@ public:
     /** Number of actions */
     size_t size() const { return action_count();};
 
-    /** 
+    /**
     Creates an action given by actionid if it does not exists.
-    Otherwise returns the existing one. 
-    
-    All newly created actions are invalid (action.get_valid() = false) and are 
+    Otherwise returns the existing one.
+
+    All newly created actions are invalid (action.get_valid() = false) and are
     skipped when computing the state value. Adding transitions to an action
     will make it valid.
     */
@@ -110,29 +110,33 @@ public:
 
     /** Returns the mean reward following the action (and outcome). */
     prec_t mean_reward(long actionid, numvec nataction) const{
-        return get_action(actionid).mean_reward(nataction);
+        if(is_terminal()) return 0;
+        else return get_action(actionid).mean_reward(nataction);
     }
 
     /** Returns the mean reward following the action. */
     prec_t mean_reward(long actionid) const{
-        return get_action(actionid).mean_reward();
+        if(is_terminal()) return 0;
+        else return get_action(actionid).mean_reward(); 
     }
 
-    /** Returns the mean transition probabilities following the action and outcome. 
+    /** Returns the mean transition probabilities following the action and outcome.
     This class assumes a deterministic policy of the decision maker and
     a randomized policy of nature.
-    
-    \param action Deterministic action of the decision maker 
+
+    \param action Deterministic action of the decision maker
     \param nataction Randomized action of nature */
     Transition mean_transition(long action, numvec nataction) const{
-        return get_action(action).mean_transition(nataction);
+        if(is_terminal()) return Transition();
+        else return get_action(action).mean_transition(nataction);
     }
 
-    /** Returns the mean transition probabilities following the action and outcome. 
-    
+    /** Returns the mean transition probabilities following the action and outcome.
+
     \param action Deterministic action of decision maker */
     Transition mean_transition(long action) const{
-        return get_action(action).mean_transition();
+        if(is_terminal()) return Transition();
+        else return get_action(action).mean_transition();
     }
 
     /** Returns json representation of the state
@@ -169,13 +173,13 @@ namespace internal{
     using namespace craam;
 
     /// checks state and policy with a policy of nature
-    template<class SType> 
+    template<class SType>
     bool is_action_correct(const SType& state, long stateid, const std::pair<indvec,vector<numvec>>& policies){
         return state.is_action_correct(policies.first[stateid], policies.second[stateid]);
     }
-    
+
     /// checks state that does not require nature
-    template<class SType> 
+    template<class SType>
     bool is_action_correct(const SType& state, long stateid, const indvec& policy){
         return state.is_action_correct(policy[stateid]);
     }

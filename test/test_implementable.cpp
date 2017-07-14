@@ -1,11 +1,10 @@
-#include "RMDP.hpp"
-#include "ImMDP.hpp"
-#include "Transition.hpp"
-#include "Simulation.hpp"
-#include "Samples.hpp"
-#include "modeltools.hpp"
+#include "craam/ImMDP.hpp"
+#include "craam/Simulation.hpp"
+#include "craam/Samples.hpp"
+#include "craam/modeltools.hpp"
+#include "craam/algorithms/valueiteration.hpp"
 
-#include "cpp11-range-master/range.hpp"
+#include "craam/cpp11-range-master/range.hpp"
 #include <boost/functional/hash.hpp>
 #include <iostream>
 #include <iterator>
@@ -13,6 +12,7 @@
 
 using namespace std;
 using namespace craam;
+using namespace craam::algorithms;
 using namespace craam::impl;
 using namespace util::lang;
 
@@ -101,10 +101,10 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
     set_outcome_thresholds(rmdp, 2.0);
-    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp, 0.9, iv, uniform_nature(rmdp, optimistic_unbounded, 0.0), 100, 0.0, 10, 0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
-    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0), 100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }
 
@@ -150,10 +150,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     vector<prec_t> target_v_rob{12.0,12.0};
 
     BOOST_TEST_CHECKPOINT("Solving RMDP");
-    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,optimistic_unbounded, 0.0),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 
-    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(sr.valuefunction, target_v_rob, 1e-3);
 }
 
@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     auto mdp = smdp.get_mdp();
     auto&& initial = smdp.get_initial();
 
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
+    auto&& sol = mpi_jac(*mdp,0.9);
 
     //cout << "Optimal policy: " << endl; print_vector(sol.policy); cout << endl;
 
@@ -408,15 +408,13 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     isol = mdpi.solve_reweighted(1, 0.9, randompolicy);
 
-    auto sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
-                    indvec(mdp->state_count(), 0));
+    auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
     BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
-    sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
-                    indvec(mdp->state_count(), 0));
+    sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
     BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);

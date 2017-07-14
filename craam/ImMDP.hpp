@@ -3,12 +3,13 @@
 #include "RMDP.hpp"
 #include "Transition.hpp"
 #include "modeltools.hpp"
+#include "algorithms/valueiteration.hpp"
+#include "algorithms/occupancies.hpp"
 
 #include <vector>
 #include <memory>
 #include <random>
 #include <algorithm>
-
 #include <iostream>
 #include <iterator>
 
@@ -20,11 +21,13 @@ namespace impl{
 
 using namespace std;
 using namespace util::lang;
+using namespace craam::algorithms;
 
 template<typename T>
 T max_value(vector<T> x){
     return (x.size() > 0) ? *max_element(x.begin(), x.end()) : -1;
 }
+
 /**
 Represents an MDP with implementability constraints.
 
@@ -168,9 +171,8 @@ public:
     */
     prec_t total_return(const indvec& obspol, prec_t discount, prec_t precision=SOLPREC) const{
         indvec&& statepol = obspol2statepol(obspol);
-        indvec natpolicy(mdp->state_count(), (size_t) 0);
 
-        auto&& sol = mdp->vi_jac_fix(discount, statepol, natpolicy, numvec(0), MAXITER, precision);
+        auto&& sol = mpi_jac(*mdp, discount, numvec(0), PolicyDeterministic(), MAXITER, precision);
 
         return sol.total_return(initial);
     }
@@ -367,7 +369,7 @@ public:
         initialize_robustmdp();
     }
 
-    const RMDP_L1& get_robust_mdp() const {
+    const RMDP& get_robust_mdp() const {
         /** Returns the internal robust MDP representation  */
         return robust_mdp;
     };
@@ -429,9 +431,6 @@ public:
     \returns Policy for observations (an index of each action for each observation)
     */
     indvec solve_reweighted(long iterations, prec_t discount, const indvec& initobspol = indvec(0)){
-        // the nature policy is simply all zeros
-        const indvec nature(state_count(), 0);
-
         if(initobspol.size() > 0 && initobspol.size() != obs_count()){
             throw invalid_argument("Initial policy must be defined for all observations.");
         }
@@ -450,11 +449,11 @@ public:
             (void) iter; // to remove the warning
 
             // compute state distribution
-            numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+            numvec importanceweights = occfreq_mat(*mdp, initial, discount, statepol);
             // update importance weights
             update_importance_weights(importanceweights);
             // compute solution of the robust MDP with the new weights
-            auto&& s = robust_mdp.mpi_jac(Uncertainty::Average, discount);
+            auto&& s = mpi_jac(robust_mdp, discount);
 
             // update the policy for the underlying states
             obspol = s.policy;
@@ -482,9 +481,6 @@ public:
     */
     indvec solve_robust(long iterations, prec_t threshold, prec_t discount, const indvec& initobspol = indvec(0)){
     
-        // the nature policy is simply all zeros
-        const indvec nature(state_count(), 0);
-
         if(initobspol.size() > 0 && initobspol.size() != obs_count()){
             throw invalid_argument("Initial policy must be defined for all observations.");
         }
@@ -502,13 +498,13 @@ public:
             (void) iter; // to remove the warning
 
             // compute state distribution
-            numvec&& importanceweights = mdp->ofreq_mat(initial, discount, statepol, nature);
+            numvec&& importanceweights = occfreq_mat(*mdp, initial, discount, statepol);
 
             // update importance weights
             update_importance_weights(importanceweights);
 
             // compute solution of the robust MDP with the new weights
-            auto&& s = robust_mdp.mpi_jac(Uncertainty::Robust,discount);
+            auto&& s = mpi_jac(robust_mdp, discount, numvec(0), uniform_nature(robust_mdp, robust_l1, threshold));
 
             // update the policy for the underlying states
             obspol = s.policy;
@@ -537,7 +533,7 @@ public:
 
 protected:
     /** Robust representation of the MDPI */
-    RMDP_L1 robust_mdp;
+    RMDP robust_mdp;
     /** Maps the index of the mdp state to the index of the observation
     within the state corresponding to the observation (multiple states per observation) */
     indvec state2outcome;

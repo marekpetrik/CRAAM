@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     BOOST_CHECK_EQUAL_COLLECTIONS(policy.begin(), policy.end(), policytarget.begin(), policytarget.end());
     auto solution3 = mpi_jac(*m, 0.9, numvec(0), PolicyDeterministic(policy));
 
-    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-3);
+    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-2);
     //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
 
     ModelDeterministicPolicy dp(ms, policy);
