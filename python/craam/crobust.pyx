@@ -747,8 +747,6 @@ cdef class DiscreteSamples:
         """ Returns a list of all step numbers (one for every sample)"""
         return dereference(self._thisptr).get_steps()
 
-
-
 cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
 
     cdef cppclass ModelSimulator:
@@ -1639,8 +1637,6 @@ cdef class RMDP:
         Returns a json representation of the RMDP. Use json.tool to pretty print.
         """
         return dereference(self.thisptr).to_json().decode('UTF-8')
-
-
 
 # ***************************************************************************
 # *******    Implementable    *******

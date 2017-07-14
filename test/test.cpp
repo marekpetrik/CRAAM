@@ -1,6 +1,6 @@
 // compilation:
-// g++ -fopenmp -Wall -Weffc++ -pedantic -pedantic-errors  -I ../  --std=c++14 test.cpp -lboost_unit_test_framework
-
+// g++ -fopenmp -Wnon-virtual-dtor -Wunreachable-code -Wfloat-equal -Wextra -Wall -Weffc++ -pedantic -pedantic-errors  -I ../  --std=c++14 test.cpp -lboost_unit_test_framework
+// clang++ -fopenmp -Wnon-virtual-dtor -Wunreachable-code -Wfloat-equal -Wextra -Wall -Weffc++ -pedantic -pedantic-errors  -I ../  --std=c++14 test.cpp -lboost_unit_test_framework
 #include <iostream>
 #include <sstream>
 #include <cmath>
