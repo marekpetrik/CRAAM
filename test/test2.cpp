@@ -753,3 +753,130 @@ BOOST_AUTO_TEST_CASE(test_randomized_mdp_with_terminal_state){
 
 }
 
+// ********************************************************************************
+//          Test adding outcomes to a weighted action
+// ********************************************************************************
+
+BOOST_AUTO_TEST_CASE(test_create_outcome){
+
+    WeightedOutcomeAction a;
+    numvec desired(5,0.2);  // this is the correct distribution with 5 outcomes
+
+    a.create_outcome(1);
+    //cout << a.get_distribution() << endl;
+    a.create_outcome(2);
+    //cout << a.get_distribution() << endl;
+    a.create_outcome(0);
+    //cout << a.get_distribution() << endl;
+    a.create_outcome(4);
+
+    auto d1 = a.get_distribution();
+    //cout << d1 << endl;
+    CHECK_CLOSE_COLLECTION(d1, desired, 0.0001);
+    BOOST_CHECK(a.is_distribution_normalized());
+
+    a.normalize_distribution();
+
+    // make sure that normalization works too
+    auto d2 = a.get_distribution();
+    CHECK_CLOSE_COLLECTION(d2, desired, 0.0001);
+    BOOST_CHECK(a.is_distribution_normalized());
+
+}
+
+// ********************************************************************************
+// ***** Test CSV *****************************************************************
+// ********************************************************************************
+
+
+BOOST_AUTO_TEST_CASE(test_parameter_read_write){
+
+    RMDP rmdp;
+
+    // define the MDP representation
+    // format: idstatefrom, idaction, idoutcome, idstateto, probability, reward
+    string string_representation{
+        "1,0,0,5,1.0,20.0 \
+         2,0,0,5,1.0,30.0 \
+         3,0,0,5,1.0,10.0 \
+         4,0,0,5,1.0,40.0 \
+         4,1,0,5,1.0,41.0 \
+         0,0,0,1,1.0,0.0 \
+         0,0,1,2,1.0,0.0 \
+         0,1,0,3,1.0,0.0 \
+         0,1,0,4,1.0,2.0 \
+         0,1,1,4,1.0,0.0\n"};
+
+    stringstream store(string_representation);
+
+    store.seekg(0);
+    from_csv(rmdp,store,false);
+
+    BOOST_CHECK_EQUAL(rmdp.get_state(3).get_action(0).get_outcome(0).get_reward(0), 10.0);
+    rmdp.get_state(3).get_action(0).get_outcome(0).set_reward(0,15.1);
+    BOOST_CHECK_EQUAL(rmdp.get_state(3).get_action(0).get_outcome(0).get_reward(0), 15.1);
+
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(1).get_outcome(0).get_reward(1), 2.0);
+    rmdp.get_state(0).get_action(1).get_outcome(0).set_reward(1,19.1);
+    BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(1).get_outcome(0).get_reward(1), 19.1);
+
+    rmdp.get_state(3).get_action(0).set_threshold(1.0);
+    BOOST_CHECK_EQUAL(rmdp.get_state(3).get_action(0).get_threshold(), 1.0);
+}
+
+
+// ********************************************************************************
+//  Test robustification 
+// ********************************************************************************
+
+
+MDP create_test_mdp_robustify(){
+    MDP mdp(4);
+
+    // nonrobust, single action, just to check basic robustification
+    add_transition(mdp,0,0,1,0.5,1.0);
+    add_transition(mdp,0,0,2,0.5,2.0);
+    // probability of transition to state 3 is 0
+    //add_transition<Model>(mdp,0,0,2,0.0,1.1);
+    // states 1-4 are terminal (value 0)
+
+    return mdp;
+}
+
+BOOST_AUTO_TEST_CASE(test_robustification){
+    MDP mdp = create_test_mdp_robustify();
+    
+    // no transition to zero probability states
+    RMDP rmdp_nz = robustify(mdp, false);
+    // allow transitions to zero probability states
+    RMDP rmdp_z = robustify(mdp, true);
+
+    // **** Test ordinary
+    BOOST_CHECK_CLOSE(mpi_jac(mdp, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
+    BOOST_CHECK_CLOSE(mpi_jac(rmdp_nz, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
+    BOOST_CHECK_CLOSE(mpi_jac(rmdp_z, 0.9).valuefunction[0],
+                    (1.0 + 2.0) / 2.0, 1e-4);
+    
+    //cout << "MDP Solution " <<  << endl;
+    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    
+    set_outcome_thresholds(rmdp_nz, 0.5);
+    set_outcome_thresholds(rmdp_z, 0.5);
+
+    // **** Test robust
+
+    // robust MDP should have the same result as a robustified RMDP
+    BOOST_CHECK_CLOSE(mpi_jac(mdp, 0.9, numvec(0), uniform_nature(rmdp_z,robust_l1,0.5)).valuefunction[0],
+                    (1.0 * (0.5 + 0.25) + 2.0 * (0.5 - 0.25)), 1e-4);
+    BOOST_CHECK_CLOSE(mpi_jac(rmdp_nz, 0.9, numvec(0), uniform_nature(rmdp_z,robust_l1,0.5)).valuefunction[0],
+                    (1.0 * (0.5 + 0.25) + 2.0 * (0.5 - 0.25)), 1e-4);
+    BOOST_CHECK_CLOSE(mpi_jac(rmdp_z, 0.9, numvec(0), uniform_nature(rmdp_z,robust_l1,0.5) ).valuefunction[0],
+                    (1.0 * (0.5) + 2.0 * (0.5 - 0.25) + 0.0 * 0.25), 1e-4);
+
+    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
+}
+
