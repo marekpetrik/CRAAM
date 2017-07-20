@@ -2,16 +2,13 @@
 
 #include "../RMDP.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/lu.hpp>
-
+#include <Eigen/Dense>
 #include "../cpp11-range-master/range.hpp"
 
 namespace craam{namespace algorithms{
 
 using namespace std;
-using namespace boost::numeric;
+using namespace Eigen;
 
 /// Internal helper functions
 namespace internal{
@@ -56,10 +53,9 @@ Constructs the transition (or its transpose) matrix for the policy.
         This is useful for computing occupancy frequencies
 */
 template<typename SType, typename Policies> 
-inline ublas::matrix<prec_t>
-transition_mat(const GRMDP<SType>& rmdp, const Policies& policies, bool transpose = false) {
+inline MatrixXd transition_mat(const GRMDP<SType>& rmdp, const Policies& policies, bool transpose = false) {
     const size_t n = rmdp.state_count();
-    ublas::matrix<prec_t> result = ublas::zero_matrix<prec_t>(n,n);
+    MatrixXd result = MatrixXd::Zero(n,n);
 
     const auto& states = rmdp.get_states();
     #pragma omp parallel for
@@ -130,28 +126,19 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     const auto n = rmdp.state_count();
 
     // initial distribution
-    auto&& initial_svec = init.probabilities_vector(n);
-    ublas::vector<prec_t> initial_vec(n);
+    const numvec& ivec = init.probabilities_vector(n);
+    const VectorXd initial_vec = Map<const VectorXd,Unaligned>(ivec.data(),ivec.size());
 
-    // TODO: this is a wasteful copy operation
-    copy(initial_svec.begin(), initial_svec.end(), initial_vec.data().begin());
-
-    // get transition matrix
-    ublas::matrix<prec_t> t_mat = transition_mat(rmdp, policies,true);
-
-    // construct main matrix
-    t_mat *= -discount;
-    t_mat += ublas::identity_matrix<prec_t>(n);
+    // get transition matrix and construct (I - gamma * P^T)
+    MatrixXd t_mat = MatrixXd::Identity(n,n)  - discount * transition_mat(rmdp, policies, true);
 
     // solve set of linear equations
-    ublas::permutation_matrix<prec_t> P(n);
-    ublas::lu_factorize(t_mat,P);
-    ublas::lu_substitute(t_mat,P,initial_vec);
+    VectorXd solution = HouseholderQR<MatrixXd>(t_mat).solve(initial_vec);
 
-    // copy the solution back to a vector
-    copy(initial_vec.begin(), initial_vec.end(), initial_svec.begin());
+    numvec result(n,0);
+    Map<VectorXd,Unaligned>(result.data(),result.size()) = solution;
 
-    return initial_svec;
+    return result;
 }
 
 }}
