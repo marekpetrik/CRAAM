@@ -6,7 +6,9 @@
 #include <numeric>
 #include <stdexcept>
 #include <utility>
+#include <string>
 #include <assert.h>
+
 
 #ifdef IS_DEBUG
 // TODO: this is DEBUG ONLY
@@ -35,9 +37,25 @@ using ind_vec_scal_t = tuple<prec_t, numvec, prec_t> ;
 
 /** Default solution precision */
 constexpr prec_t SOLPREC = 0.0001;
+
 /** Default number of iterations */
 constexpr unsigned long MAXITER = 100000;
 
+/// Numerical threshold
+constexpr prec_t THRESHOLD = 1e-5;
+
+
+#ifdef IS_DEBUG
+/** This is a useful functionality for debugging.  */
+template<class T>
+std::ostream & operator<<(std::ostream &os, const std::vector<T>& vec)
+{
+    for(const auto& p : vec){
+        cout << p << " ";
+    }
+    return os;
+}
+#endif
 
 
 /** \brief Sort indices by values in ascending order
@@ -90,7 +108,8 @@ This function does not check whether the probability distribution sums to 1.
 **/
 inline 
 pair<numvec,prec_t> worstcase_l1(numvec const& z, numvec const& q, prec_t t){
-    assert(*min_element(q.begin(), q.end()) >= 0 && *max_element(q.begin(), q.end()) <= 1);
+    assert(*min_element(q.cbegin(), q.cend()) >= - THRESHOLD);
+    assert(*max_element(q.cbegin(), q.cend()) <= 1 + THRESHOLD);
     assert(z.size() > 0);
     assert(t >= 0.0 && t <= 2.0);
     assert(z.size() == q.size());
@@ -119,16 +138,5 @@ pair<numvec,prec_t> worstcase_l1(numvec const& z, numvec const& q, prec_t t){
 }
 
 
-#ifdef IS_DEBUG
-/** This is a useful functionality for debugging.  */
-template<class T>
-std::ostream & operator<<(std::ostream &os, const std::vector<T>& vec)
-{
-    for(const auto& p : vec){
-        cout << p << " ";
-    }
-    return os;
-}
-#endif
 
 }

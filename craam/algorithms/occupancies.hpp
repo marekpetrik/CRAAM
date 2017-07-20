@@ -133,10 +133,8 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     MatrixXd t_mat = MatrixXd::Identity(n,n)  - discount * transition_mat(rmdp, policies, true);
 
     // solve set of linear equations
-    VectorXd solution = HouseholderQR<MatrixXd>(t_mat).solve(initial_vec);
-
     numvec result(n,0);
-    Map<VectorXd,Unaligned>(result.data(),result.size()) = solution;
+    Map<VectorXd,Unaligned>(result.data(),result.size()) = HouseholderQR<MatrixXd>(t_mat).solve(initial_vec);
 
     return result;
 }
