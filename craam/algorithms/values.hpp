@@ -323,7 +323,7 @@ protected:
 // **************************************************************************
 
 /**
-Gauss-Seidel variant of value iteration (not parallelized).
+Gauss-Seidel variant of value iteration (not parallelized). See solve_vi for a simplified interface.
 
 This function is suitable for computing the value function of a finite state MDP. If
 the states are ordered correctly, one iteration is enough to compute the optimal value function.
@@ -376,8 +376,10 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
     return solution;
 }
 
+
 /**
-Modified policy iteration using Jacobi value iteration in the inner loop.
+Modified policy iteration using Jacobi value iteration in the inner loop. See solve_mpi for 
+a simplified interface.
 This method generalizes modified policy iteration to robust MDPs.
 In the value iteration step, both the action *and* the outcome are fixed.
 
@@ -474,5 +476,66 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 // **************************************************************************
 // Convenient interface methods
 // **************************************************************************
+
+
+/** 
+Gauss-Seidel variant of value iteration (not parallelized).
+
+This function is suitable for computing the value function of a finite state MDP. If
+the states are ordered correctly, one iteration is enough to compute the optimal value function.
+Since the value function is updated from the last state to the first one, the states should be ordered
+in the temporal order.
+
+\param mdp The MDP to solve
+\param discount Discount factor.
+\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use
+                    all zeros when not provided. Ignored when size is 0.
+\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param iterations Maximal number of iterations to run
+\param maxresidual Stop when the maximal residual falls below this value.
+
+
+\returns Solution that can be used to compute the total return, or the optimal policy.
+*/
+template<class SType>
+inline auto solve_vi(const GRMDP<SType>& mdp, prec_t discount,
+                        numvec valuefunction=numvec(0), const indvec& policy = numvec(0),
+                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
+                        {
+   return vi_gs<SType, PolicyDeterministic>(mdp, discount, move(valuefunction), 
+            PolicyDeterministic(policy), iterations, maxresidual);
+}
+
+
+/**
+Modified policy iteration using Jacobi value iteration in the inner loop.
+This method generalizes modified policy iteration to robust MDPs.
+In the value iteration step, both the action *and* the outcome are fixed.
+
+Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+\param type Type of realization of the uncertainty
+\param discount Discount factor
+\param valuefunction Initial value function
+\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param iterations_pi Maximal number of policy iteration steps
+\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+\param iterations_vi Maximal number of inner loop value iterations
+\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+            This value should be smaller than maxresidual_pi
+\param print_progress Whether to report on progress during the computation
+\return Computed (approximate) solution
+ */
+template<class SType>
+inline auto solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
+
+    return mpi_jac<SType, PolicyDeterministic>(mdp, discount, valuefunction, PolicyDeterministic(policy), 
+                    iterations_pi, maxresidual_pi,
+                     iterations_vi, maxresidual_vi, 
+                     print_progress);
+}
 
 }}
