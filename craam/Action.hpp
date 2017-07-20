@@ -27,18 +27,11 @@ using namespace util::lang;
 /**
 Action in a regular MDP. There is no uncertainty and
 the action contains only a single outcome.
-
-An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid.
-Actions are constructed as valid by default.
 */
 class RegularAction{
 protected:
     /// Transition probabilities
     Transition outcome;
-
-    /// Invalid actions are skipped during computation
-    bool valid = true;
 
 public:
 
@@ -70,7 +63,7 @@ public:
     Transition& get_outcome() {return outcome;};
 
     /**
-    Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
+    Adds a sufficient number of empty outcomes for the outcomeid to be a correct identifier.
     This method does nothing in this action.
     */
     Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;}
@@ -81,17 +74,6 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;};
 
-    /**
-    Returns whether this is a valid action (or only a placeholder).
-    Invalid actions cannot be taken and may result from incomplete
-    sampling of a domain. They are skipped in the computation of value function.
-
-    The action is considered valid when there are some transitions
-    */
-    bool is_valid() const{return valid;};
-
-    /// Sets whether the action is valid (see is_valid)
-    void set_validity(bool newvalidity){valid = newvalidity;};
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
@@ -128,8 +110,6 @@ public:
         string result{"{"};
         result += "\"actionid\" : ";
         result += std::to_string(actionid);
-        result += ",\"valid\" :";
-        result += std::to_string(valid);
         result += ",\"transition\" : ";
         result += outcome.to_json(-1);
         result += "}";
@@ -144,10 +124,6 @@ public:
 
 /**
 A class that manages creation and access to outcomes to be used by actions.
-
-An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid.
-Actions are constructed as valid by default.
 */
 class OutcomeManagement{
 
@@ -155,8 +131,6 @@ protected:
     /** List of possible outcomes */
     vector<Transition> outcomes;
 
-    /// Invalid actions are skipped during computation
-    bool valid = true;
 public:
     /** Empty list of outcomes */
     OutcomeManagement() : outcomes() {};
@@ -170,6 +144,8 @@ public:
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
     This method is virtual to make overloading safer.
+
+    Makes the action valid.
     */
     virtual Transition& create_outcome(long outcomeid){
         if(outcomeid < 0)
@@ -226,7 +202,7 @@ public:
             t.normalize();
     }
 
-    /** Whether the provided outcome is valid */
+    /** Whether the provided outcomeid is correct */
     bool is_nature_correct(numvec oid) const
         {return (oid.size() == outcomes.size());};
 
@@ -234,18 +210,6 @@ public:
     void to_string(string& result) const{
         result.append(std::to_string(get_outcomes().size()));
     }
-
-    /**
-    Returns whether this is a valid action (or only a placeholder).
-    Invalid actions cannot be taken and may result from incomplete
-    sampling of a domain. They are skipped in the computation of value function.
-
-    The action is considered valid when there are some transitions
-    */
-    bool is_valid() const{return valid;};
-
-    /// Sets whether the action is valid (see is_valid)
-    void set_validity(bool newvalidity){valid = newvalidity;};
 };
 
 
@@ -266,10 +230,6 @@ See L1Action for an example of an instance of this template class.
 The distribution d over outcomes is uniform by default:
 see WeightedOutcomeAction::create_outcome.
 
-An action can be invalid, in which case it is skipped during any computations
-and cannot be used during a simulation. See is_valid.
-
-Actions are constructed as valid by default.
 */
 class WeightedOutcomeAction : public OutcomeManagement{
 
@@ -352,6 +312,7 @@ public:
 
     Note that this operation may leave the action in an invalid state in
     which the nominal outcome distribution does not sum to 1.
+    
 
     \param outcomeid Index of outcome to create
     \param weight New nominal weight for the outcome.
@@ -486,8 +447,6 @@ public:
         string result{"{"};
         result += "\"actionid\" : ";
         result += std::to_string(actionid);
-        result += ",\"valid\" :";
-        result += std::to_string(valid);
         result += ",\"threshold\" : ";
         result += std::to_string(threshold);
         result += ",\"outcomes\" : [";

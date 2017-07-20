@@ -235,7 +235,7 @@ inline pair<long,prec_t> value_max_state(const SAState<AType>& state, const numv
         auto const& action = state[i];
 
         // skip invalid state.get_actions()
-        if(!action.is_valid()) continue;
+        if(!state.is_valid(i)) continue;
 
         auto value = value_action(action, valuefunction, discount);
         if(value >= maxvalue){
@@ -267,11 +267,12 @@ inline prec_t value_fix_state(const SAState<AType>& state, numvec const& valuefu
     if(state.is_terminal())
         return 0;
     if(actionid < 0 || actionid >= (long) state.get_actions().size())
-        throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+        throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + 
+                            to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
     // cannot assume invalid state.get_actions()
-    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+    if(!state.is_valid(actionid)) throw invalid_argument("Cannot take an invalid action");
 
     return value_action(action, valuefunction, discount);
 }
@@ -295,11 +296,12 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
 
     assert(actionid >= 0 && actionid < long(state.size()));
 
-    if(actionid < 0 || actionid >= long(state.size())) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+    if(actionid < 0 || actionid >= long(state.size())) throw range_error("invalid actionid: " 
+        + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
     // cannot assume that the action is valid
-    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+    if(!state.is_valid(actionid)) throw invalid_argument("Cannot take an invalid action");
 
     return value_action(action, valuefunction, discount, distribution);
 }
@@ -327,7 +329,7 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
 
     const auto& action = state[actionid];
     // cannot assume that the action is valid
-    if(!action.is_valid()) throw invalid_argument("Cannot take an invalid action");
+    if(!state.is_valid(actionid)) throw invalid_argument("Cannot take an invalid action");
 
     return value_action(action, valuefunction, discount, nature);
 }
@@ -360,10 +362,10 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
     numvec result_outcome;
 
     for(size_t i = 0; i < state.get_actions().size(); i++){
-        const auto& action = state.get_actions()[i];
+        const auto& action = state[i];
 
         // skip invalid state.get_actions()
-        if(!action.is_valid()) continue;
+        if(!state.is_valid(i)) continue;
 
         auto value = value_action(action, valuefunction, discount, nature);
         if(value.second > maxvalue){

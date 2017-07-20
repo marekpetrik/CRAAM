@@ -585,14 +585,9 @@ public:
         for(size_t si : indices(*mdp)){
             auto& state = mdp->get_state(si);
 
+            // valid only if there are some samples for the action
             for(size_t ai : indices(state)){
-                auto& action = state[ai];
-
-                //assert(si < state_action_weights.size());
-                //assert(ai < state_action_weights[si].size());
-
-                // valid only if there are some samples for the action
-                action.set_validity(state_action_weights[si][ai] > 0);
+                state.set_valid(ai, state_action_weights[si][ai] > 0);
             }
         }
 

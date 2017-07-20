@@ -9,8 +9,6 @@
 #include <numeric>
 #include <utility>
 
-
-
 using namespace std;
 using namespace craam;
 using namespace craam::algorithms;
@@ -32,7 +30,6 @@ Model create_test_mdp(){
     add_transition<Model>(rmdp,0,0,0,1.0,0.0);
     add_transition<Model>(rmdp,1,0,0,1.0,1.0);
     add_transition<Model>(rmdp,2,0,1,1.0,1.0);
-
 
     return rmdp;
 }

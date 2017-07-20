@@ -25,18 +25,30 @@ using namespace std;
 /**
 State for sa-rectangular uncertainty (or no uncertainty) in an MDP
 
+Actions within a state are sequentially labeled. That is, adding an action with an id = 3
+will also create actions 0,1,2. These additional actions are marked as "invalid" state. This 
+means that they will not be used in computations and algorithms will simply skip over them.
+Use `create_action` to make and action valid.
+
+
 \tparam Type of action used in the state. This type determines the
     type of uncertainty set.
 */
 template<class AType>
 class SAState{
 protected:
+    /// list of actions
     vector<AType> actions;
-
+    /// whether actions can be used in computation. If false, that means
+    /// that they should not be used in algorithms or in computation.
+    vector<bool> valid;
+    
 public:
 
-    SAState() : actions(0) {};
-    SAState(const vector<AType>& actions) : actions(actions) {};
+    SAState() : actions(0), valid(0) {};
+
+    /** Initializes state with actions and sets them all to valid */
+    SAState(const vector<AType>& actions) : actions(actions), valid(actions.size(),true) { };
 
     /** Number of actions */
     size_t action_count() const { return actions.size();};
@@ -48,17 +60,21 @@ public:
     Creates an action given by actionid if it does not exists.
     Otherwise returns the existing one.
 
-    All newly created actions are invalid (action.get_valid() = false) and are
-    skipped when computing the state value. Adding transitions to an action
-    will make it valid.
+    All newly created actions with id < actionid are created as invalid 
+    (action.get_valid() = false). Action actionid is created as valid.
     */
     AType& create_action(long actionid){
         assert(actionid >= 0);
-
-        if(actionid >= (long) actions.size())
+        
+        // assumes that the default constructor makes the actions invalid
+        if(actionid >= (long) actions.size()){
             actions.resize(actionid+1);
+            valid.resize(actionid+1, false);
+        }
 
-        return this->actions[actionid];
+        // set only the action that is being added as valid
+        valid[actionid] = true;
+        return actions[actionid];
     }
 
     /** Creates an action at the last position of the state */
@@ -79,6 +95,22 @@ public:
 
     /** Returns an existing action */
     AType& operator[](long actionid) {return get_action(actionid);}
+
+    /// Returns whether the actions is valid
+    bool is_valid(long actionid) const {
+        assert(actionid < long(valid.size()) && actionid >= 0);
+        return valid[actionid];
+    };
+
+    /** 
+    Set action validity. A valid action can be used in computations. An 
+    invalid action is just a placeholder.
+    */
+    void set_valid(long actionid, bool value = true){
+        assert(actionid < long(valid.size()) && actionid >= 0);
+        valid[actionid] = value;
+    };
+
 
     /** Returns set of all actions */
     const vector<AType>& get_actions() const {return actions;};

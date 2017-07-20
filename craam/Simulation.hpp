@@ -431,7 +431,7 @@ public:
         assert(action >= 0 && size_t(action) < mdpstate.size());
         const auto& mdpaction = mdpstate[action];
 
-        if(!mdpaction.is_valid())
+        if(!mdpstate.is_valid(action))
             throw invalid_argument("Cannot transition using an invalid action");
 
         const auto& tran = mdpaction.get_outcome();
