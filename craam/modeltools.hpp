@@ -279,8 +279,5 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
         }
     }    
     return rmdp;
-}
-
-
-}
+}}
 

@@ -3,7 +3,7 @@
 #include "RMDP.hpp"
 #include "Transition.hpp"
 #include "modeltools.hpp"
-#include "algorithms/valueiteration.hpp"
+#include "algorithms/values.hpp"
 #include "algorithms/occupancies.hpp"
 
 #include <vector>

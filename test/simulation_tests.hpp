@@ -1,7 +1,7 @@
 #include "craam/Simulation.hpp"
 #include "craam/modeltools.hpp"
 #include "craam/RMDP.hpp"
-#include "craam/algorithms/valueiteration.hpp"
+#include "craam/algorithms/values.hpp"
 
 #include <iostream>
 #include <sstream>

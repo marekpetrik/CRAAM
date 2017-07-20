@@ -2,7 +2,7 @@
 #include "craam/Simulation.hpp"
 #include "craam/Samples.hpp"
 #include "craam/modeltools.hpp"
-#include "craam/algorithms/valueiteration.hpp"
+#include "craam/algorithms/values.hpp"
 
 #include "craam/cpp11-range-master/range.hpp"
 #include <boost/functional/hash.hpp>
