@@ -39,6 +39,7 @@ Represents an instance of nature that can be used to directly compute the respon
 template<class T>
 using NatureInstance = pair<NatureResponse<T>, T>;
 
+
 /// L1 robust response
 inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
     assert(v.size() == p.size());
@@ -74,7 +75,6 @@ inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
     dist[index] = 1;
     return make_pair(dist,v[index]);
 }
-
 
 // *******************************************************
 // RegularAction computation methods
@@ -282,7 +282,7 @@ public:
         return solution;
     }
 
-    /// Computed the Bellman update and updates the solution to the best response
+    /// Computes the Bellman update and updates the solution to the best response
     /// It does not update the value function
     /// \returns New value for the state
     template<class SType>
@@ -326,5 +326,165 @@ PolicyNature<T> uniform_nature(const Model& m, NatureResponse<T> nature,
                             T threshold){
     return PolicyNature<T>(vector<NatureInstance<T>>(m.state_count(), make_pair(nature, threshold)));
 }
+
+
+// **************************************************************************
+// Convenient interface methods
+// **************************************************************************
+
+namespace internal{
+
+template <class T1, class T2>
+vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
+    assert(v1.size() == v2.size());
+    vector<pair<T1,T2>> result(v1.size());
+    for(size_t i=0; i< v1.size(); i++){
+        result[i] = make_pair(v1[i], v2[i]);
+    }
+    return result;
+}
+
+template <class T1, class T2>
+vector<pair<T1,T2>> zip(const T1& v1, const vector<T2>& v2){
+    vector<pair<T1,T2>> result(v2.size());
+    for(size_t i=0; i< v2.size(); i++){
+        result[i] = make_pair(v1, v2[i]);
+    }
+    return result;
+}
+}
+
+/** 
+Gauss-Seidel variant of value iteration (not parallelized).
+
+This function is suitable for computing the value function of a finite state MDP. If
+the states are ordered correctly, one iteration is enough to compute the optimal value function.
+Since the value function is updated from the last state to the first one, the states should be ordered
+in the temporal order.
+
+This is a simplified method interface. Use vi_gs with PolicyNature for full functionality.
+
+\param mdp The MDP to solve
+\param discount Discount factor.
+\param nature Response of nature, one function per state.
+\param thresholds Parameters passed to nature response functions. One value per state.
+\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use
+                    all zeros when not provided. Ignored when size is 0.
+\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param iterations Maximal number of iterations to run
+\param maxresidual Stop when the maximal residual falls below this value.
+
+
+\returns Solution that can be used to compute the total return, or the optimal policy.
+*/
+template<class SType, class T = prec_t >
+inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
+                        const vector<NatureResponse<T>>& nature, const vector<T>& thresholds,
+                        numvec valuefunction=numvec(0), const indvec& policy = numvec(0),
+                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
+    {
+    assert(nature.size() == thresholds.size());
+    assert(nature.size() == mdp.state_count());
+
+    return vi_gs<SType, PolicyNature<T>>(mdp, discount, move(valuefunction), 
+            PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+            iterations, maxresidual);
+}
+
+/// Simplified function call with a single nature for all states.
+template<class SType, class T = prec_t >
+inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
+                        const NatureResponse<T>& nature, const vector<T>& thresholds,
+                        numvec valuefunction=numvec(0), const indvec& policy = numvec(0),
+                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
+    {
+    assert(nature.size() == thresholds.size());
+    assert(nature.size() == mdp.state_count());
+
+    return vi_gs<SType, PolicyNature<T>>(mdp, discount, move(valuefunction), 
+            PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+            iterations, maxresidual);
+}
+
+
+
+/**
+Modified policy iteration using Jacobi value iteration in the inner loop.
+This method generalizes modified policy iteration to robust MDPs.
+In the value iteration step, both the action *and* the outcome are fixed.
+
+This is a simplified method interface. Use mpi_jac with PolicyNature for full functionality.
+
+Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+\param type Type of realization of the uncertainty
+\param discount Discount factor
+\param nature Response of nature, one function per state.
+\param thresholds Parameters passed to nature response functions. One value per state.
+\param valuefunction Initial value function
+\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param iterations_pi Maximal number of policy iteration steps
+\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+\param iterations_vi Maximal number of inner loop value iterations
+\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+            This value should be smaller than maxresidual_pi
+\param print_progress Whether to report on progress during the computation
+\return Computed (approximate) solution
+ */
+template<class SType, class T = prec_t>
+inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+                const vector<NatureResponse<T>>& nature, const vector<T>& thresholds,
+                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
+    assert(nature.size() == thresholds.size());
+    assert(nature.size() == mdp.state_count());
+
+
+    return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
+                    PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+                    iterations_pi, maxresidual_pi,
+                    iterations_vi, maxresidual_vi, 
+                    print_progress);
+}
+
+/// Simplified function call with a single nature for all states.
+template<class SType, class T = prec_t>
+inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+                const NatureResponse<T>& nature, const vector<T>& thresholds,
+                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
+    assert(nature.size() == thresholds.size());
+    assert(nature.size() == mdp.state_count());
+
+
+    return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
+                    PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+                    iterations_pi, maxresidual_pi,
+                    iterations_vi, maxresidual_vi, 
+                    print_progress);
+}
+
+/**
+Converts a string representation of nature response to the appropriate nature response call.
+This function is useful when the code is used within a python or R libraries. The values values
+correspond to the function definitions, and ones that are currently supported are:
+
+- robust_unbounded
+- optimistic_unbounded
+- robust_l1
+- optimistic_l1
+*/
+inline NatureResponse<prec_t> string_to_nature(string nature){
+    if(nature == "robust_unbounded") return robust_unbounded;
+    if(nature == "optimistic_unbounded") return optimistic_unbounded;
+    if(nature == "robust_unbounded") return robust_l1;
+    if(nature == "optimistic_unbounded") return optimistic_l1;
+    throw invalid_argument("Unknown nature.");
+}
+
+
 
 }}

@@ -413,6 +413,4 @@ An uncertain MDP with outcomes and weights. See craam::L1RobustState.
 */
 typedef GRMDP<WeightedRobustState> RMDP;
 
-
-
 }
