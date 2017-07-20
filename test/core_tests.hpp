@@ -499,7 +499,6 @@ BOOST_AUTO_TEST_CASE(test_string_rmdpl1){
     add_transition(rmdp,1,0,0,0,1,1);
     add_transition(rmdp,1,0,1,0,1,2);
 
-    set_outcome_thresholds(rmdp, 2);
     set_uniform_outcome_dst(rmdp);
 
     auto s = rmdp.to_string();
@@ -535,7 +534,6 @@ BOOST_AUTO_TEST_CASE(test_normalization) {
     BOOST_CHECK(rmdp.is_normalized());
 
     // solve and check value function
-    //set_outcome_thresholds(rmdp, 2.0);
     numvec initial{0,0};
     auto&& re = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,robust_unbounded,2.0), 2000,0);
 
@@ -799,9 +797,6 @@ BOOST_AUTO_TEST_CASE(test_parameter_read_write){
     BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(1).get_outcome(0).get_reward(1), 2.0);
     rmdp.get_state(0).get_action(1).get_outcome(0).set_reward(1,19.1);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).get_action(1).get_outcome(0).get_reward(1), 19.1);
-
-    rmdp.get_state(3).get_action(0).set_threshold(1.0);
-    BOOST_CHECK_EQUAL(rmdp.get_state(3).get_action(0).get_threshold(), 1.0);
 }
 
 
@@ -839,13 +834,6 @@ BOOST_AUTO_TEST_CASE(test_robustification){
     BOOST_CHECK_CLOSE(mpi_jac(rmdp_z, 0.9).valuefunction[0],
                     (1.0 + 2.0) / 2.0, 1e-4);
     
-    //cout << "MDP Solution " <<  << endl;
-    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    
-    set_outcome_thresholds(rmdp_nz, 0.5);
-    set_outcome_thresholds(rmdp_z, 0.5);
-
     // **** Test robust
 
     // robust MDP should have the same result as a robustified RMDP
@@ -855,7 +843,4 @@ BOOST_AUTO_TEST_CASE(test_robustification){
                     (1.0 * (0.5 + 0.25) + 2.0 * (0.5 - 0.25)), 1e-4);
     BOOST_CHECK_CLOSE(mpi_jac(rmdp_z, 0.9, numvec(0), uniform_nature(rmdp_z,robust_l1,0.5) ).valuefunction[0],
                     (1.0 * (0.5) + 2.0 * (0.5 - 0.25) + 0.0 * 0.25), 1e-4);
-
-    //cout << "RMDP Solution, no zeros " << rmdp_nz.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
-    //cout << "MDP Solution, zeros " << rmdp_z.mpi_jac(Uncertainty::Robust, 0.9).valuefunction << endl;
 }

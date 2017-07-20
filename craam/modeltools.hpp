@@ -132,26 +132,6 @@ Model& from_csv_file(Model& mdp, const string& filename, bool header = true){
 }
 
 /**
-Uniformly sets the thresholds to the provided value for all states and actions.
-This method should be used only with models that support thresholds.
-
-This function only applies to models that have thresholds, such as ones using
-"WeightedOutcomeAction" or its derivatives.
-
-\param model Model to set thresholds for
-\param threshold New thresholds value
-*/
-template<class Model>
-inline
-void set_outcome_thresholds(Model& mdp, prec_t threshold){
-    for(const auto si : indices(mdp)){
-        auto& state = mdp.get_state(si);
-        for(auto ai : indices(state))
-            state.get_action(ai).set_threshold(threshold);
-    }
-}
-
-/**
 Sets the distribution for outcomes for each state and
 action to be uniform. 
 */
@@ -184,7 +164,7 @@ void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& 
 /**
 Checks whether outcome distributions sum to 1 for all states and actions.
 
-This function only applies to models that have thresholds, such as ones using
+This function only applies to models that have outcomes, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 
 */
@@ -204,7 +184,7 @@ bool is_outcome_dst_normalized(const Model& mdp){
 /**
 Normalizes outcome distributions for all states and actions.
 
-This function only applies to models that have thresholds, such as ones using
+This function only applies to models that have outcomes, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 */
 template<class Model>

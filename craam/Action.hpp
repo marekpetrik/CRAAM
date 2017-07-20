@@ -219,13 +219,9 @@ public:
 
 
 /**
-An action in a robust MDP in which the outcomes are defined by a weighted function
-and a threshold. The uncertain behavior is parametrized by a base distribution
-and a threshold value. An example may be a worst case computation:
-    \f[ \min \{ u^T v ~:~ \| u - d \|_1 \le  t\} \f]
-where \f$ v \f$ are the values for individual outcomes, \f$ d \f$ is the nominal
-outcome distribution, and \f$ t \f$ is the threshold.
-See L1Action for an example of an instance of this template class.
+An action in a robust MDP that allows for outcomes chosen by nature. This type of action
+represents a zero-sum game with the decision maker choosing an action and nature choosing
+a distribution over outcomes. This action can be used by both regular and robust MDP algorithms.
 
 The distribution d over outcomes is uniform by default:
 see WeightedOutcomeAction::create_outcome.
@@ -234,8 +230,6 @@ see WeightedOutcomeAction::create_outcome.
 class WeightedOutcomeAction : public OutcomeManagement{
 
 protected:
-    /** Threshold */
-    prec_t threshold;
     /** Weights used in computing the worst/best case */
     numvec distribution;
 
@@ -243,11 +237,11 @@ public:
 
     /** Creates an empty action. */
     WeightedOutcomeAction()
-        : OutcomeManagement(), threshold(0), distribution(0) {};
+        : OutcomeManagement(), distribution(0) {};
 
     /** Initializes outcomes to the provided vector */
     WeightedOutcomeAction(const vector<Transition>& outcomes)
-        : OutcomeManagement(outcomes), threshold(0), distribution(outcomes.size(), 
+        : OutcomeManagement(outcomes), distribution(outcomes.size(), 
             1.0 / prec_t(outcomes.size())) {};
 
     using OutcomeManagement::create_outcome;
@@ -390,21 +384,14 @@ public:
     }
 
     /**
-    Sets an initial uniform value for the threshold (0) and the distribution.
+    Sets an initial uniform value for the distribution.
     If the distribution already exists, then it is overwritten.
     */
     void uniform_distribution(){
         distribution.clear();
         if(outcomes.size() > 0)
             distribution.resize(outcomes.size(), 1.0/ (prec_t) outcomes.size());
-        threshold = 0.0;
     }
-
-    /** Returns threshold value */
-    prec_t get_threshold() const {return threshold;};
-
-    /** Sets threshold value */
-    void set_threshold(prec_t threshold){this->threshold = threshold; }
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const {
@@ -447,8 +434,6 @@ public:
         string result{"{"};
         result += "\"actionid\" : ";
         result += std::to_string(actionid);
-        result += ",\"threshold\" : ";
-        result += std::to_string(threshold);
         result += ",\"outcomes\" : [";
         for(auto oi : indices(outcomes)){
             const auto& o = outcomes[oi];

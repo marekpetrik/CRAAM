@@ -488,8 +488,6 @@ public:
         indvec statepol(state_count(),0);         // state policy that corresponds to the observation policy
         obspol2statepol(obspol,statepol);
 
-        set_outcome_thresholds(robust_mdp, threshold);
-
         for(auto iter : range(0l, iterations)){
             (void) iter; // to remove the warning
 
