@@ -17,6 +17,11 @@ addons:
 install:
     - wget --no-check-certificate http://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz 
     - tar xf cmake-3.3.2-Linux-x86_64.tar.gz
+    - wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
+    - tar xzf 3.3.4.tar.gz
+    - rm 3.3.4.tar.gz
+    - mv eigen-eigen-5a0156e40feb/Eigen .
+
 script:
     - export CC=/usr/bin/gcc-6
     - export CXX=/usr/bin/g++-6

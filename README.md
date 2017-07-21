@@ -96,6 +96,8 @@ Requirements
 Installation
 ------------
 
+The python interface that comes with this project is just a thin interface to the C++ code. [RAAM](https://github.com/marekpetrik/raam) is a more full-featured library that add significant python functionality as well as unit tests.
+
 To install the Python extension, first compile the C++ library as described above. Then go to the `python` subdirectory and run:
 
 ``` bash
@@ -214,8 +216,8 @@ value,policy,residual,iterations = mdp.solve_mpi(100)
 print('Value function s0-s9:', value[:10])
 ```
 
-    ## Value function s0-s9: [ 65.32583735  65.07965501  64.6732363   64.90734411  65.29139129
-    ##   64.75586467  64.95297054  65.33295913  65.12193743  65.25152873]
+    ## Value function s0-s9: [ 69.80128537  70.42106693  70.38961762  70.22134631  70.40475099
+    ##   69.86828576  69.94327196  70.36343291  70.21632776  69.95414206]
 
 This example can be easily converted to a robust MDP by appropriately defining additional outcomes (the options available to nature) with transition matrices and rewards.
 

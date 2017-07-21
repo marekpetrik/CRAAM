@@ -95,6 +95,8 @@ This install a package `craam`, with most of the classes and method provided by 
  
 ## Installation
 
+The python interface that comes with this project is just a thin interface to the C++ code. [RAAM](https://github.com/marekpetrik/raam) is a more full-featured library that add significant python functionality as well as unit tests. 
+
 To install the Python extension, first compile the C++ library as described above. Then go to the `python` subdirectory and run:
 ```bash
   $ python3 setup.py install --user 
