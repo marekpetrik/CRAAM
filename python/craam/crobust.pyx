@@ -527,8 +527,8 @@ cdef class MDP:
 
 
     cpdef solve_mpi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
-                                    policy = np.empty(),
-                                    double maxresidual = 0, long valiterations = -1, int stype=0,
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1, 
                                     double valresidual=-1, bool show_progress = False):
         """
         Runs regular modified policy iteration with parallelized Jacobi valus updates. No robustness
@@ -631,13 +631,13 @@ cdef class MDP:
                         string_to_nature(nature), thresholds,
                         valuefunction,policy,iterations,maxresidual)
 
-        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations,sol.natpolicy)
 
 
     cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
-                                    policy = np.empty(),
-                                    double maxresidual = 0, long valiterations = -1, int stype=0,
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1,  
                                     double valresidual=-1, bool show_progress = False):
         """
         Runs robust modified policy iteration with parallelized Jacobi value updates.         
@@ -695,7 +695,7 @@ cdef class MDP:
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
-        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.natpolicy)
 cdef extern from "Samples.hpp" namespace 'craam::msen':
     
@@ -1580,8 +1580,8 @@ cdef class RMDP:
 
 
     cpdef solve_mpi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
-                                    policy = np.empty(),
-                                    double maxresidual = 0, long valiterations = -1, int stype=0,
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1,  
                                     double valresidual=-1, bool show_progress = False):
         """
         Runs regular modified policy iteration with parallelized Jacobi valus updates. No robustness
@@ -1684,13 +1684,13 @@ cdef class RMDP:
                         string_to_nature(nature), thresholds,
                         valuefunction,policy,iterations,maxresidual)
 
-        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations,sol.natpolicy)
 
 
     cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
-                                    policy = np.empty(),
-                                    double maxresidual = 0, long valiterations = -1, int stype=0,
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1, 
                                     double valresidual=-1, bool show_progress = False):
         """
         Runs robust modified policy iteration with parallelized Jacobi value updates.         
@@ -1748,7 +1748,7 @@ cdef class RMDP:
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
-        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.natpolicy)
 
 

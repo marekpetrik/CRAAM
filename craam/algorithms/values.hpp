@@ -470,6 +470,8 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
     solution.valuefunction = move(*targetvalue);
+    solution.residual = residual_pi;
+    solution.iterations = i;
     return solution;
 }
 
