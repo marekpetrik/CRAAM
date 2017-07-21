@@ -29,7 +29,7 @@ ext_modules = [
         ["craam/crobust.pyx"],
         extra_compile_args = ['-std=c++14','-fopenmp','-O3','-march=native'],
         extra_link_args=['-fopenmp'],
-        include_dirs = [numpy.get_include(), '../']),
+        include_dirs = [numpy.get_include(), '.', '../']),
     ]
 
 setup(

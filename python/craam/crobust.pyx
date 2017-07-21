@@ -1,5 +1,4 @@
 # distutils: language = c++
-# distutils: include_dirs = ../craam
 
 
 """
@@ -44,7 +43,7 @@ from libcpp.memory cimport make_shared
 #    unique_ptr[T] make_unique[T](...) # except +
 
 
-cdef extern from "RMDP.hpp" namespace 'craam' nogil:
+cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
                                             
     ctypedef double prec_t
     ctypedef vector[double] numvec
@@ -85,7 +84,7 @@ cdef extern from "RMDP.hpp" namespace 'craam' nogil:
 
         string to_json() const;
 
-cdef extern from "algorithms/values.hpp" namespace "craam::algorithms" nogil:
+cdef extern from "craam/algorithms/values.hpp" namespace "craam::algorithms" nogil:
 
     cdef cppclass Solution:
         numvec valuefunction
@@ -111,7 +110,7 @@ cdef extern from "algorithms/values.hpp" namespace "craam::algorithms" nogil:
     
 SolutionRobustTuple = namedtuple("Solution", ("valuefunction", "policy", "residual", "iterations","natpolicy")) 
 
-cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
 
     cdef cppclass SolutionRobust:
         numvec valuefunction
@@ -125,7 +124,7 @@ cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' no
 
     cdef NatureResponse string_to_nature(string s);
 
-cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
     SolutionRobust crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
                     NatureResponse nature, const numvec& thresholds,
                     const numvec& valuefunction,
@@ -145,7 +144,7 @@ cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' no
                     prec_t maxresidual_vi,
                     bool show_progress) except +
 
-cdef extern from "modeltools.hpp" namespace 'craam' nogil:
+cdef extern from "craam/modeltools.hpp" namespace 'craam' nogil:
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
 
 DEFAULT_ITERS = 500
@@ -693,7 +692,7 @@ cdef class MDP:
 
         return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.natpolicy)
-cdef extern from "Samples.hpp" namespace 'craam::msen':
+cdef extern from "craam/Samples.hpp" namespace 'craam::msen':
     
     cdef cppclass CDiscreteSamples "craam::msen::DiscreteSamples":
 
@@ -809,7 +808,7 @@ cdef class DiscreteSamples:
         return dereference(self._thisptr).get_steps()
 
 
-cdef extern from "Simulation.hpp" namespace 'craam::msen' nogil:
+cdef extern from "craam/Simulation.hpp" namespace 'craam::msen' nogil:
 
     cdef cppclass ModelSimulator:
         ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial, long seed);
@@ -985,7 +984,7 @@ cdef class SimulatorMDP:
             del rp
 
 
-cdef extern from "Simulation.hpp" namespace 'craam::msen' nogil:
+cdef extern from "craam/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
         CSampledMDP();
         void add_samples(const CDiscreteSamples& samples);
@@ -1031,7 +1030,7 @@ cdef class SampledMDP:
         return np.array(t.probabilities_vector(state_count))
             
   
-cdef extern from "definitions.hpp" namespace 'craam' nogil:
+cdef extern from "craam/definitions.hpp" namespace 'craam' nogil:
     pair[numvec,double] c_worstcase_l1 "craam::worstcase_l1" (const vector[double] & z, \
                         const vector[double] & q, double t)
 
@@ -1100,7 +1099,7 @@ def worstcase_l1_dst(np.ndarray[double] z, np.ndarray[double] q, double t):
 
 
 
-cdef extern from "algorithms/values.hpp" namespace 'craam::algorithms' nogil:
+cdef extern from "craam/algorithms/values.hpp" namespace 'craam::algorithms' nogil:
 
     Solution csolve_vi_rmdp "craam::algorithms::solve_vi"(CRMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
@@ -1117,7 +1116,7 @@ cdef extern from "algorithms/values.hpp" namespace 'craam::algorithms' nogil:
                     prec_t maxresidual_vi,
                     bool show_progress) except +;
 
-cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
     SolutionRobust crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
                     NatureResponse nature, const numvec& thresholds,
                     const numvec& valuefunction,
@@ -1151,7 +1150,7 @@ def choose_nature(nature_name):
     pass
 
 
-cdef extern from "RMDP.hpp" namespace 'craam' nogil:
+cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
 
     cdef cppclass CL1OutcomeAction "craam::WeightedOutcomeAction":
         CTransition& get_outcome(long outcomeid)
@@ -1174,7 +1173,7 @@ cdef extern from "RMDP.hpp" namespace 'craam' nogil:
                 
         string to_json() const
 
-cdef extern from "modeltools.hpp" namespace 'craam' nogil:
+cdef extern from "craam/modeltools.hpp" namespace 'craam' nogil:
     void set_uniform_outcome_dst[Model](Model& mdp)
     bool is_outcome_dst_normalized[Model](const Model& mdp)
     void normalize_outcome_dst[Model](Model& mdp)
@@ -1753,7 +1752,7 @@ cdef class RMDP:
 # *******    Implementable    *******
 # ***************************************************************************
 
-cdef extern from "ImMDP.hpp" namespace 'craam::impl':
+cdef extern from "craam/ImMDP.hpp" namespace 'craam::impl':
     
     cdef cppclass MDPI_R:
     
