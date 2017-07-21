@@ -79,7 +79,7 @@ configure_file (
 )
 
 # **** SOURCE FILES ****
-include_directories (craam)
+include_directories (.)
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/definitions.hpp  
@@ -93,8 +93,12 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
-          )
-set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test2.cpp)
+
+set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/core_tests.hpp 
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/implementable_tests.hpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/simulation_tests.hpp
+)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 

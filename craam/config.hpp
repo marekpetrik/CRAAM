@@ -1,8 +1,10 @@
 #pragma once 
 
-#define VERSION 1.0.0
-#define IS_DEBUG 
+#define VERSION 2.0.0
+/* #undef IS_DEBUG */
 
 #ifndef IS_DEBUG
     #define NDEBUG
 #endif
+
+
