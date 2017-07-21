@@ -3,55 +3,44 @@ CRAAM: Robust And Approximate Markov decision processes
 
 [![Build Status](https://travis-ci.org/marekpetrik/CRAAM.svg?branch=master)](https://travis-ci.org/marekpetrik/CRAAM)
 
-Craam is a C++ library for solving Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The library also provides tools for basic simulation, for constructing MDPs from samples, and value function approximation. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
+Craam is a **header-only** C++ library for solving Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The optimistic obective is the opposite of robust, in which nature chooses the best possible realization of the uncertain values. The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
 
-The library is build around two main data structures: MDP and RMD. **MDP** is the standard model that consists of states 𝒮 and actions 𝒜. The robust solution for an MDP would satisfy, for example, the following Bellman optimality equation:
-*v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*p* ∈ *Δ*</sub>{∑<sub>*s*′∈𝒮</sub>*p*(*s*′)(*r*(*s*,*a*,*s*′)+*γ*  *v*(*s*′)) : ∥*p*−*P*(*s*,*a*,⋅)∥≤*ψ*} .
- The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. In that case, the robust solution may for example satify the following Bellman optimality equation:
+The library is build around two main data structures: MDP and RMDP. **MDP** is the standard model that consists of states 𝒮 and actions 𝒜. The robust solution for an MDP would satisfy, for example, the following Bellman optimality equation:
+*v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*p* ∈ *Δ*</sub>{∑<sub>*s*′∈𝒮</sub>*p*(*s*′)(*r*(*s*,*a*,*s*′)+*γ*  *v*(*s*′)) : ∥*p*−*P*(*s*,*a*,⋅)∥≤*ψ*, *p*≪*P*(*s*,*a*,⋅)} .
+ Note that *p* is constrained to be **absolutely continuous** with respect to *P*(*s*, *a*, ⋅). This is a hard requirement for all choices of ambiguity (or uncertainty).
+
+The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. In that case, the robust solution may for example satisfy the following Bellman optimality equation:
 *v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*o* ∈ 𝒪</sub>∑<sub>*s*′∈𝒮</sub>*P*(*s*, *a*, *o*, *s*′)(*r*(*s*, *a*, *o*, *s*′) + *γ* *v*(*s*′)) .
- Using outcomes makes it more convenient to capture correlations between the uncertainty in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces.
+ Using outcomes makes it more convenient to capture correlations between the ambiguity in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces. The equation above uses the worst outcome, but in general distributions over outcomes are supported.
 
-In summary, the robust MDP problem being solved is:
-
-Here, 𝒮 are the states, 𝒜 are the actions, 𝒪 are the outcomes.
-
-Available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
+The available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
 
 A python interface is also supported. See the instructions below.
 
 Installing C++ Library
 ======================
 
-The library has minimal dependencies and should compile on all Linux and MacOS operating systems.
+No installation is required. Numerous asserts are enabled in the code by default. To disable them, insert the following line *before* importing any files:
+
+``` cpp
+#define NDEBUG
+```
+
+The library has minimal dependencies and was tested on Linux and MacOS operating systems. It has not been tested on Windows.
 
 ### Requirements
 
--   [CMake](http://cmake.org/): 3.1.0
 -   C++14 compatible compiler:
     -   Tested with Linux GCC 4.9.2,5.2.0,6.1.0; does not work with GCC 4.7, 4.8.
     -   Tested with Linux Clang 3.6.2 (and maybe 3.2+).
--   [Boost](http://boost.org) to enable unit tests
+-   [Eigen](http://eigen.tuxfamily.org) 3+ for computing occupancy frequencies
 
 #### Optional Dependencies
 
+-   [CMake](http://cmake.org/): 3.1.0 to build tests and documentation
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
-
-### Build Instructions
-
-Build all default supported targets:
-
-``` bash
-    $ cmake -DCMAKE_BUILD_TYPE=Release .
-    $ cmake --build .
-```
-
-To use [Ninja](https://ninja-build.org/) to parallelize and speed up the build process, call cmake as:
-
-``` bash
-    $ cmake -DCMAKE_BUILD_TYPE=Release -G Ninja .
-    $ cmake --build . --target testit
-```
+-   [Boost](http://boost.org) for compiling and running unit tests
 
 ### Documentation
 
@@ -102,9 +91,9 @@ Requirements
 ------------
 
 -   Python 3.5+ (Python 2 is NOT supported)
--   Setuptools 7.0
+-   Setuptools 7.0+
 -   Numpy 1.8+
--   Cython 0.21+
+-   Cython 0.24+
 
 Installation
 ------------
@@ -158,14 +147,57 @@ C++ Library
 
 See the [online documentation](http://cs.unh.edu/~mpetrik/code/craam) or generate it locally as described above.
 
-Python interface
+Unit tests provide some examples of how to use the library. For simple end-to-end examples, see `tests/benchmark.cpp` and `test/dev.cpp`. Targets `BENCH` and `DEV` build them respectively.
+
+The main models supported are: - `craam::MDP` : plain MDP with no definition of uncertainty - `craam::RMDP` : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty - `craam::impl::MDPIR` : an MDP with implementatbility constraints. See \[Petrik2016\].
+
+The regular value-function based methods are in the header `algorithms/values.hpp` and the robust versions are in in the header `algorithms/robust_values.hpp`. There are 4 main value-function based methods:
+
+<table style="width:85%;">
+<colgroup>
+<col width="33%" />
+<col width="51%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Algorithm</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>solve_vi</code></td>
+<td>Gauss-Seidel value iteration; runs in a single thread.</td>
+</tr>
+<tr class="even">
+<td><code>solve_mpi</code></td>
+<td>Jacobi modified policy iteration; parallelized with OpenMP. Generally, modified policy iteration is vastly more efficient than value iteration.</td>
+</tr>
+<tr class="odd">
+<td><code>rsolve_vi</code></td>
+<td>Like the value iteration above, but also supports robust, risk-averse, or optimistic objectives.</td>
+</tr>
+<tr class="even">
+<td><code>rsolve_mpi</code></td>
+<td>Like the modified policy iteration above, but it also supports robust, risk-averse, optimistic objective.</td>
+</tr>
+</tbody>
+</table>
+
+These methods can be applied to eithen an MDP or an RMDP.
+
+The header `algorithms/occupancies.hpp` provides tools for converting the MDP to a transition matrix and computing the occupancy frequencies.
+
+There are tools for building simulators and sampling from simulations in the header `Simulation.hpp` and methods for handling samples in `Samples.hpp`.
+
+Python Interface
 ----------------
 
 The python interface closely mirrors the C++ classes. The following main types of plain and robust MDPs supported:
 
--   `craam.crobust.MDP` : plain MDP with no definition of uncertainty
--   `craam.crobust.RMDP` : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
--   `craam.crobust.MDPIR` : an MDP with implementatbility constraints. See \[Petrik2016\].
+-   `craam.MDP` : plain MDP with no definition of uncertainty
+-   `craam.RMDP` : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
+-   `craam.MDPIR` : an MDP with implementatbility constraints. See \[Petrik2016\].
 
 The classes support the following main optimization algorithms:
 
@@ -182,20 +214,20 @@ The classes support the following main optimization algorithms:
 </thead>
 <tbody>
 <tr class="odd">
-<td>vi_gs</td>
+<td>solve_vi</td>
 <td>Gauss-Seidel value iteration; runs in a single thread.</td>
 </tr>
 <tr class="even">
-<td>vi_jac</td>
-<td>Jacobi value iteration; parallelized with OpenMP.</td>
-</tr>
-<tr class="odd">
-<td>mpi_jac</td>
+<td>solve_mpi</td>
 <td>Jacobi modified policy iteration; parallelized with OpenMP. Generally, modified policy iteration is vastly more efficient than value iteration.</td>
 </tr>
+<tr class="odd">
+<td>rsolve_vi</td>
+<td>Like the value iteration above, but also supports robust, risk-averse, or optimistic objectives.</td>
+</tr>
 <tr class="even">
-<td>vi_jac_fix</td>
-<td>Jacobi value iteration for policy evaluation; parallelized with OpenMP.</td>
+<td>rsolve_mpi</td>
+<td>Like the modified policy iteration above, but it also supports robust, risk-averse, optimistic objective.</td>
 </tr>
 </tbody>
 </table>
@@ -236,8 +268,8 @@ value,policy,residual,iterations = mdp.solve_mpi(100)
 print('Value function s0-s9:', value[:10])
 ```
 
-    ## Value function s0-s9: [ 62.53457193  62.89915887  62.86243706  62.55455014  62.41384687
-    ##   62.3188398   62.62322657  62.46382137  62.86198087  62.21616294]
+    ## Value function s0-s9: [ 68.59164877  68.17255088  69.01759101  68.50824648  68.77114289
+    ##   68.84949497  68.86934182  69.00629372  68.59825972  69.0319304 ]
 
 This example can be easily converted to a robust MDP by appropriately defining additional outcomes (the options available to nature) with transition matrices and rewards.
 

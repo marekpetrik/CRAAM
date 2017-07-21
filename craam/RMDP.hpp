@@ -22,20 +22,18 @@
 Introduction
 ------------
 
-Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods.
-
-The library supports standard finite or infinite horizon discounted MDPs [Puterman2005]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
-
-The robust model extends the regular MDPs [Iyengar2005]. The library allows to model uncertainty in *both* the transitions and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to [Filar1997].
-
-In summary, the MDP problem being solved is:
-
-\f[ v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s\in\mathcal{S}} ( r(s,a,o,s') + \gamma P(s,a,o,s') v(s') ) ~.\f]
-
-Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes.
-
-Available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
-
+Craam is a **header-only** C++ library for solving  Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The optimistic obective is the opposite of robust, in which nature chooses the best possible realization of the uncertain values. The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path [Puterman2005]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
+ 
+The library is build around two main data structures: MDP and RMDP. **MDP** is the standard model that consists of states $\mathcal{S}$ and actions $\mathcal{A}$. The robust solution for an MDP would satisfy, for example, the following Bellman optimality equation:
+$$ v(s) = \max_{a \in \mathcal{A}} \min_{p \in \Delta} \left\{ \sum_{s'\in\mathcal{S}} p(s') ( r(s,a,s') + \gamma \,  \, v(s') ) ~:~ \|p - P(s,a,\cdot) \| \le \psi, \; p \ll P(s,a,\cdot) \right\}~. $$
+Note that $p$ is constrained to be **absolutely continuous** with respect to $P(s,a,\cdot)$. This is a hard requirement for all choices of ambiguity (or uncertainty). 
+ 
+The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. In that case, the robust solution may for example satisfy the following Bellman optimality equation:
+$$ v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s'\in\mathcal{S}} P(s,a,o,s')  ( r(s,a,o,s') + \gamma \, v(s') ) ~. $$
+Using outcomes makes it more convenient to capture correlations between the ambiguity in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces. The equation above uses the worst outcome, but in general distributions over outcomes are supported.
+ 
+The available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
+ 
 Installation and Build Instruction
 ----------------------------------
 
@@ -44,24 +42,30 @@ See the README.rst
 Getting Started
 ---------------
 
-The main interface to the library is through the templated class GRMDP. The templated version of this class enable different definitions of the uncertainty set. The available specializations are:
-
-- craam::MDP : plain MDP with no explicit definition of uncertainty
-- craam::RMDP_L1 : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
-
-
-States, actions, and outcomes are identified using 0-based contiguous indexes. The actions are indexed independently for each states and the outcomes are indexed independently for each state and action pair.
-
-Transitions are added through function add_transition. New states, actions, or outcomes are automatically added based on the new transition. Main supported solution methods are:
-
-| Method                  |  Algorithm     |
-| ----------------------- | ----------------
-| GRMDP::vi_gs            | Gauss-Seidel value iteration; runs in a single thread.
-| GRMDP::vi_jac           | Jacobi value iteration; parallelized using OpenMP.
-| GRMDP::mpi_jac          | Jacobi modified policy iteration; parallelized with OpenMP. Generally, modified policy iteration is vastly more efficient than value iteration.
-| GRMDP::vi_jac_fix       | Jacobi value iteration for policy evaluation; parallelized with OpenMP.
-
-Each of the methods above supports average, robust, and optimistic computation modes for the Nature.
+See the [online documentation](http://cs.unh.edu/~mpetrik/code/craam) or generate it locally as described above. 
+ 
+Unit tests provide some examples of how to use the library. For simple end-to-end examples, see `tests/benchmark.cpp` and `test/dev.cpp`. Targets `BENCH` and `DEV` build them respectively.
+ 
+The main models supported are:
+ 
+- `craam::MDP` : plain MDP with no definition of uncertainty
+- `craam::RMDP` : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
+- `craam::impl::MDPIR` : an MDP with implementatbility constraints. See [Petrik2016].
+ 
+The regular value-function based methods are in the header `algorithms/values.hpp` and the robust versions are in in the header `algorithms/robust_values.hpp`. There are 4 main value-function based methods:
+ 
+| Method                  |  Algorithm                           |
+| ----------------------- | ------------------------------------ |
+| `solve_vi`                | Gauss-Seidel value iteration; runs in a single thread. 
+| `solve_mpi`               | Jacobi modified policy iteration; parallelized with OpenMP. Generally, modified policy iteration is vastly more efficient than value iteration.
+| `rsolve_vi`              | Like the value iteration above, but also supports robust, risk-averse, or optimistic objectives.
+| `rsolve_mpi`              | Like the modified policy iteration above, but it also supports robust, risk-averse, optimistic objective.  
+ 
+These methods can be applied to eithen an MDP or an RMDP.
+ 
+The header `algorithms/occupancies.hpp` provides tools for converting the MDP to a transition matrix and computing the occupancy frequencies.
+ 
+There are tools for building simulators and sampling from simulations in the header `Simulation.hpp` and methods for handling samples in `Samples.hpp`.
 
 The following is a simple example of formulating and solving a small MDP.
 
