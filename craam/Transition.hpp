@@ -236,7 +236,7 @@ public:
         if(indices.empty())
             throw range_error("No transitions defined. Cannot compute mean reward.");
 
-        return inner_product(cbegin(probabilities), end(probabilities), cbegin(rewards), 0.0);
+        return inner_product(probabilities.cbegin(), probabilities.cend(), rewards.cbegin(), 0.0);
     }
 
 
