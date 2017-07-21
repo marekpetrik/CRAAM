@@ -8,8 +8,8 @@ robust and interpretable MDPs.
 
 The main functionality is provided by the individual classes below:
 
-- Solve MDPs: :py:class:`craam.MDP`
-- Solve Robust MDPs: :py:class:`craam.RMDP`
+- Model and solve MDPs: :py:class:`craam.MDP`
+- Model and solve RMDPs (with outcomes): :py:class:`craam.RMDP`
 - Simulate MDPs and generate samples: :py:class:`craam.SimulatorMDP`, :py:class:`craam.DiscreteSamples`
 - Construct MDPs from samples: :py:class:`craam.SampledMDP`, :py:class:`craam.DiscreteSamples`
 - Solve interpretable MDPs: :py:class:`craam.MDPIR`
@@ -51,10 +51,6 @@ cdef extern from "RMDP.hpp" namespace 'craam' nogil:
     ctypedef vector[long] indvec
     ctypedef unsigned long size_t
                                             
-    cdef cppclass Uncertainty:
-        pass 
-
-
     cdef cppclass CTransition "craam::Transition":
         CTransition() 
         CTransition(const indvec& indices, const numvec& probabilities, const numvec& rewards)

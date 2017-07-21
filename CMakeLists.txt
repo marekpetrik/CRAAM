@@ -25,7 +25,7 @@ endif()
 
 # **** Find packages ****
 find_package(OpenMP)
-find_package(Boost COMPONENTS unit_test_framework ) # CMake does not detect header-only packages. Also needs uBlas and format
+find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests (testit) require Boost unit test library and may not compile." )
@@ -44,7 +44,6 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ON)
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_ADVANCED "Build simulation functionality beyond pure RMDPs (requires Boost)" OFF)
 
 # **** CONFIGURATION ****
 
@@ -88,26 +87,16 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/valueiteration.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/values.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/robust_values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
           )
 set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test2.cpp)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
-
-if (BUILD_ADVANCED)
-    # whether to build the simulation component of the library
-    set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
-                    )
-    set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
-
-    # whether to build the implementable component of the library
-    set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
-    set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_implementable.cpp)
-endif (BUILD_ADVANCED)
 
 # **** LIBRARY ****
 #add_library (craam STATIC ${SRCS} )

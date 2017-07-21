@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <numeric>

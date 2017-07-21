@@ -4,6 +4,7 @@
 #include "Transition.hpp"
 #include "modeltools.hpp"
 #include "algorithms/values.hpp"
+#include "algorithms/robust_values.hpp"
 #include "algorithms/occupancies.hpp"
 
 #include <vector>
@@ -340,8 +341,6 @@ protected:
 /**
 An MDP with implementability constraints. The class contains solution
 methods that rely on robust MDP reformulation of the problem.
-
-Uses L1 version of the robust MDP
  */
 class MDPI_R : public MDPI{
 
