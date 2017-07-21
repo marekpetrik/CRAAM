@@ -8,7 +8,7 @@ try:
     from Cython.Distutils import build_ext  
     import numpy
 except:
-    print('ERROR: Setup requires Cython and numpy.')
+    print('ERROR: Setup requires Cython and Numpy.')
     raise
 
 # read the version of the package
@@ -27,9 +27,9 @@ ext_modules = [
     Extension(
         "craam.crobust",
         ["craam/crobust.pyx"],
-        extra_compile_args = ['-std=c++14','-fopenmp','-O2','-march=native'],
+        extra_compile_args = ['-std=c++14','-fopenmp','-O3','-march=native'],
         extra_link_args=['-fopenmp'],
-        include_dirs = [numpy.get_include(),'craam/include']),
+        include_dirs = [numpy.get_include(), '../']),
     ]
 
 setup(

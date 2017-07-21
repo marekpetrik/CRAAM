@@ -1,7 +1,6 @@
 # distutils: language = c++
-# distutils: libraries = craam
-# distutils: library_dirs = ../lib 
-# distutils: include_dirs = ../include 
+# distutils: include_dirs = ../craam
+
 
 """
 A suite of tools for sampling, solving and manipulating MDPs. Includes
@@ -9,8 +8,8 @@ robust and interpretable MDPs.
 
 The main functionality is provided by the individual classes below:
 
-- Solve MDPs: :py:class:`craam.MDP`
-- Solve Robust MDPs: :py:class:`craam.RMDP`
+- Model and solve MDPs: :py:class:`craam.MDP`
+- Model and solve RMDPs (with outcomes): :py:class:`craam.RMDP`
 - Simulate MDPs and generate samples: :py:class:`craam.SimulatorMDP`, :py:class:`craam.DiscreteSamples`
 - Construct MDPs from samples: :py:class:`craam.SampledMDP`, :py:class:`craam.DiscreteSamples`
 - Solve interpretable MDPs: :py:class:`craam.MDPIR`
@@ -37,30 +36,21 @@ from math import sqrt
 import warnings 
 from cython.operator import dereference
 
-# The following definition is for backwards compatibility with Cython 0.23
-# replace in 0.24 by
-#   from libcpp.memory cimport make_shared
-cdef extern from "<memory>" namespace "std" nogil:
-    shared_ptr[T] make_shared[T](...) except +
-    unique_ptr[T] make_unique[T](...) # except +
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
+from libcpp.memory cimport make_shared
+# Replace above for backwards compatibility with Cython 0.23 by text below
+#cdef extern from "<memory>" namespace "std" nogil:
+#    shared_ptr[T] make_shared[T](...) except +
+#    unique_ptr[T] make_unique[T](...) # except +
+
+
+cdef extern from "RMDP.hpp" namespace 'craam' nogil:
                                             
     ctypedef double prec_t
     ctypedef vector[double] numvec
     ctypedef vector[long] indvec
     ctypedef unsigned long size_t
                                             
-    cdef cppclass Uncertainty:
-        pass 
-
-    cdef cppclass SolutionDscDsc:
-        numvec valuefunction
-        indvec policy
-        indvec outcomes
-        prec_t residual
-        long iterations
-
     cdef cppclass CTransition "craam::Transition":
         CTransition() 
         CTransition(const indvec& indices, const numvec& probabilities, const numvec& rewards)
@@ -93,63 +83,84 @@ cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
         size_t state_count() 
         CRegularState& get_state(long stateid)
 
-        SolutionDscDsc vi_jac(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) const;
-
-        SolutionDscDsc vi_gs(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) const;
-
-        SolutionDscDsc mpi_jac(Uncertainty uncert,
-                        prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations_pi,
-                        prec_t maxresidual_pi,
-                        unsigned long iterations_vi,
-                        prec_t maxresidual_vi,
-                        bool show_progress) const;
-
-        SolutionDscDsc vi_jac_fix(prec_t discount,
-                        const indvec& policy,
-                        const indvec& natpolicy,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) const;
-        
         string to_json() const;
 
+cdef extern from "algorithms/values.hpp" namespace "craam::algorithms" nogil:
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam::Uncertainty' nogil:
-    cdef Uncertainty Robust
-    cdef Uncertainty Optimistic
-    cdef Uncertainty Average 
+    cdef cppclass Solution:
+        numvec valuefunction
+        indvec policy
+        indvec outcomes
+        prec_t residual
+        long iterations
+
+    Solution csolve_vi_mdp "craam::algorithms::solve_vi"(const CMDP& mdp, prec_t discount,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations,
+                    prec_t maxresidual) except +;
+
+    Solution csolve_mpi_mdp "craam::algorithms::solve_mpi"(const CMDP& mdp, prec_t discount,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi,
+                    bool show_progress) except +;
     
-cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
+SolutionRobustTuple = namedtuple("Solution", ("valuefunction", "policy", "residual", "iterations","natpolicy")) 
+
+cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+
+    cdef cppclass SolutionRobust:
+        numvec valuefunction
+        indvec policy
+        vector[numvec] natpolicy
+        prec_t residual
+        long iterations
+
+    ctypedef pair[numvec, prec_t] vec_scal_t 
+    ctypedef vec_scal_t (*NatureResponse)(const numvec& v, const numvec& p, prec_t threshold)
+
+    cdef NatureResponse string_to_nature(string s);
+
+cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+    SolutionRobust crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
+                    NatureResponse nature, const numvec& thresholds,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations,
+                    prec_t maxresidual) except +
+
+
+    SolutionRobust crsolve_mpi_mdp "craam::algorithms::rsolve_mpi"(
+                    CMDP& mdp, prec_t discount,
+                    NatureResponse nature, const numvec& thresholds,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi,
+                    bool show_progress) except +
+
+cdef extern from "modeltools.hpp" namespace 'craam' nogil:
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
-
-from enum import Enum 
-
-class UncertainSet(Enum):
-    """
-    Type of the solution to seek
-    """
-    Robust = 0
-    Optimistic = 1
-    Average = 2
 
 DEFAULT_ITERS = 500
 
+import collections
+
+SolutionTuple = namedtuple("Solution", ("valuefunction", "policy", "residual", "iterations")) 
+
 cdef class MDP:
     """
-    Contains the definition of a standard MDP and related optimization algorithms.
+    Contains the definition of a standard MDP  model and related optimization algorithms. It supports 
+    both regular and robust solutions.
     
     The states, actions, and outcomes are identified by consecutive ids, independently
     numbered for each type.
-    
-    Initialization requires the number of states.
     
     Parameters
     ----------
@@ -170,7 +181,7 @@ cdef class MDP:
 
     def __init__(self, long statecount, double discount):
         self.discount = discount
-        
+
     def __dealloc__(self):
         # this is probably not necessary
         self.thisptr.reset()
@@ -179,6 +190,11 @@ cdef class MDP:
         if valuefunction.shape[0] > 0:
             if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
+
+    cdef _check_policy(self,policy):
+        if policy.shape[0] > 0:
+            if policy.shape[0] != dereference(self.thisptr).state_count():
+                raise ValueError('Partial policy dimensions must match the number of states.')
 
     cpdef copy(self):
         """ Makes a copy of the object """
@@ -279,6 +295,7 @@ cdef class MDP:
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().get_indices()[sampleid]
         
+        
     cpdef get_toids(self, long stateid, long actionid):
         """ 
         Returns the target state for the given state, action, and outcome 
@@ -350,179 +367,7 @@ cdef class MDP:
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().size()
         
-    cpdef vi_gs(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                            double maxresidual=0):
-        """
-        Runs value iteration using the worst case (simplex) distribution for the 
-        outcomes.
-        
-        This is the "Gauss-Seidel" kind of value iteration in which the state values
-        are updated one at a time and directly used in subsequent iterations.
-        
-        This version is not parallelized (and likely would be hard to).
-        
-        Parameters
-        ----------
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        """
-        
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = Average
- 
-        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
-                    valuefunction,iterations,maxresidual)
 
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations
-
-    cpdef vi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                                    double maxresidual=0):
-        """
-        Value iteration. This is the parallel (Jacobi) version of the update 
-        with values updates for all states simultaneously.
-        
-        Parameters
-        ----------
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        """
-
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = Average
-
-        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
-                        valuefunction,iterations,maxresidual)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations
-
-
-    cpdef vi_jac_fix(self, np.ndarray[long] policy, long iterations=DEFAULT_ITERS, \
-                        valuefunction = np.empty(0), double maxresidual=0):
-        """
-        Value iteration for a fixed policy. Can be used to compute the return of a policy. 
-        This is the parallel (Jacobi) version of the update  with values updates for 
-        all states simultaneously.
-        
-        Parameters
-        ----------
-        policy : np.ndarray
-            Policy to use in computing the value function
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        """
-        self._check_value(valuefunction)
-        
-        cdef np.ndarray[long] natpolicy = np.zeros(dereference(self.thisptr).state_count(), dtype=long)
-        cdef SolutionDscDsc sol = dereference(self.thisptr).vi_jac_fix(self.discount,\
-                        policy,natpolicy,valuefunction,iterations,maxresidual)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations
-
-    cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                                    double maxresidual = 0, long valiterations = -1, int stype=0,
-                                    double valresidual=-1, bool show_progress = False):
-        """
-        Runs modified policy iteration using the worst distribution constrained by the threshold 
-        and l1 norm difference from the base distribution.
-        
-        This is the parallel version of the update with values updates for all states
-        simultaneously.
-        
-        Parameters
-        ----------
-        iterations : int, optional
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-        valiterations : int, optional
-            Maximal number of iterations for value function computation. The same as iterations if omitted.
-        valresidual : double, optional 
-            Maximal residual at which iterations of computing the value function 
-            stop. Default is maxresidual / 2.
-        show_progress : bool
-            Whether to report on the progress of the computation
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        """
-
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = Average
-
-        if valiterations <= 0:
-            valiterations = iterations
-
-        if valresidual < 0:
-            valresidual = maxresidual / 2
-
-        cdef SolutionDscDsc sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
-                        valuefunction,iterations,maxresidual,valiterations,\
-                        valresidual,show_progress)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations
 
     cpdef from_matrices(self, np.ndarray[double,ndim=3] transitions, np.ndarray[double,ndim=2] rewards, \
         double ignorethreshold = 1e-10):
@@ -630,7 +475,225 @@ cdef class MDP:
         """
         return dereference(self.thisptr).to_json().decode('UTF-8')
 
-cdef extern from "../include/Samples.hpp" namespace 'craam::msen':
+    cpdef solve_vi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                            policy = np.empty(0), double maxresidual=0):
+        """
+        Runs regular value iteration (no robustness or nature response).
+        
+        This is the "Gauss-Seidel" kind of value iteration in which the state values
+        are updated one at a time and directly used in subsequent iterations.
+        
+        This version is not parallelized (and likely would be hard to).
+
+        Returns a namedtuple SolutionTuple.
+        
+        Parameters
+        ----------
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+        
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        cdef Solution sol = csolve_vi_mdp(dereference(self.thisptr), self.discount,\
+                    valuefunction,policy,iterations,maxresidual)
+
+        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations)
+
+
+    cpdef solve_mpi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1, 
+                                    double valresidual=-1, bool show_progress = False):
+        """
+        Runs regular modified policy iteration with parallelized Jacobi valus updates. No robustness
+        or nature response.
+        
+        Returns a namedtuple SolutionTuple.
+
+        Parameters
+        ----------
+        iterations : int, optional
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        valiterations : int, optional
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
+        valresidual : double, optional 
+            Maximal residual at which iterations of computing the value function 
+            stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        if valiterations <= 0: valiterations = iterations
+        if valresidual < 0: valresidual = maxresidual / 2
+
+        cdef Solution sol = csolve_mpi_mdp(dereference(self.thisptr),self.discount,\
+                        valuefunction,policy,iterations,maxresidual,valiterations,\
+                        valresidual,show_progress)
+
+        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations)
+
+    cpdef rsolve_vi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                            policy = np.empty(0), double maxresidual=0):
+        """
+        Runs robust value iteration.
+        
+        This is the "Gauss-Seidel" kind of value iteration in which the state values
+        are updated one at a time and directly used in subsequent iterations.
+        
+        This version is not parallelized (and likely would be hard to).
+
+        Returns a namedtuple SolutionRobustTuple.
+        
+        Parameters
+        ----------
+        nature : string
+            Type of response of nature. See choose_nature for supported values.
+        thresholds : ndarray
+            Numerical arguments that can be passed to the nature 
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        """
+        
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        cdef SolutionRobust sol = crsolve_vi_mdp(dereference(self.thisptr), self.discount,\
+                        string_to_nature(nature), thresholds,
+                        valuefunction,policy,iterations,maxresidual)
+
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations,sol.natpolicy)
+
+
+    cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1,  
+                                    double valresidual=-1, bool show_progress = False):
+        """
+        Runs robust modified policy iteration with parallelized Jacobi value updates.         
+
+        Returns a namedtuple SolutionRobustTuple.
+
+        Parameters
+        ----------
+        nature : string
+            Type of response of nature. See choose_nature for supported values.
+        thresholds : ndarray
+            Numerical arguments that can be passed to the nature 
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        iterations : int, optional
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        valiterations : int, optional
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
+        valresidual : double, optional 
+            Maximal residual at which iterations of computing the value function 
+            stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        """
+
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        if valiterations <= 0: valiterations = iterations
+        if valresidual < 0: valresidual = maxresidual / 2
+
+        cdef SolutionRobust sol = crsolve_mpi_mdp(dereference(self.thisptr),self.discount,\
+                        string_to_nature(nature), thresholds,
+                        valuefunction,policy,iterations,maxresidual,valiterations,\
+                        valresidual,show_progress)
+
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations, sol.natpolicy)
+cdef extern from "Samples.hpp" namespace 'craam::msen':
     
     cdef cppclass CDiscreteSamples "craam::msen::DiscreteSamples":
 
@@ -746,8 +809,7 @@ cdef class DiscreteSamples:
         return dereference(self._thisptr).get_steps()
 
 
-
-cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
+cdef extern from "Simulation.hpp" namespace 'craam::msen' nogil:
 
     cdef cppclass ModelSimulator:
         ModelSimulator(const shared_ptr[CMDP] mdp, const CTransition& initial, long seed);
@@ -923,7 +985,7 @@ cdef class SimulatorMDP:
             del rp
 
 
-cdef extern from "../include/Simulation.hpp" namespace 'craam::msen' nogil:
+cdef extern from "Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
         CSampledMDP();
         void add_samples(const CDiscreteSamples& samples);
@@ -968,13 +1030,8 @@ cdef class SampledMDP:
         cdef CTransition t = dereference(self._thisptr).get_initial()
         return np.array(t.probabilities_vector(state_count))
             
-
-# distutils: language = c++
-# distutils: libraries = craam
-# distutils: library_dirs = ../lib 
-# distutils: include_dirs = ../include 
-
-cdef extern from "../include/definitions.hpp" namespace 'craam' nogil:
+  
+cdef extern from "definitions.hpp" namespace 'craam' nogil:
     pair[numvec,double] c_worstcase_l1 "craam::worstcase_l1" (const vector[double] & z, \
                         const vector[double] & q, double t)
 
@@ -1039,71 +1096,103 @@ def worstcase_l1_dst(np.ndarray[double] z, np.ndarray[double] q, double t):
     cdef pair[numvec, double] x = c_worstcase_l1(z,q,t)
     return x.first, x.second
 
-cdef extern from "../include/RMDP.hpp" namespace 'craam' nogil:
 
-    cdef cppclass SolutionDscProb:
-        numvec valuefunction
-        indvec policy
-        vector[numvec] outcomes
-        prec_t residual
-        long iterations
 
-    cdef cppclass CL1OutcomeAction "craam::L1OutcomeAction":
+
+
+cdef extern from "algorithms/values.hpp" namespace 'craam::algorithms' nogil:
+
+    Solution csolve_vi_rmdp "craam::algorithms::solve_vi"(CRMDP& mdp, prec_t discount,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations,
+                    prec_t maxresidual) except +;
+
+    Solution csolve_mpi_rmdp "craam::algorithms::solve_mpi"(CRMDP& mdp, prec_t discount,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi,
+                    bool show_progress) except +;
+
+cdef extern from "algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+    SolutionRobust crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
+                    NatureResponse nature, const numvec& thresholds,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations,
+                    prec_t maxresidual) except +
+
+
+    SolutionRobust crsolve_mpi "craam::algorithms::rsolve_mpi"(
+                    CRMDP& mdp, prec_t discount,
+                    NatureResponse nature, const numvec& thresholds,
+                    const numvec& valuefunction,
+                    const indvec& policy,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi,
+                    bool show_progress) except +
+
+def choose_nature(nature_name):
+    """
+    The function does not do anything; it only serves as a documentation point.
+
+    These nature values are currently supported:
+
+    - robust_unbounded
+    - optimistic_unbounded
+    - robust_l1
+    - optimistic_l1
+    """
+    pass
+
+
+cdef extern from "RMDP.hpp" namespace 'craam' nogil:
+
+    cdef cppclass CL1OutcomeAction "craam::WeightedOutcomeAction":
         CTransition& get_outcome(long outcomeid)
         size_t outcome_count()
 
-        void set_threshold(prec_t threshold)
-        prec_t get_threshold()
 
-    cdef cppclass CL1RobustState "craam::L1RobustState":
+    cdef cppclass CL1RobustState "craam::RobustState":
         CL1OutcomeAction& get_action(long actionid)
         size_t action_count()
 
-    cdef cppclass RMDP_L1:
-        RMDP_L1(long)
-        RMDP_L1(const RMDP_L1&)
-        RMDP_L1()
+    cdef cppclass CRMDP "craam::RMDP":
+        CRMDP(long)
+        CRMDP(const CRMDP&)
+        CRMDP()
 
         size_t state_count() 
         CL1RobustState& get_state(long stateid)
 
         void normalize()
-
-        SolutionDscProb vi_jac(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-
-        SolutionDscProb vi_gs(Uncertainty uncert, prec_t discount,
-                        const numvec& valuefunction,
-                        unsigned long iterations,
-                        prec_t maxresidual) 
-
-        SolutionDscProb mpi_jac(Uncertainty uncert,
-                    prec_t discount,
-                    const numvec& valuefunction,
-                    unsigned long iterations_pi,
-                    prec_t maxresidual_pi,
-                    unsigned long iterations_vi,
-                    prec_t maxresidual_vi,
-                    bool show_progress)
-        
+                
         string to_json() const
 
-cdef extern from "../include/modeltools.hpp" namespace 'craam' nogil:
-    void set_outcome_thresholds[Model](Model& mdp, prec_t threshold)
+cdef extern from "modeltools.hpp" namespace 'craam' nogil:
     void set_uniform_outcome_dst[Model](Model& mdp)
     bool is_outcome_dst_normalized[Model](const Model& mdp)
     void normalize_outcome_dst[Model](Model& mdp)
     void set_outcome_dst[Model](Model& mdp, size_t stateid, size_t actionid, const numvec& dist)
-    RMDP_L1 robustify_l1(const CMDP& mdp, bool allowzeros)
+    CRMDP robustify(const CMDP& mdp, bool allowzeros)
+
 
 cdef class RMDP:
     """
-    An interface for solving robust MDPs (worst-case nature) and o
-    ptimistic MDPs (best-case nature). The uncertainty is bounded by L1 norms. 
-    
+    An extended MDP class that supports not only states and actions, but also adds outcomes which allow
+    for a more convenient formulation of low-rank ambiguities and correlations between states and actions.
+
+    The robust solution to this class will satisfy the following Bellman optimality equation:
+
+    \f[v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s\in\mathcal{S}} ( r(s,a,o,s') + \gamma P(s,a,o,s') v(s') ) ~.\f]
+
+    Here, \f$\mathcal{S}\f$ are the states, \f$\mathcal{A}\f$ are the actions, \f$\mathcal{O}\f$ are the outcomes.
+            
     The states, actions, and outcomes are identified by consecutive ids, independently
     numbered for each type.
     
@@ -1111,18 +1200,18 @@ cdef class RMDP:
     
     Parameters
     ----------
-    statecount : int
+    statecount : int, optional
         An estimate of the numeber of states (for pre-allocation). When more states
         are added, the estimate is readjusted.
-    discount : double
+    discount : double, optional
         The discount factor
     """
     
-    cdef shared_ptr[RMDP_L1] thisptr
+    cdef shared_ptr[CRMDP] thisptr
     cdef public double discount
 
     def __cinit__(self, long statecount, double discount):
-        self.thisptr = make_shared[RMDP_L1](statecount)
+        self.thisptr = make_shared[CRMDP](statecount)
 
     def __init__(self, long statecount, double discount):
         self.discount = discount
@@ -1136,18 +1225,10 @@ cdef class RMDP:
             if valuefunction.shape[0] != dereference(self.thisptr).state_count():
                 raise ValueError('Value function dimensions must match the number of states.')
 
-    cdef Uncertainty _convert_uncertainty(self,stype):
-        cdef Uncertainty unc
-        if stype == 0:
-            unc = Robust
-        elif stype == 1:
-            unc = Optimistic
-        elif stype == 2:
-            unc = Average
-        else:
-            raise ValueError("Incorrect solution type '%s'." % stype )
-        
-        return unc
+    cdef _check_policy(self,policy):
+        if policy.shape[0] > 0:
+            if policy.shape[0] != dereference(self.thisptr).state_count():
+                raise ValueError('Partial policy dimensions must match the number of states.')
 
     cpdef add_transition(self, long fromid, long actionid, long outcomeid, long toid, double probability, double reward):
         """
@@ -1169,7 +1250,7 @@ cdef class RMDP:
         reward : float
             Reward associated with the transition
         """        
-        add_transition[RMDP_L1](dereference(self.thisptr),fromid, actionid, outcomeid,
+        add_transition[CRMDP](dereference(self.thisptr),fromid, actionid, outcomeid,
                                 toid, probability, reward)
 
     cpdef long state_count(self):
@@ -1215,35 +1296,6 @@ cdef class RMDP:
             Action index
         """
         return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome(outcomeid).size()
-
-    cpdef double get_threshold(self, long stateid, long actionid):
-        """ 
-        Returns the robustness threshold for the given state and action 
-
-        Parameters
-        ----------
-        stateid : int
-            State index
-        actionid : int
-            Action index
-        """
-        return dereference(self.thisptr).get_state(stateid).get_action(actionid).get_threshold()
-
-    cpdef set_threshold(self, long stateid, long actionid, double threshold):
-        """ 
-        Sets the robustness threshold for the given state and action 
-
-        Parameters
-        ----------
-        stateid : int
-            State index
-        actionid : int
-            Action index
-        threshold : double
-            New threshold value
-        """
-        dereference(self.thisptr).get_state(stateid).get_action(actionid).set_threshold(threshold)
-
 
     cpdef double get_reward(self, long stateid, long actionid, long outcomeid, long sampleid):
         """ 
@@ -1362,7 +1414,7 @@ cdef class RMDP:
 
     cpdef set_distribution(self, long fromid, long actionid, np.ndarray[double] distribution):
         """
-        Sets the base distribution over the states and the threshold
+        Sets the base distribution over outcomes
         
         Parameters
         ----------
@@ -1378,30 +1430,16 @@ cdef class RMDP:
         if np.min(distribution) < 0:
             raise ValueError('incorrect distribution (negative)', distribution)    
 
-        set_outcome_dst[RMDP_L1](dereference(self.thisptr), fromid, actionid, distribution)
+        set_outcome_dst[CRMDP](dereference(self.thisptr), fromid, actionid, distribution)
         
     cpdef set_uniform_distributions(self):
         """ Sets all the outcome distributions to be uniform. """
-        set_uniform_outcome_dst[RMDP_L1](dereference(self.thisptr))
-
-    cpdef set_uniform_thresholds(self, double threshold):
-        """
-        Sets the same threshold for all states.
-        
-        Can use ``self.set_distribution`` to set the thresholds individually for 
-        each states and action.
-        
-        See Also
-        --------
-        self.set_distribution
-        """
-        set_outcome_thresholds[RMDP_L1](dereference(self.thisptr), \
-                                        threshold)
+        set_uniform_outcome_dst[CRMDP](dereference(self.thisptr))
 
     cpdef copy(self):
         """ Makes a copy of the object """
         r = RMDP(0, self.discount)
-        r.thisptr.reset(new RMDP_L1(dereference(self.thisptr)))
+        r.thisptr.reset(new CRMDP(dereference(self.thisptr)))
         return r
 
     cpdef robustify_mdp(self, MDP mdp, bool allowzeros):
@@ -1419,6 +1457,9 @@ cdef class RMDP:
 
         The initial thresholds are all set to 0.
 
+        When allowzeros = false, then robust solutions to the RMDP should be the same 
+        as the robust solutions to the MDP.
+
         Parameters
         ----------
         mdp : MDP   
@@ -1426,159 +1467,8 @@ cdef class RMDP:
         allowzeros : bool
             Whether to allow outcomes to states with zero transition probabilities
         """
-        cdef RMDP_L1 rmdp = robustify_l1(dereference(mdp.thisptr), allowzeros)
-        self.thisptr.reset(new RMDP_L1(rmdp))
-
-        
-    cpdef vi_gs(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                            double maxresidual=0, int stype=0):
-        """
-        Runs value iteration using the worst case (simplex) distribution for the 
-        outcomes.
-        
-        This is the "Gauss-Seidel" kind of value iteration in which the state values
-        are updated one at a time and directly used in subsequent iterations.
-        
-        This version is not parallelized (and likely would be hard to).
-        
-        Parameters
-        ----------
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-        stype : int  {0, 1, 2}, optional
-            Robust (0) or optimistic (1) solution or (2) average solution. One
-            can use e.g. UncertainSet.Robust.value.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        outcomes : np.ndarray
-            Outcomes selected
-        """
-        
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = self._convert_uncertainty(stype)
- 
-        cdef SolutionDscProb sol = dereference(self.thisptr).vi_gs(unc,self.discount,\
-                    valuefunction,iterations,maxresidual)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.outcomes
-
-
-    cpdef vi_jac(self, int iterations=DEFAULT_ITERS,valuefunction = np.empty(0), \
-                                    double maxresidual=0, int stype=0):
-        """
-        Runs value iteration using the worst case (simplex) distribution for the 
-        outcomes.
-        
-        This is the parallel version of the update with values updates for all states
-        simultaneously.
-        
-        Parameters
-        ----------
-        iterations : int
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-        stype : int  (0, 1, 2}
-            Robust (0) or optimistic (1) solution or (2) average. One
-            can use e.g. UncertainSet.Robust.value.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        outcomes : np.ndarray
-            Outcomes selected
-        """
-
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = self._convert_uncertainty(stype)
-
-        cdef SolutionDscProb sol = dereference(self.thisptr).vi_jac(unc,self.discount,\
-                        valuefunction,iterations,maxresidual)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.outcomes
-
-
-    cpdef mpi_jac(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0), \
-                                    double maxresidual = 0, long valiterations = 1000, int stype=0,
-                                    double valresidual=-1, bool show_progress = False):
-        """
-        Runs modified policy iteration using the worst distribution constrained by the threshold 
-        and l1 norm difference from the base distribution.
-        
-        This is the parallel version of the update with values updates for all states
-        simultaneously.
-        
-        Parameters
-        ----------
-        iterations : int, optional
-            Maximal number of iterations
-        valuefunction : np.ndarray, optional
-            The initial value function. Created automatically if not provided.            
-        maxresidual : double, optional
-            Maximal residual at which the iterations stop. A negative value
-            will ensure the necessary number of iterations.
-        valiterations : int, optional
-            Maximal number of iterations for value function computation
-        stype : int  (0, 1, 2}
-            Robust (0) or optimistic (1) solution or (2) average solution. One
-            can use e.g. UncertainSet.Robust.value.
-        valresidual : double, optional 
-            Maximal residual at which iterations of computing the value function 
-            stop. Default is maxresidual / 2.
-            
-        Returns
-        -------
-        valuefunction : np.ndarray
-            Optimized value function
-        policy : np.ndarray
-            Policy greedy for value function
-        residual : double
-            Residual for the value function
-        iterations : int
-            Number of iterations taken
-        outcomes : np.ndarray
-            Outcomes selected
-        """
-
-        self._check_value(valuefunction)
-        cdef Uncertainty unc = self._convert_uncertainty(stype)
-
-        if valresidual < 0:
-            valresidual = maxresidual / 2
-
-        cdef SolutionDscProb sol = dereference(self.thisptr).mpi_jac(unc,self.discount,\
-                        valuefunction,iterations,maxresidual,valiterations,\
-                        valresidual, show_progress)
-
-        return np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.outcomes
-
+        cdef CRMDP rmdp = robustify(dereference(mdp.thisptr), allowzeros)
+        self.thisptr.reset(new CRMDP(rmdp))
 
     cpdef from_matrices(self, np.ndarray[double,ndim=3] transitions, np.ndarray[double,ndim=2] rewards, \
         np.ndarray[long] actions, np.ndarray[long] outcomes, double ignorethreshold = 1e-10):
@@ -1638,13 +1528,232 @@ cdef class RMDP:
         """
         return dereference(self.thisptr).to_json().decode('UTF-8')
 
+    cpdef solve_vi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                            policy = np.empty(0), double maxresidual=0):
+        """
+        Runs regular value iteration (no robustness or nature response).
+        
+        This is the "Gauss-Seidel" kind of value iteration in which the state values
+        are updated one at a time and directly used in subsequent iterations.
+        
+        This version is not parallelized (and likely would be hard to).
+
+        Returns a namedtuple SolutionTuple.
+        
+        Parameters
+        ----------
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+        
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        cdef Solution sol = csolve_vi_rmdp(dereference(self.thisptr), self.discount,\
+                    valuefunction,policy,iterations,maxresidual)
+
+        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations)
+
+
+    cpdef solve_mpi(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1,  
+                                    double valresidual=-1, bool show_progress = False):
+        """
+        Runs regular modified policy iteration with parallelized Jacobi valus updates. No robustness
+        or nature response.
+        
+        Returns a namedtuple SolutionTuple.
+
+        Parameters
+        ----------
+        iterations : int, optional
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        valiterations : int, optional
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
+        valresidual : double, optional 
+            Maximal residual at which iterations of computing the value function 
+            stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        if valiterations <= 0: valiterations = iterations
+        if valresidual < 0: valresidual = maxresidual / 2
+
+        cdef Solution sol = csolve_mpi_rmdp(dereference(self.thisptr),self.discount,\
+                        valuefunction,policy,iterations,maxresidual,valiterations,\
+                        valresidual,show_progress)
+
+        return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations)
+
+    cpdef rsolve_vi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                            policy = np.empty(0), double maxresidual=0):
+        """
+        Runs robust value iteration.
+        
+        This is the "Gauss-Seidel" kind of value iteration in which the state values
+        are updated one at a time and directly used in subsequent iterations.
+        
+        This version is not parallelized (and likely would be hard to).
+
+        Returns a namedtuple SolutionRobustTuple.
+        
+        Parameters
+        ----------
+        nature : string
+            Type of response of nature. See choose_nature for supported values.
+        thresholds : ndarray
+            Numerical arguments that can be passed to the nature 
+        iterations : int
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        """
+        
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        cdef SolutionRobust sol = crsolve_vi(dereference(self.thisptr), self.discount,\
+                        string_to_nature(nature), thresholds,
+                        valuefunction,policy,iterations,maxresidual)
+
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations,sol.natpolicy)
+
+
+    cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1, 
+                                    double valresidual=-1, bool show_progress = False):
+        """
+        Runs robust modified policy iteration with parallelized Jacobi value updates.         
+
+        Returns a namedtuple SolutionRobustTuple.
+
+        Parameters
+        ----------
+        nature : string
+            Type of response of nature. See choose_nature for supported values.
+        thresholds : ndarray
+            Numerical arguments that can be passed to the nature 
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        iterations : int, optional
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            Partial policy specification. Best action is chosen for states with 
+            policy[state] = -1, otherwise the fixed value is used. 
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        valiterations : int, optional
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
+        valresidual : double, optional 
+            Maximal residual at which iterations of computing the value function 
+            stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        natpolicy : np.ndarray
+            Best responses selected by nature
+        """
+
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        if valiterations <= 0: valiterations = iterations
+        if valresidual < 0: valresidual = maxresidual / 2
+
+        cdef SolutionRobust sol = crsolve_mpi(dereference(self.thisptr),self.discount,\
+                        string_to_nature(nature), thresholds,
+                        valuefunction,policy,iterations,maxresidual,valiterations,\
+                        valresidual,show_progress)
+
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations, sol.natpolicy)
+
 
 
 # ***************************************************************************
 # *******    Implementable    *******
 # ***************************************************************************
 
-cdef extern from "../include/ImMDP.hpp" namespace 'craam::impl':
+cdef extern from "ImMDP.hpp" namespace 'craam::impl':
     
     cdef cppclass MDPI_R:
     
@@ -1652,12 +1761,12 @@ cdef extern from "../include/ImMDP.hpp" namespace 'craam::impl':
 
         vector[long] obspol2statepol(const vector[long]& obspol) except +;
         
-        const RMDP_L1& get_robust_mdp() except +
+        const CRMDP& get_robust_mdp() except +
 
         vector[long] solve_reweighted(long iterations, double discount) except +;
         vector[long] solve_robust(long iterations, double threshold, double discount) except +;
         
-        double total_return(const vector[long]& obspol, double discount, double precision);
+        double total_return(double discount, double precision);
         
         void to_csv_file(const string& output_mdp, const string& output_state2obs, \
                         const string& output_initial, bool headers) except +;
@@ -1670,7 +1779,6 @@ cdef extern from "../include/ImMDP.hpp" namespace 'craam::impl':
                                             const string& input_initial, \
                                             bool headers) except +;
                                             
-
 cdef class MDPIR:
     """
     MDP with Implementability constraints. The implementability constraints
@@ -1767,7 +1875,7 @@ cdef class MDPIR:
         Returns the robust representation of the implementable MDP
         """
         cdef RMDP result = RMDP(0, self.discount)
-        result.thisptr = make_shared[RMDP_L1](dereference(self.thisptr).get_robust_mdp())
+        result.thisptr = make_shared[CRMDP](dereference(self.thisptr).get_robust_mdp())
         return result
 
     def obspol2statepol(self, np.ndarray[long] obspol):
@@ -1787,7 +1895,7 @@ cdef class MDPIR:
     def total_return(self, np.ndarray[long] obspol):
         """ The return of an interpretable policy """
         assert len(obspol) == self.obs_count()
-        return dereference(self.thisptr).total_return(obspol, self.discount, 1e-8)
+        return dereference(self.thisptr).total_return(self.discount, 1e-8)
 
     def to_csv(self, mdp_file, state2obs_file, initial_file, headers):
         """

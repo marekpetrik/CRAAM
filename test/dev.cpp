@@ -1,5 +1,11 @@
 // Simple development tests
 
+#include "craam/ImMDP.hpp"
+#include "craam/Simulation.hpp"
+#include "craam/Samples.hpp"
+#include "craam/algorithms/values.hpp"
+
+#include "craam/cpp11-range-master/range.hpp"
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -10,10 +16,6 @@
 #include <iostream>
 #include <iterator>
 
-#include "ImMDP.hpp"
-#include "Simulation.hpp"
-#include "Samples.hpp"
-#include "cpp11-range-master/range.hpp"
 
 using namespace std;
 using namespace craam;
@@ -125,7 +127,7 @@ int main(void){
     auto mdp = smdp.get_mdp();
     auto&& initial = smdp.get_initial();
 
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,discount);
+    auto&& sol = algorithms::solve_mpi(*mdp,discount);
 
     cout << "Optimal policy: "; print_vector(sol.policy); cout << "Return " <<  sol.total_return(initial) << endl;
 
@@ -156,8 +158,7 @@ int main(void){
 
     isol = mdpi.solve_reweighted(10, discount, randompolicy);
 
-    auto sol_impl = mdp->vi_jac_fix(discount, mdpi.obspol2statepol(isol),
-                    indvec(mdp->state_count(), 0));
+    auto sol_impl = solve_mpi(*mdp, discount, numvec(0), mdpi.obspol2statepol(isol));
 
     cout << "Implementable pol: "; print_vector(isol);
     cout << "  Return: " << sol_impl.total_return(initial) << endl;
@@ -171,8 +172,7 @@ int main(void){
         (void)(i);
         auto rand_pol = mdpi.random_policy();
 
-        auto ret = mdp->vi_jac_fix(discount, mdpi.obspol2statepol(rand_pol),
-                    indvec(mdp->state_count(), 0)).total_return(initial);
+        auto ret = solve_mpi(*mdp, discount, numvec(0), mdpi.obspol2statepol(rand_pol)).total_return(initial);
 
         if(ret > max_return){
             max_pol = rand_pol;

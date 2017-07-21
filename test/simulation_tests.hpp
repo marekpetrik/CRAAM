@@ -1,5 +1,7 @@
-#include "Simulation.hpp"
-#include "modeltools.hpp"
+#include "craam/Simulation.hpp"
+#include "craam/modeltools.hpp"
+#include "craam/RMDP.hpp"
+#include "craam/algorithms/values.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -8,38 +10,19 @@
 #include <functional>
 
 #include <boost/functional/hash.hpp>
-#include "cpp11-range-master/range.hpp"
-
 
 using namespace std;
 using namespace craam;
 using namespace craam::msen;
+using namespace craam::algorithms;
 using namespace util::lang;
 
 
-#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
-
-#define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
-    using std::distance; \
-    using std::begin; \
-    using std::end; \
-    auto a = begin(aa), ae = end(aa); \
-    auto b = begin(bb); \
-    BOOST_REQUIRE_EQUAL(distance(a, ae), distance(b, end(bb))); \
-    for(; a != ae; ++a, ++b) { \
-        BOOST_CHECK_CLOSE(*a, *b, tolerance); \
-    } \
-}
-
-//#define BOOST_TEST_MODULE MainModule
-#include <boost/test/unit_test.hpp>
 
 struct TestState{
     int index;
 
-    TestState(int i){
-        this->index = i;
+    TestState(int i) : index(i){
     };
 };
 
@@ -80,6 +63,7 @@ BOOST_AUTO_TEST_CASE(basic_simulation) {
 }
 
 
+
 /**
 A simple simulator class. The state represents a position in a chain
 and actions move it up and down. The reward is equal to the position.
@@ -116,11 +100,11 @@ public:
         return make_pair((double) pos, nextpos);
     }
 
-    bool end_condition(const int state){
+    bool end_condition(const int){
         return false;
     }
 
-    int action(State state, long index) const{
+    int action(State , long index) const{
         return actions_list[index];
     }
 
@@ -149,6 +133,7 @@ namespace std{
         };
     };
 }
+
 
 BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si ) {
     Counter sim(0.9,0,1);
@@ -255,12 +240,12 @@ BOOST_AUTO_TEST_CASE(construct_mdp_from_samples_si_pol){
     shared_ptr<const MDP> mdp = smdp.get_mdp();
 
     // check that the number of actions is correct (2)
-    for(auto i : range((size_t)0, mdp->state_count())){
+    for(size_t i = 0; i < mdp->state_count(); i++){
         if(mdp->get_state(i).action_count() > 0)
             BOOST_CHECK_EQUAL(mdp->get_state(i).action_count(), 2);
     }
 
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
+    auto&& sol = mpi_jac(*mdp,0.9);
 
     BOOST_CHECK_CLOSE(sol.total_return(smdp.get_initial()), 51.313973, 1e-3);
 }
@@ -306,8 +291,8 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
 
     auto newmdp = smdp.get_mdp();
 
-    auto solution1 = m->mpi_jac(Uncertainty::Robust, 0.9);
-    auto solution2 = newmdp->mpi_jac(Uncertainty::Robust, 0.9);
+    auto solution1 = mpi_jac(*m, 0.9);
+    auto solution2 = mpi_jac(*newmdp, 0.9);
 
     BOOST_CHECK_CLOSE(solution1.total_return(initial),8.90971,1e-3);
     //cout << "Return in original MDP " << solution1.total_return(initial) << endl;
@@ -322,9 +307,9 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     //cout << "Computed policy " << policy << endl;
     indvec policytarget{1,1,1};
     BOOST_CHECK_EQUAL_COLLECTIONS(policy.begin(), policy.end(), policytarget.begin(), policytarget.end());
-    auto solution3 = m->vi_jac_fix(0.9, policy, indvec(m->size(),0));
+    auto solution3 = mpi_jac(*m, 0.9, numvec(0), PolicyDeterministic(policy));
 
-    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-3);
+    BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-2);
     //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;
 
     ModelDeterministicPolicy dp(ms, policy);
