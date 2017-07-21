@@ -9,7 +9,9 @@ Provides abstractions that allow generalization to both robust and regular MDPs.
 #include <type_traits>
 #include "../cpp11-range-master/range.hpp"
 
-namespace craam {namespace algorithms{
+namespace craam {
+/// Main namespace for algorithms that operate on MDPs and RMDPs
+namespace algorithms{
 
 using namespace std;
 using namespace util::lang;

@@ -22,14 +22,14 @@
 Introduction
 ------------
 
-Craam is a **header-only** C++ library for solving  Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The optimistic obective is the opposite of robust, in which nature chooses the best possible realization of the uncertain values. The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path [Puterman2005]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
+Craam is a **header-only** C++ library for solving  Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The optimistic objective is the opposite of robust, in which nature chooses the best possible realization of the uncertain values. The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path [Puterman2005]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
  
 The library is build around two main data structures: MDP and RMDP. **MDP** is the standard model that consists of states $\mathcal{S}$ and actions $\mathcal{A}$. The robust solution for an MDP would satisfy, for example, the following Bellman optimality equation:
-$$ v(s) = \max_{a \in \mathcal{A}} \min_{p \in \Delta} \left\{ \sum_{s'\in\mathcal{S}} p(s') ( r(s,a,s') + \gamma \,  \, v(s') ) ~:~ \|p - P(s,a,\cdot) \| \le \psi, \; p \ll P(s,a,\cdot) \right\}~. $$
+\f[ v(s) = \max_{a \in \mathcal{A}} \min_{p \in \Delta} \left\{ \sum_{s'\in\mathcal{S}} p(s') ( r(s,a,s') + \gamma \,  \, v(s') ) ~:~ \|p - P(s,a,\cdot) \| \le \psi, \; p \ll P(s,a,\cdot) \right\}~. \f]
 Note that $p$ is constrained to be **absolutely continuous** with respect to $P(s,a,\cdot)$. This is a hard requirement for all choices of ambiguity (or uncertainty). 
  
 The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. In that case, the robust solution may for example satisfy the following Bellman optimality equation:
-$$ v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s'\in\mathcal{S}} P(s,a,o,s')  ( r(s,a,o,s') + \gamma \, v(s') ) ~. $$
+\f[ v(s) = \max_{a \in \mathcal{A}} \min_{o \in \mathcal{O}} \sum_{s'\in\mathcal{S}} P(s,a,o,s')  ( r(s,a,o,s') + \gamma \, v(s') ) ~. \f]
 Using outcomes makes it more convenient to capture correlations between the ambiguity in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces. The equation above uses the worst outcome, but in general distributions over outcomes are supported.
  
 The available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
@@ -48,9 +48,9 @@ Unit tests provide some examples of how to use the library. For simple end-to-en
  
 The main models supported are:
  
-- `craam::MDP` : plain MDP with no definition of uncertainty
-- `craam::RMDP` : a robust/uncertain with discrete outcomes with L1 constraints on the uncertainty
-- `craam::impl::MDPIR` : an MDP with implementatbility constraints. See [Petrik2016].
+- `craam::MDP` : plain MDP with no specific definition of ambiguity (can be used to compute robust solutions anyway)
+- `craam::RMDP` : an augmented model that adds nature's actions (so-called outcomes) to the model for convenience
+- `craam::impl::MDPIR` : an MDP with implementability constraints. See [Petrik2016].
  
 The regular value-function based methods are in the header `algorithms/values.hpp` and the robust versions are in in the header `algorithms/robust_values.hpp`. There are 4 main value-function based methods:
  
@@ -71,8 +71,9 @@ The following is a simple example of formulating and solving a small MDP.
 
 \code
 
-    #include "RMDP.hpp"
-    #include "modeltools.hpp"
+    #include "craam/RMDP.hpp"
+    #include "craam/modeltools.hpp"
+    #include "craam/algorithms/values.hpp"
 
     #include <iostream>
     #include <vector>
@@ -94,7 +95,7 @@ The following is a simple example of formulating and solving a small MDP.
         add_transition(mdp,2,1,2,1,1.1);
 
         // solve using Jacobi value iteration
-        auto&& re = mdp.mpi_jac(Uncertainty::Average,0.9);
+        auto&& re = algorithms::solve_mpi(mdp,0.9);
 
         for(auto v : re.valuefunction){
             cout << v << " ";
@@ -108,15 +109,12 @@ The following is a simple example of formulating and solving a small MDP.
 To compile the file, run:
 
 \code{.sh}
-     $ g++ -fopenmp -std=c++14 -I<path_to_RAAM.hpp> -L <path_to_libcraam.a> simple.cpp -lcraam
+     $ g++ -fopenmp -std=c++14 -I<path_to_top_craam_folder> simple.cpp
 \endcode
 
-Notice that the order of the arguments matters (`-lcraam` must follow the file name).
 
-Also note that the library first needs to be build. See the README file for the instructions.
-
-Common Use Cases
-----------------
+Supported Use Cases
+--------------------
 
 1. Formulate an uncertain MDP
 2. Compute a solution to an uncertain MDP
