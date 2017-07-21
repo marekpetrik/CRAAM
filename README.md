@@ -3,14 +3,15 @@ CRAAM: Robust And Approximate Markov decision processes
 
 [![Build Status](https://travis-ci.org/marekpetrik/CRAAM.svg?branch=master)](https://travis-ci.org/marekpetrik/CRAAM)
 
-Craam is a C++ library for solving *plain*, *robust*, or *optimistic* Markov decision processes. The library also provides basic tools that enable simulation and construction of MDPs from samples. There is also support for state aggregation and abstraction solution methods.
+Craam is a C++ library for solving Markov decision processes with *regular*, *robust*, or *optimistic* objectives. The library also provides tools for basic simulation, for constructing MDPs from samples, and value function approximation. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
 
-The library supports standard finite or infinite horizon discounted MDPs \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The states and actions must be finite.
-
-The robust model extends the regular MDPs \[Iyengar2005\]. The library allows to model uncertainty in *both* the transitions and rewards, unlike some published papers on this topic. This is modeled by adding an outcome to each action. The outcome is assumed to be minimized by nature, similar to \[Filar1997\]. In other words, outcomes are actions available to nature.
+The library is build around two main data structures: MDP and RMD. **MDP** is the standard model that consists of states 𝒮 and actions 𝒜. The robust solution for an MDP would satisfy, for example, the following Bellman optimality equation:
+*v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*p* ∈ *Δ*</sub>{∑<sub>*s*′∈𝒮</sub>*p*(*s*′)(*r*(*s*,*a*,*s*′)+*γ*  *v*(*s*′)) : ∥*p*−*P*(*s*,*a*,⋅)∥≤*ψ*} .
+ The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. In that case, the robust solution may for example satify the following Bellman optimality equation:
+*v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*o* ∈ 𝒪</sub>∑<sub>*s*′∈𝒮</sub>*P*(*s*, *a*, *o*, *s*′)(*r*(*s*, *a*, *o*, *s*′) + *γ* *v*(*s*′)) .
+ Using outcomes makes it more convenient to capture correlations between the uncertainty in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces.
 
 In summary, the robust MDP problem being solved is:
-*v*(*s*)=max<sub>*a* ∈ 𝒜</sub>min<sub>*o* ∈ 𝒪</sub>∑<sub>*s* ∈ 𝒮</sub>(*r*(*s*, *a*, *o*, *s*′) + *γ**P*(*s*, *a*, *o*, *s*′)*v*(*s*′)) .
 
 Here, 𝒮 are the states, 𝒜 are the actions, 𝒪 are the outcomes.
 
@@ -29,7 +30,7 @@ The library has minimal dependencies and should compile on all Linux and MacOS o
 -   C++14 compatible compiler:
     -   Tested with Linux GCC 4.9.2,5.2.0,6.1.0; does not work with GCC 4.7, 4.8.
     -   Tested with Linux Clang 3.6.2 (and maybe 3.2+).
--   [Boost](http://boost.org) to enable unit tests and for some simple numerical algebra
+-   [Boost](http://boost.org) to enable unit tests
 
 #### Optional Dependencies
 
@@ -230,13 +231,13 @@ rewards = np.column_stack((r1,r2))
 
 mdp = crobust.MDP(states,0.99)
 mdp.from_matrices(transitions,rewards)
-value,policy,residual,iterations = mdp.mpi_jac(100)
+value,policy,residual,iterations = mdp.solve_mpi(100)
 
 print('Value function s0-s9:', value[:10])
 ```
 
-    ## Value function s0-s9: [ 69.66477134  69.69878666  69.86349142  69.35592051  69.72738515
-    ##   69.27471716  69.3910742   69.37349951  69.71188441  69.59685855]
+    ## Value function s0-s9: [ 62.53457193  62.89915887  62.86243706  62.55455014  62.41384687
+    ##   62.3188398   62.62322657  62.46382137  62.86198087  62.21616294]
 
 This example can be easily converted to a robust MDP by appropriately defining additional outcomes (the options available to nature) with transition matrices and rewards.
 
