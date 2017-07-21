@@ -6,7 +6,7 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
-set(VERSION "1.0.0")
+set(VERSION "2.0.0")
 project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
@@ -25,7 +25,7 @@ endif()
 
 # **** Find packages ****
 find_package(OpenMP)
-find_package(Boost COMPONENTS unit_test_framework ) # CMake does not detect header-only packages. Also needs uBlas and format
+find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests (testit) require Boost unit test library and may not compile." )
@@ -44,7 +44,6 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ON)
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
-option (BUILD_ADVANCED "Build advandced functionality beyond pure RMDPs (requires Boost)" ON)
 
 # **** CONFIGURATION ****
 
@@ -75,54 +74,40 @@ endif()
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/craam/config.hpp.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/craam/config.hpp
 )
- 
 
 # **** SOURCE FILES ****
-include_directories (include)
+include_directories (.)
 set (SRCS 
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/Action.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/definitions.cpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/definitions.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/RMDP.cpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/RMDP.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/State.cpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/State.hpp  
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/Transition.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/Transition.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/modeltools.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/modeltools.hpp
-          )
-set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp)
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/definitions.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/RMDP.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/values.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/robust_values.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
+
+set (TSTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/core_tests.hpp 
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/implementable_tests.hpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/test/simulation_tests.hpp
+)
 set (DEV ${CMAKE_CURRENT_SOURCE_DIR}/test/dev.cpp)
 set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
-if (BUILD_ADVANCED)
-    # whether to build the simulation component of the library
-    set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src/Simulation.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Simulation.hpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src/Samples.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/Samples.hpp
-                    )
-    set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_simulation.cpp)
-
-    # whether to build the implementable component of the library
-    set (SRCS ${SRCS} 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src/ImMDP.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include/ImMDP.hpp)
-    set (TSTS ${TSTS} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_implementable.cpp)
-endif (BUILD_ADVANCED)
-
 # **** LIBRARY ****
-add_library (craam STATIC ${SRCS} )
+#add_library (craam STATIC ${SRCS} )
 
 # **** DEVELOPMENT EXECUTABLE ****
 add_executable (develop_exe ${DEV})
-target_link_libraries(develop_exe craam)
+target_link_libraries(develop_exe)
 add_custom_target (develop COMMAND develop_exe
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running executable")
@@ -130,8 +115,8 @@ add_custom_target (develop COMMAND develop_exe
 # **** TEST ****
 if (BUILD_TESTS)
     add_executable (unit_tests ${TSTS} )
-    target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
-    
+    target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+    #cotire(unit_tests)
     add_custom_target (testit   COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
@@ -139,7 +124,8 @@ endif (BUILD_TESTS)
 
 # **** BENCHMARK ****
 add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
-target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
+#cotire(benchmark)
+#target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)

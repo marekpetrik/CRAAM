@@ -1,9 +1,10 @@
 #pragma once 
 
-// the configured options and settings for Tutorial
 #define VERSION @VERSION@
 #cmakedefine IS_DEBUG
 
 #ifndef IS_DEBUG
     #define NDEBUG
 #endif
+
+

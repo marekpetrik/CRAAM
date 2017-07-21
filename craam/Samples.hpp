@@ -2,12 +2,16 @@
 
 #include "definitions.hpp"
 #include "RMDP.hpp"
+#include "modeltools.hpp"
 
 #include <set>
 #include <memory>
 #include <unordered_map>
 #include <functional>
 #include <cassert>
+#include <utility>
+#include <vector>
+#include <string>
 
 #include "cpp11-range-master/range.hpp"
 
@@ -91,6 +95,9 @@ See Sample for definitions of individual values.
 template <class State, class Action>
 class Samples {
 public:
+
+   Samples(): states_from(), actions(), states_to(), rewards(), weights(), runs(), steps(), initial() {};
+    
 
     /** Adds an initial state */
     void add_initial(const State& decstate){
@@ -243,7 +250,8 @@ class SampleDiscretizerSI{
 public:
 
     /** Constructs new internal discrete samples*/
-    SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()){};
+    SampleDiscretizerSI() : discretesamples(make_shared<DiscreteSamples>()),
+        action_map(), state_map() {};
 
     /** Adds samples to the discrete samples */
     void add_samples(const Samples<State,Action>& samples){
@@ -345,7 +353,8 @@ class SampleDiscretizerSD{
 public:
 
     /** Constructs new internal discrete samples*/
-    SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()){};
+    SampleDiscretizerSD() : discretesamples(make_shared<DiscreteSamples>()), action_map(),
+                            action_count(), state_map() {};
 
     /** Adds samples to the discrete samples */
     void add_samples(const Samples<State,Action>& samples){
@@ -450,7 +459,8 @@ class SampledMDP{
 public:
 
     /** Constructs an empty MDP from discrete samples */
-    SampledMDP();
+    SampledMDP(): mdp(make_shared<MDP>()), initial(), state_action_weights() {}
+
 
     /**
     Constructs or adds states and actions based on the
@@ -466,23 +476,23 @@ public:
         - Cumulative state-action weights \f$ z'\f$:
             \f[ z'(s,a) =  z(s,a) + \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j \} \f]
         - Transition probabilities \f$ P \f$:
-            \f{align*}{ 
+            \f{align*}{
             P'(s,a,s') &= \frac{z(s,a) * P(s,a,s') +
                         \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
                             { z'(s,a) } = \\
                 &= \frac{P(s,a,s') +
                 (1 / z(s,a)) \sum_{j=m}^{n-1} w_j 1\{ s = s_j, a = a_j, s' = s_j' \} }
-                { z'(s,a) / z(s,a)  } 
+                { z'(s,a) / z(s,a)  }
 
             \f}
             The denominator is computed implicitly by normalizing transition probabilities.
         - Rewards \f$ r' \f$:
-            \f{align*} 
-            r'(s,a,s') 
+            \f{align*}
+            r'(s,a,s')
                 &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
                        \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
                        {z'(s,a)P'(s,a,s')} \\
-            r'(s,a,s') 
+            r'(s,a,s')
                 &= \frac{r(s,a,s') z(s,a) P(s,a,s') +
                        \sum_{j=m}^{n-1} r_j w_j 1\{ s = s_j, a = a_j, s' = s_j' \}}
                        {z'(s,a)P'(s,a,s')} \\
@@ -491,19 +501,106 @@ public:
                        {z'(s,a)P'(s,a,s')/ z(s,a)} \\
                 &= \frac{r(s,a,s') P(s,a,s') +
                     \sum_{j=m}^{n-1} r_j (w_j/z(s,a) 1\{ s = s_j, a = a_j, s' = s_j' \}}
-                       {P(s,a,s') + \sum_{j=m}^{n-1} (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}} 
+                       {P(s,a,s') + \sum_{j=m}^{n-1} (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}}
             \f}
             The last line follows from the definition of \f$ P(s,a,s') \f$.
-            This corresponds to the operation of Transition::add_sample 
+            This corresponds to the operation of Transition::add_sample
             repeatedly for \f$ j = m \ldots (n-1) \f$ with
-            \f{align*} 
+            \f{align*}
             p &= (w_j/z(s,a)) 1\{ s = s_j, a = a_j, s' = s_j' \}\\
             r &= r_j \f}.
 
     \param samples New sample set to add to transition probabilities and
                     rewards
     */
-    void add_samples(const DiscreteSamples& samples);
+    void add_samples(const DiscreteSamples& samples){
+        // copy the state and action counts to be
+        auto old_state_action_weights = state_action_weights;
+
+        // add transition samples
+        for(size_t si : indices(samples)){
+
+            DiscreteSample s = samples.get_sample(si);
+
+            // -----------------
+            // Computes sample weights:
+            // the idea is to normalize new samples by the same
+            // value as the existing samples and then re-normalize
+            // this is linear complexity
+            // -----------------
+
+
+            // weight used to normalize old data
+            prec_t weight = 1.0; // this needs to be initialized to 1.0
+            // whether the sample weight has been initialized
+            bool weight_initialized = false;
+
+            // resize transition counts
+            // the actual values are updated later
+            if((size_t) s.state_from() >= state_action_weights.size()){
+                state_action_weights.resize(s.state_from()+1);
+
+                // we know that the value will not be found in old data
+                weight_initialized = true;
+            }
+
+            // check if we have something for the action
+            numvec& actioncount = state_action_weights[s.state_from()];
+            if((size_t)s.action() >= actioncount.size()){
+                actioncount.resize(s.action()+1);
+
+                // we know that the value will not be found in old data
+                weight_initialized = true;
+            }
+
+            // update the new count
+            assert(size_t(s.state_from()) < state_action_weights.size());
+            assert(size_t(s.action()) < state_action_weights[s.state_from()].size());
+
+            state_action_weights[s.state_from()][s.action()] += s.weight();
+
+            // get number of existing transitions
+            // this is only run when we do not know if we have any prior
+            // sample
+            if(!weight_initialized &&
+                    (size_t(s.state_from()) < old_state_action_weights.size()) &&
+                    (size_t(s.action()) < old_state_action_weights[s.state_from()].size())) {
+
+                size_t cnt = old_state_action_weights[s.state_from()][s.action()];
+
+                // adjust the weight of the new sample to be consistent
+                // with the previous normalization (use 1.0 if no previous action)
+                weight = 1.0 / prec_t(cnt);
+            }
+            // ---------------------
+
+            // adds a transition
+            add_transition( *mdp, s.state_from(), s.action(), s.state_to(),
+                            weight*s.weight(),
+                            s.reward());
+        }
+
+        // make sure to set action validity based on whether there have been
+        // samples observed for the action
+        for(size_t si : indices(*mdp)){
+            auto& state = mdp->get_state(si);
+
+            // valid only if there are some samples for the action
+            for(size_t ai : indices(state)){
+                state.set_valid(ai, state_action_weights[si][ai] > 0);
+            }
+        }
+
+        //  Normalize the transition probabilities and rewards
+        mdp->normalize();
+
+        // set initial distribution
+        for(long state : samples.get_initial()){
+            initial.add_sample(state, 1.0, 0.0);
+        }
+        initial.normalize();
+    }
+
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
@@ -515,13 +612,13 @@ public:
     /** \returns Initial distribution based on empirical sample data */
     Transition get_initial() const {return initial;}
 
-    /** \returns State-action cumulative weights \f$ z \f$. 
+    /** \returns State-action cumulative weights \f$ z \f$.
     See class description for details. */
     vector<vector<prec_t>> get_state_action_weights(){return state_action_weights;}
 
-    /** Returns thenumber of states in the samples (the highest observed index. 
-    Some may be missing) 
-    \returns 0 when there are no samples 
+    /** Returns thenumber of states in the samples (the highest observed index.
+    Some may be missing)
+    \returns 0 when there are no samples
     */
     long state_count(){return state_action_weights.size();}
 protected:
@@ -537,8 +634,7 @@ protected:
 };
 
 
-
- /**
+/*
 Constructs a robust MDP from integer samples.
 
 In integer samples each decision state, expectation state,

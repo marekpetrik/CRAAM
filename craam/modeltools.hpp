@@ -16,7 +16,6 @@
 
 #include "cpp11-range-master/range.hpp"
 
-
 // **********************************************************************
 // ***********************    HELPER FUNCTIONS    ***********************
 // **********************************************************************
@@ -36,7 +35,15 @@ Adds a transition probability and reward for a particular outcome.
 \param reward The reward associated with the transition.
 */
 template<class Model>
-void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward);
+inline
+void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward){
+    // make sure that the destination state exists
+    mdp.create_state(toid);
+    auto& state_from = mdp.create_state(fromid);
+    auto& action = state_from.create_action(actionid);
+    Transition& outcome = action.create_outcome(outcomeid);
+    outcome.add_sample(toid,probability,reward);
+}
 
 /**
 Adds a transition probability and reward for a model with no outcomes.
@@ -49,6 +56,7 @@ Adds a transition probability and reward for a model with no outcomes.
 \param reward The reward associated with the transition.
 */
 template<class Model>
+inline
 void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
     add_transition<Model>(mdp, fromid, actionid, 0l, toid, probability, reward);
 }
@@ -70,7 +78,42 @@ Note that outcome distributions are not restored.
 \returns The input model
  */
 template<class Model>
-Model& from_csv(Model& mdp, istream& input, bool header = true);
+inline
+Model& from_csv(Model& mdp, istream& input, bool header = true){
+    string line;
+    // skip the first row if so instructed
+    if(header) input >> line;
+    input >> line;
+    while(input.good()){
+        string cellstring;
+        stringstream linestream(line);
+        long idstatefrom, idstateto, idaction, idoutcome;
+        prec_t probability, reward;
+
+        // read idstatefrom
+        getline(linestream, cellstring, ',');
+        idstatefrom = stoi(cellstring);
+        // read idaction
+        getline(linestream, cellstring, ',');
+        idaction = stoi(cellstring);
+        // read idoutcome
+        getline(linestream, cellstring, ',');
+        idoutcome = stoi(cellstring);
+        // read idstateto
+        getline(linestream, cellstring, ',');
+        idstateto = stoi(cellstring);
+        // read probability
+        getline(linestream, cellstring, ',');
+        probability = stof(cellstring);
+        // read reward
+        getline(linestream, cellstring, ',');
+        reward = stof(cellstring);
+        // add transition
+        add_transition<Model>(mdp,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
+        input >> line;
+    }
+    return mdp;
+}
 
 /**
 Loads the transition probabilities and rewards from a CSV file.
@@ -80,6 +123,7 @@ Loads the transition probabilities and rewards from a CSV file.
 \returns The input model
  */
 template<class Model>
+inline
 Model& from_csv_file(Model& mdp, const string& filename, bool header = true){
     ifstream ifs(filename);
     from_csv(mdp, ifs, header);
@@ -88,49 +132,70 @@ Model& from_csv_file(Model& mdp, const string& filename, bool header = true){
 }
 
 /**
-Uniformly sets the thresholds to the provided value for all states and actions.
-This method should be used only with models that support thresholds.
-
-This function only applies to models that have thresholds, such as ones using
-"WeightedOutcomeAction" or its derivatives.
-
-\param model Model to set thresholds for
-\param threshold New thresholds value
-*/
-template<class Model>
-void set_outcome_thresholds(Model& mdp, prec_t threshold);
-
-/**
 Sets the distribution for outcomes for each state and
 action to be uniform. 
 */
 template<class Model>
-void set_uniform_outcome_dst(Model& mdp);
+inline
+void set_uniform_outcome_dst(Model& mdp){
+    for(const auto si : indices(mdp)){
+        auto& s = mdp[si];
+        for(const auto ai : indices(s)){
+            auto& a = s[ai];
+            numvec distribution(a.size(), 
+                    1.0 / static_cast<prec_t>(a.size()));
+
+            a.set_distribution(distribution);
+        }
+    }
+}
 
 /**
 Sets the distribution of outcomes for the given state and action.
 */
 template<class Model>
-void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& dist);
+inline
+void set_outcome_dst(Model& mdp, size_t stateid, size_t actionid, const numvec& dist){
+    assert(stateid >= 0 && stateid < mdp.size());
+    assert(actionid >= 0 && actionid < mdp[stateid].size());
+    mdp[stateid][actionid].set_distribution(dist);
+}
 
 /**
 Checks whether outcome distributions sum to 1 for all states and actions.
 
-This function only applies to models that have thresholds, such as ones using
+This function only applies to models that have outcomes, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 
 */
 template<class Model>
-bool is_outcome_dst_normalized(const Model& mdp);
+inline
+bool is_outcome_dst_normalized(const Model& mdp){
+    for(auto si : indices(mdp)){
+        auto& state = mdp.get_state(si);
+        for(auto ai : indices(state)){
+            if(!state[ai].is_distribution_normalized())
+                return false;
+        }
+    }
+    return true;
+}
 
 /**
 Normalizes outcome distributions for all states and actions.
 
-This function only applies to models that have thresholds, such as ones using
+This function only applies to models that have outcomes, such as ones using
 "WeightedOutcomeAction" or its derivatives.
 */
 template<class Model>
-void normalize_outcome_dst(Model& mdp);
+inline
+void normalize_outcome_dst(Model& mdp){
+    for(auto si : indices(mdp)){
+        auto& state = mdp.get_state(si);
+        for(auto ai : indices(state))
+            state.get_action(ai).normalize_distribution();
+    }
+}
 
 /**
 Adds uncertainty to a regular MDP. Turns transition probabilities to uncertain
@@ -171,21 +236,48 @@ the \f$ k \f$-th state with a non-zero transition probability from state \f$ s \
 - Nominal outcome probabilities are:
     \f$ d(s,a,b_k) = P(s,a,z_k(s,a)) \f$
 
-\tparam SType State type for the RMDP being constructed. The actions must support methods:
-    - set_distribution(long outcomeid, prec_t weight)
-
 \param mdp MDP \f$ \mathcal{M} \f$ used as the input
 \param allowzeros Whether to allow outcomes to states with zero 
                     transition probability
 \returns RMDP with nominal probabilities
 */
-template<class SType>
-GRMDP<SType> robustify(const MDP& mdp, bool allowzeros);
-
-/**
-Instantiated template version of robustify.
-*/
-RMDP_L1 robustify_l1(const MDP& mdp, bool allowzeros);
-
-}
+inline
+RMDP robustify(const MDP& mdp, bool allowzeros = false){
+    // construct the result first
+    RMDP rmdp;
+    // iterate over all starting states (at t)
+    for(size_t si : indices(mdp)){
+        const auto& s = mdp[si];
+        auto& newstate = rmdp.create_state(si);
+        for(size_t ai : indices(s)){
+            auto& newaction = newstate.create_action(ai);
+            const Transition& t = s[ai].get_outcome();
+            // iterate over transitions next states (at t+1) and add samples
+            if(allowzeros){
+                numvec probabilities = t.probabilities_vector(mdp.state_count());
+                numvec rewards = t.rewards_vector(mdp.state_count());
+                for(size_t nsi : indices(probabilities)){
+                    // create the outcome with the appropriate weight
+                    Transition& newoutcome = 
+                        newaction.create_outcome(newaction.size(), 
+                                                probabilities[nsi]);
+                    // adds the single sample for each outcome
+                    newoutcome.add_sample(nsi, 1.0, rewards[nsi]);
+                }    
+            }
+            else{
+                // only consider non-zero probabilities unless allowzeros is used
+                for(size_t nsi : indices(t)){
+                    // create the outcome with the appropriate weight
+                    Transition& newoutcome = 
+                        newaction.create_outcome(newaction.size(), 
+                                                t.get_probabilities()[nsi]);
+                    // adds the single sample for each outcome
+                    newoutcome.add_sample(t.get_indices()[nsi], 1.0, t.get_rewards()[nsi]);
+                }    
+            }
+        }
+    }    
+    return rmdp;
+}}
 

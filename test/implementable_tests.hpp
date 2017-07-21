@@ -1,11 +1,10 @@
-#include "RMDP.hpp"
-#include "ImMDP.hpp"
-#include "Transition.hpp"
-#include "Simulation.hpp"
-#include "Samples.hpp"
-#include "modeltools.hpp"
+#include "craam/ImMDP.hpp"
+#include "craam/Simulation.hpp"
+#include "craam/Samples.hpp"
+#include "craam/modeltools.hpp"
+#include "craam/algorithms/values.hpp"
 
-#include "cpp11-range-master/range.hpp"
+#include "craam/cpp11-range-master/range.hpp"
 #include <boost/functional/hash.hpp>
 #include <iostream>
 #include <iterator>
@@ -13,27 +12,9 @@
 
 using namespace std;
 using namespace craam;
+using namespace craam::algorithms;
 using namespace craam::impl;
 using namespace util::lang;
-
-
-#define CHECK_CLOSE_COLLECTION(aa, bb, tolerance) { \
-    using std::distance; \
-    using std::begin; \
-    using std::end; \
-    auto a = begin(aa), ae = end(aa); \
-    auto b = begin(bb); \
-    BOOST_REQUIRE_EQUAL(distance(a, ae), distance(b, end(bb))); \
-    for(; a != ae; ++a, ++b) { \
-        BOOST_CHECK_CLOSE(*a, *b, tolerance); \
-    } \
-}
-
-#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
-
-//#define BOOST_TEST_MODULE MainModule
-#include <boost/test/unit_test.hpp>
 
 
 /**
@@ -100,11 +81,10 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-    set_outcome_thresholds(rmdp, 2.0);
-    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp, 0.9, iv, uniform_nature(rmdp, optimistic_unbounded, 0.0), 100, 0.0, 10, 0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
-    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0), 100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }
 
@@ -135,7 +115,6 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     // Copy to change threshold
     auto rmdp = imr.get_robust_mdp();
 
-    set_outcome_thresholds(rmdp, 2.0);
     BOOST_TEST_CHECKPOINT("Checking MDP properties.");
     BOOST_CHECK_EQUAL(rmdp.state_count(), 2);
     BOOST_CHECK_EQUAL(rmdp.get_state(0).action_count(), 2);
@@ -150,10 +129,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     vector<prec_t> target_v_rob{12.0,12.0};
 
     BOOST_TEST_CHECKPOINT("Solving RMDP");
-    auto&& so = rmdp.mpi_jac(Uncertainty::Optimistic,0.9,iv,100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,optimistic_unbounded, 0.0),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 
-    auto&& sr = rmdp.mpi_jac(Uncertainty::Robust,0.9,iv,100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(sr.valuefunction, target_v_rob, 1e-3);
 }
 
@@ -261,80 +240,6 @@ BOOST_AUTO_TEST_CASE(simple_mdpor_save_load_save_load) {
     BOOST_CHECK_EQUAL(string13, string23);
 }
 
-/**
-A simple simulator class. The state represents a position in a chain
-and actions move it up and down. The reward is equal to the position.
-
-Representation
-~~~~~~~~~~~~~~
-- Decision state: position (int)
-- Action: change (int)
-- Expectation state: position, action (int,int)
-*/
-class Counter{
-private:
-    default_random_engine gen;
-    bernoulli_distribution d;
-    const vector<int> actions_list = {1,-1};
-    const int initstate;
-
-public:
-    typedef int State;
-    typedef int Action;
-
-    /**
-    Define the success of each action
-    \param success The probability that the action is actually applied
-    */
-    Counter(double success, int initstate, random_device::result_type seed = random_device{}())
-        : gen(seed), d(success), initstate(initstate) {};
-
-    int init_state() const {
-        return initstate;
-    }
-
-    pair<double,int> transition(State pos, Action act) {
-
-        int nextpos = d(gen) ? pos + act : pos;
-        return make_pair((double) pos, nextpos);
-    }
-
-    bool end_condition(const State& state){
-        return false;
-    }
-
-    size_t action_count(State) const{
-        return actions_list.size();
-    }
-
-    Action action(State,long index) const{
-        return actions_list[index];
-    }
-
-};
-
-/** A counter that terminates at either end as defined by the end state */
-class CounterTerminal : public Counter {
-public:
-    int endstate;
-
-    CounterTerminal(double success, int initstate, int endstate, random_device::result_type seed = random_device{}())
-        : Counter(success, initstate, seed), endstate(endstate) {};
-
-    bool end_condition(const int state){
-        return (abs(state) >= endstate);
-    }
-};
-// Hash function for the Counter / CounterTerminal EState above
-namespace std{
-    template<> struct hash<pair<int,int>>{
-        size_t operator()(pair<int,int> const& s) const{
-            boost::hash<pair<int,int>> h;
-            return h(s);
-        };
-    };
-}
-
 using namespace craam::msen;
 
 /*
@@ -373,7 +278,7 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     auto mdp = smdp.get_mdp();
     auto&& initial = smdp.get_initial();
 
-    auto&& sol = mdp->mpi_jac(Uncertainty::Average,0.9);
+    auto&& sol = mpi_jac(*mdp,0.9);
 
     //cout << "Optimal policy: " << endl; print_vector(sol.policy); cout << endl;
 
@@ -408,18 +313,16 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     isol = mdpi.solve_reweighted(1, 0.9, randompolicy);
 
-    auto sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
-                    indvec(mdp->state_count(), 0));
+    auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
-    sol_impl = mdp->vi_jac_fix(0.9, mdpi.obspol2statepol(isol),
-                    indvec(mdp->state_count(), 0));
+    sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(isol, 0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
 }
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){
@@ -434,13 +337,14 @@ BOOST_AUTO_TEST_CASE(test_return_of_implementable){
                 initial3(numvec({0.0, 0.0, 1.0}));
 
     MDPI mdpi1(mdp, observations, initial1);
-    BOOST_CHECK_CLOSE(mdpi1.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,2)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi1.total_return(gamma, 1e-5), 1.1*pow(gamma,2)/(1-gamma), 1e-3);
     MDPI mdpi2(mdp, observations, initial2);
-    BOOST_CHECK_CLOSE(mdpi2.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,1)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi2.total_return(gamma, 1e-5), 1.1*pow(gamma,1)/(1-gamma), 1e-3);
     MDPI mdpi3(mdp, observations, initial3);
-    BOOST_CHECK_CLOSE(mdpi3.total_return(indvec(1,1),gamma, 1e-5), 1.1*pow(gamma,0)/(1-gamma), 1e-3);
+    BOOST_CHECK_CLOSE(mdpi3.total_return(gamma, 1e-5), 1.1*pow(gamma,0)/(1-gamma), 1e-3);
 }
 
 
 // TODO: make sure there is a test that checks that the return of the implementable policy with
 // the true weights has the same return as the true MDP.
+
