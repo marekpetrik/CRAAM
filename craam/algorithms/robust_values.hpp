@@ -380,7 +380,7 @@ This is a simplified method interface. Use vi_gs with PolicyNature for full func
 template<class SType, class T = prec_t >
 inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         const vector<NatureResponse<T>>& nature, const vector<T>& thresholds,
-                        numvec valuefunction=numvec(0), const indvec& policy = numvec(0),
+                        numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
     {
     assert(nature.size() == thresholds.size());
@@ -395,7 +395,7 @@ inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
 template<class SType, class T = prec_t >
 inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         const NatureResponse<T>& nature, const vector<T>& thresholds,
-                        numvec valuefunction=numvec(0), const indvec& policy = numvec(0),
+                        numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
     {
     assert(nature.size() == thresholds.size());
