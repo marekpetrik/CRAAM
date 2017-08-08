@@ -250,6 +250,8 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
         const auto& s = mdp[si];
         auto& newstate = rmdp.create_state(si);
         for(size_t ai : indices(s)){
+            if(!s.is_valid(ai))
+                continue;
             auto& newaction = newstate.create_action(ai);
             const Transition& t = s[ai].get_outcome();
             // iterate over transitions next states (at t+1) and add samples

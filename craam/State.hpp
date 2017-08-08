@@ -48,7 +48,7 @@ public:
     SAState() : actions(0), valid(0) {};
 
     /** Initializes state with actions and sets them all to valid */
-    SAState(const vector<AType>& actions) : actions(actions), valid(actions.size(),true) { };
+    SAState(const vector<AType>& actions) : actions(actions), valid(actions.size(),false) { };
 
     /** Number of actions */
     size_t action_count() const { return actions.size();};
@@ -106,7 +106,7 @@ public:
     Set action validity. A valid action can be used in computations. An 
     invalid action is just a placeholder.
     */
-    void set_valid(long actionid, bool value = true){
+    void set_valid(long actionid, bool value = false){
         assert(actionid < long(valid.size()) && actionid >= 0);
         valid[actionid] = value;
     };
