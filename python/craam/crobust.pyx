@@ -125,8 +125,12 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
     cdef NatureResponse string_to_nature(string s);
 
 cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+
+    vector[vector[double]] pack_thresholds(indvec states, indvec actions, numvec values) except +
+
+
     SolutionRobust crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
-                    NatureResponse nature, const numvec& thresholds,
+                    NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
@@ -135,7 +139,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
     SolutionRobust crsolve_mpi_mdp "craam::algorithms::rsolve_mpi"(
                     CMDP& mdp, prec_t discount,
-                    NatureResponse nature, const numvec& thresholds,
+                    NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,
@@ -592,8 +596,10 @@ cdef class MDP:
         ----------
         nature : string
             Type of response of nature. See choose_nature for supported values.
-        thresholds : ndarray
-            Numerical arguments that can be passed to the nature 
+        thresholds : (stateids, actionids, thresholds values)
+            Each entry represents the threshold for each state and action. The threshold
+            should be provided for each state and action value; the ones that are not 
+            specified are undefined.
         iterations : int
             Maximal number of iterations
         valuefunction : np.ndarray, optional
@@ -623,7 +629,7 @@ cdef class MDP:
         self._check_policy(policy)
 
         cdef SolutionRobust sol = crsolve_vi_mdp(dereference(self.thisptr), self.discount,\
-                        string_to_nature(nature), thresholds,
+                        string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
         return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -643,8 +649,10 @@ cdef class MDP:
         ----------
         nature : string
             Type of response of nature. See choose_nature for supported values.
-        thresholds : ndarray
-            Numerical arguments that can be passed to the nature 
+        thresholds : (stateids, actionids, thresholds values)
+            Each entry represents the threshold for each state and action. The threshold
+            should be provided for each state and action value; the ones that are not 
+            specified are undefined.
         natpolicy : np.ndarray
             Best responses selected by nature
         iterations : int, optional
@@ -686,7 +694,7 @@ cdef class MDP:
         if valresidual < 0: valresidual = maxresidual / 2
 
         cdef SolutionRobust sol = crsolve_mpi_mdp(dereference(self.thisptr),self.discount,\
-                        string_to_nature(nature), thresholds,
+                        string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
@@ -1118,7 +1126,7 @@ cdef extern from "craam/algorithms/values.hpp" namespace 'craam::algorithms' nog
 
 cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
     SolutionRobust crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
-                    NatureResponse nature, const numvec& thresholds,
+                    NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
@@ -1127,7 +1135,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
     SolutionRobust crsolve_mpi "craam::algorithms::rsolve_mpi"(
                     CRMDP& mdp, prec_t discount,
-                    NatureResponse nature, const numvec& thresholds,
+                    NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,
@@ -1645,8 +1653,10 @@ cdef class RMDP:
         ----------
         nature : string
             Type of response of nature. See choose_nature for supported values.
-        thresholds : ndarray
-            Numerical arguments that can be passed to the nature 
+        thresholds : (stateids, actionids, thresholds values)
+            Each entry represents the threshold for each state and action. The threshold
+            should be provided for each state and action value; the ones that are not 
+            specified are undefined.
         iterations : int
             Maximal number of iterations
         valuefunction : np.ndarray, optional
@@ -1676,7 +1686,7 @@ cdef class RMDP:
         self._check_policy(policy)
 
         cdef SolutionRobust sol = crsolve_vi(dereference(self.thisptr), self.discount,\
-                        string_to_nature(nature), thresholds,
+                        string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
         return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -1696,8 +1706,10 @@ cdef class RMDP:
         ----------
         nature : string
             Type of response of nature. See choose_nature for supported values.
-        thresholds : ndarray
-            Numerical arguments that can be passed to the nature 
+        thresholds : (stateids, actionids, thresholds values)
+            Each entry represents the threshold for each state and action. The threshold
+            should be provided for each state and action value; the ones that are not 
+            specified are undefined.
         natpolicy : np.ndarray
             Best responses selected by nature
         iterations : int, optional
@@ -1739,7 +1751,7 @@ cdef class RMDP:
         if valresidual < 0: valresidual = maxresidual / 2
 
         cdef SolutionRobust sol = crsolve_mpi(dereference(self.thisptr),self.discount,\
-                        string_to_nature(nature), thresholds,
+                        string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 

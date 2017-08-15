@@ -218,14 +218,14 @@ struct Solution {
     /// Number of iterations taken
     long iterations;
 
-    Solution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {};
+    Solution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {}
 
     /// Empty solution for a problem with statecount states
-    Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {};
+    Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {}
 
     /// Empty solution for a problem with a given value function and policy
     Solution(numvec valuefunction, indvec policy, prec_t residual = -1, long iterations = -1) :
-        valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {};
+        valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {}
 
     /**
     Computes the total return of the solution given the initial
@@ -257,12 +257,12 @@ public:
     indvec policy;
 
     /// All actions will be optimized
-    PolicyDeterministic() : policy(0) {};
+    PolicyDeterministic() : policy(0) {}
 
     /// A partial policy that can be used to fix some actions
     /// policy[s] = -1 means that the action should be optimized in the state
     /// policy of length 0 means that all actions will be optimized
-    PolicyDeterministic(indvec policy) : policy(move(policy)) {};
+    PolicyDeterministic(indvec policy) : policy(move(policy)) {}
 
     Solution new_solution(size_t statecount, numvec valuefunction) const {
         process_valuefunction(statecount, valuefunction);
