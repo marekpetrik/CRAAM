@@ -266,11 +266,11 @@ public:
 
     /// Constructs the object from a policy and a specification of nature
     PolicyNature(indvec policy, vector<NatureInstance<T>> natspec):
-        PolicyDeterministic(move(policy)), natspec(move(natspec)) {};
+        PolicyDeterministic(move(policy)), natspec(move(natspec)) {}
 
     /// Constructs the object from a policy and a specification of nature
     PolicyNature(vector<NatureInstance<T>> natspec):
-        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {};
+        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {}
 
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
