@@ -361,7 +361,7 @@ PolicyNature<T> uniform_nature(const MDP& m, NatureResponse<T> nature,
     vector<vector<NatureInstance<T>>> natures(m.state_count());
 
     for(size_t stateid = 0; stateid < m.state_count(); stateid++){
-        natures[stateid] = vector<NatureInstance<T>>(m.state_count(), make_pair(nature, threshold));
+        natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
     }
     return PolicyNature<T>(natures);
 }
@@ -375,7 +375,7 @@ PolicyNature<T> uniform_nature(const RMDP& m, NatureResponse<T> nature,
     vector<vector<NatureInstance<T>>> natures(m.state_count());
 
     for(size_t stateid = 0; stateid < m.state_count(); stateid++){
-        natures[stateid] = vector<NatureInstance<T>>(m.state_count(), make_pair(nature, threshold));
+        natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
     }
     return PolicyNature<T>(natures);
 }
