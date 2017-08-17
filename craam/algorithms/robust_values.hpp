@@ -298,8 +298,8 @@ public:
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
 
-        if(valuefunction.size() != statecount)
-            throw invalid_argument("Size of value function specification does not match the number of states.");
+        //if(valuefunction.size() != statecount)
+         //   throw invalid_argument("Size of value function specification does not match the number of states.");
 
         process_valuefunction(statecount, valuefunction);
         SolutionRobust solution =  SolutionRobust(move(valuefunction), process_policy(statecount));
