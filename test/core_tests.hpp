@@ -157,21 +157,21 @@ void test_simple_vi(const Model& rmdp){
     const prec_t ret_true = inner_product(val_rob3.cbegin(), val_rob3.cend(), init_d.get_probabilities().cbegin(),0.0);
 
     // robust
-    auto&& re3 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp.state_count(), robust_l1, 0.0));
+    auto&& re3 = vi_gs(rmdp,0.9,initial, uniform_nature(rmdp, robust_l1, 0.0));
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3.policy.begin(),re3.policy.end());
 
-    auto&& re4 = mpi_jac(rmdp,0.9, initial,uniform_nature(rmdp.state_count(), robust_l1, 0.0),
+    auto&& re4 = mpi_jac(rmdp,0.9, initial, uniform_nature(rmdp, robust_l1, 0.0),
                             1000, 0.0, 1000, 0.0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4.policy.begin(),re4.policy.end());
 
     // optimistic
-    auto&& re5 = vi_gs(rmdp,0.9, initial,uniform_nature(rmdp.state_count(), optimistic_l1, 0.0));
+    auto&& re5 = vi_gs(rmdp,0.9, initial, uniform_nature(rmdp, optimistic_l1, 0.0));
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5.policy.begin(),re5.policy.end());
 
-    auto&& re6 = mpi_jac(rmdp,0.9, initial,uniform_nature(rmdp.state_count(), optimistic_l1, 0.0));
+    auto&& re6 = mpi_jac(rmdp,0.9, initial, uniform_nature(rmdp, optimistic_l1, 0.0));
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6.policy.begin(),re6.policy.end());
 

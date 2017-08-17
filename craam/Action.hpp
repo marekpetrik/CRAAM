@@ -36,19 +36,19 @@ protected:
 public:
 
     /** Creates an empty action. */
-    RegularAction() : outcome() {};
+    RegularAction() : outcome() {}
 
     /** Initializes outcomes to the provided transition vector */
-    RegularAction(const Transition& outcome) : outcome(outcome) {};
+    RegularAction(const Transition& outcome) : outcome(outcome) {}
 
     /** Returns the outcomes. */
-    vector<Transition> get_outcomes() const {return vector<Transition>{outcome};};
+    vector<Transition> get_outcomes() const {return vector<Transition>{outcome};}
 
     /** Returns the single outcome. */
-    const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;};
+    const Transition& get_outcome(long outcomeid) const {assert(outcomeid == 0); return outcome;}
 
     /** Returns the single outcome. */
-    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;};
+    Transition& get_outcome(long outcomeid) {assert(outcomeid == 0);return outcome;}
 
     /** Returns the outcome */
     const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
@@ -57,10 +57,10 @@ public:
     Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
 
     /** Returns the single outcome. */
-    const Transition& get_outcome() const {return outcome;};
+    const Transition& get_outcome() const {return outcome;}
 
     /** Returns the single outcome. */
-    Transition& get_outcome() {return outcome;};
+    Transition& get_outcome() {return outcome;}
 
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a correct identifier.
@@ -69,10 +69,10 @@ public:
     Transition& create_outcome(long outcomeid){assert(outcomeid == 0);return outcome;}
 
     /** Normalizes transition probabilities */
-    void normalize() {outcome.normalize();};
+    void normalize() {outcome.normalize();}
 
     /** Returns number of outcomes (1). */
-    size_t outcome_count() const {return 1;};
+    size_t outcome_count() const {return 1;}
 
 
     /** Appends a string representation to the argument */
@@ -82,19 +82,19 @@ public:
 
     /** Whether the provided outcome is valid. Check only size, not that the distribution
     sums to any particular number. */
-    bool is_nature_correct(numvec oid) const {return oid.size() == outcome.size();};
+    bool is_nature_correct(numvec oid) const {return oid.size() == outcome.size();}
 
     /** Returns the mean reward from the transition. */
-    prec_t mean_reward() const { return outcome.mean_reward();};
+    prec_t mean_reward() const { return outcome.mean_reward();}
 
     /** 
     Returns the mean reward from the transition. 
     \param natpolicy Nature can choose the probability distribution
     */
-    prec_t mean_reward(numvec natpolicy) const { return outcome.mean_reward(natpolicy);};
+    prec_t mean_reward(numvec natpolicy) const { return outcome.mean_reward(natpolicy);}
 
     /** Returns the mean transition probabilities. Ignore rewards. */
-    Transition mean_transition() const {return outcome;};
+    Transition mean_transition() const {return outcome;}
 
 
     /** Returns the mean transition probabilities. Ignore rewards. 
@@ -102,7 +102,7 @@ public:
     */
     Transition mean_transition(numvec natpolicy) const {
         return Transition(outcome.get_indices(),natpolicy,numvec(outcome.size(),0.0));
-    };
+    }
 
     /** Returns a json representation of the action
     \param actionid Whether to include action id*/

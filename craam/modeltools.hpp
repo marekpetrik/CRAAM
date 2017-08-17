@@ -250,12 +250,15 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
         const auto& s = mdp[si];
         auto& newstate = rmdp.create_state(si);
         for(size_t ai : indices(s)){
-            if(!s.is_valid(ai))
+            // make sure that the invalid actions are marked as such in the rmdp
+            if(!s.is_valid(ai)){
+                newstate.set_valid(ai,false);
                 continue;
+            }
             auto& newaction = newstate.create_action(ai);
             const Transition& t = s[ai].get_outcome();
             // iterate over transitions next states (at t+1) and add samples
-            if(allowzeros){
+            if(allowzeros){ // add outcomes for states with 0 transition probability
                 numvec probabilities = t.probabilities_vector(mdp.state_count());
                 numvec rewards = t.rewards_vector(mdp.state_count());
                 for(size_t nsi : indices(probabilities)){
@@ -267,8 +270,7 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
                     newoutcome.add_sample(nsi, 1.0, rewards[nsi]);
                 }    
             }
-            else{
-                // only consider non-zero probabilities unless allowzeros is used
+            else{ // add outcomes only for states with non-zero probabilities
                 for(size_t nsi : indices(t)){
                     // create the outcome with the appropriate weight
                     Transition& newoutcome = 

@@ -186,15 +186,19 @@ When there are no actions, the state is assumed to be terminal and the return is
 \param state State to compute the value for
 \param valuefunction Value function to use in computing value of states.
 \param discount Discount factor
-\param nature Method used to compute the response of nature.
+\param natures Method used to compute the response of nature; one for each action available in the state.
 
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
 template<typename AType, typename T>
 inline ind_vec_scal_t
 value_max_state(const SAState<AType>& state, const numvec& valuefunction,
-                prec_t discount, const NatureInstance<T>& nature) {
+                prec_t discount, const vector<NatureInstance<T>>& natures) {
 
+    // make sure that the number of natures is the same as the number of actions
+    assert(natures.size() == state.size());
+
+    // can finish immediately when the state is terminal
     if(state.is_terminal())
         return make_tuple(-1,numvec(),0);
 
@@ -209,7 +213,7 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
         // skip invalid state.get_actions()
         if(!state.is_valid(i)) continue;
 
-        auto value = value_action(action, valuefunction, discount, nature);
+        auto value = value_action(action, valuefunction, discount, natures[i]);
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = i;
@@ -224,6 +228,15 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
     return make_tuple(result,result_outcome,maxvalue);
 }
 
+/**
+A wrapper that assumes that the natures is the same across all the actions
+*/
+template<typename AType, typename T>
+inline ind_vec_scal_t
+value_max_state(const SAState<AType>& state, const numvec& valuefunction,
+                prec_t discount, const NatureInstance<T>& nature) {
+    return value_max_state(state, valuefunction, discount, vector<NatureInstance<T>>(state.action_count(), nature));
+}
 
 // **************************************************************************
 // Helper classes to handle computing of the best response
@@ -236,20 +249,20 @@ struct SolutionRobust : public Solution {
     vector<numvec> natpolicy;
 
     /// Empty SolutionRobust
-    SolutionRobust() : Solution(), natpolicy(0) {};
+    SolutionRobust() : Solution(), natpolicy(0) {}
 
     /// Empty SolutionRobust for a problem with statecount states
-    SolutionRobust(size_t statecount): Solution(statecount), natpolicy(statecount, numvec(0)) {};
+    SolutionRobust(size_t statecount): Solution(statecount), natpolicy(statecount, numvec(0)) {}
 
     /// Empty SolutionRobust for a problem with policy and value function
     SolutionRobust(numvec valuefunction, indvec policy):
             Solution(move(valuefunction), move(policy)),
-            natpolicy(this->valuefunction.size(), numvec(0)) {};
+            natpolicy(this->valuefunction.size(), numvec(0)) {}
 
     SolutionRobust(numvec valuefunction, indvec policy,
              vector<numvec> natpolicy, prec_t residual = -1, long iterations = -1) :
         Solution(move(valuefunction), move(policy), residual, iterations),
-        natpolicy(move(natpolicy)) {};
+        natpolicy(move(natpolicy)) {}
 };
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
@@ -261,16 +274,26 @@ class PolicyNature : public PolicyDeterministic {
 public:
     using solution_type = SolutionRobust;
 
-    /// Specification of natures response (the function that nature computes, could be different for each state)
-    vector<NatureInstance<T>> natspec;
+    /** Specification of natures response (the function that nature computes).
+    The outer list is for each state and the inner list is for each action in the state. */
+    vector<vector<NatureInstance<T>>> natspec;
 
-    /// Constructs the object from a policy and a specification of nature
-    PolicyNature(indvec policy, vector<NatureInstance<T>> natspec):
-        PolicyDeterministic(move(policy)), natspec(move(natspec)) {};
+    /**
+    Constructs the object from a policy and a specification of nature. Action are optimized
+    only in states in which policy is -1 (or < 0)
+    @param policy Index of the action to take for each state
+    @param natspec Responce of nature for each state and each action
+    */
+    PolicyNature(indvec policy, vector<vector<NatureInstance<T>>> natspec):
+        PolicyDeterministic(move(policy)), natspec(move(natspec)) {}
 
-    /// Constructs the object from a policy and a specification of nature
-    PolicyNature(vector<NatureInstance<T>> natspec):
-        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {};
+    /**
+    Constructs the object from a specification of nature. No decision maker's
+    policy is provided.
+    @param natspec Responce of nature for each state and each action
+    */
+    PolicyNature(vector<vector<NatureInstance<T>>> natspec):
+        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {}
 
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
@@ -282,60 +305,88 @@ public:
         return solution;
     }
 
-    /// Computes the Bellman update and updates the solution to the best response
-    /// It does not update the value function
-    /// \returns New value for the state
+
+    /**
+    Computes the Bellman update and updates the action in the solution to the best response
+    It does not update the value function in the solution.
+    @param solution Solution to update
+    @param state State for which to compute the Bellman update
+    @param stateid  Index of the state
+    @param valuefunction Value function
+    @param discount Discount factor
+    @returns New value for the state
+     */
     template<class SType>
     prec_t update_solution(SolutionRobust& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
-
         prec_t newvalue = 0;
         // check whether this state should only be evaluated or also optimized
-        if(policy.empty() || policy[stateid] < 0){    // optimizing
-            tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) = value_max_state(state, valuefunction, discount, natspec[stateid]);
-        }else{// fixed-action, do not copy
+        // optimizing action
+        if(policy.empty() || policy[stateid] < 0){
+            tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) =
+                    value_max_state(state, valuefunction, discount, natspec[stateid]);
+        }
+        // fixed-action, do not copy
+        else{
             prec_t newvalue;
-            tie(solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, policy[stateid], natspec[stateid]);
+            const long actionid = policy[stateid];
+            tie(solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, actionid, natspec[stateid][actionid]);
         }
         return newvalue;
     }
 
-    /// Computes a fixed Bellman update using the current solution policy
-    /// \returns New value for the state
+    /**
+    Computes value function using the provided policy. Used in policy evaluation.
+    @param solution Solution used to infer the current policy
+    @param state State for which to compute the Bellman update
+    @param stateid Index of the state
+    @param valuefunction Value function
+    @param discount Discount factor
+    @returns New value for the state
+    */
     template<class SType>
     prec_t update_value(const SolutionRobust& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
-
         return value_fix_state(state, valuefunction, discount, solution.policy[stateid],
                 solution.natpolicy[stateid]);
     }
-
 };
 
-
-/// A helper function that simply copies a nature specification across all states
+/**
+A helper function that simply copies a nature specification across all states and actions
+*/
 template<class T>
-PolicyNature<T> uniform_nature(size_t statecount, NatureResponse<T> nature,
+PolicyNature<T> uniform_nature(const MDP& m, NatureResponse<T> nature,
                             T threshold){
-    return PolicyNature<T>(vector<NatureInstance<T>>(statecount, make_pair(nature, threshold)));
+    vector<vector<NatureInstance<T>>> natures(m.state_count());
+
+    for(size_t stateid = 0; stateid < m.state_count(); stateid++){
+        natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
+    }
+    return PolicyNature<T>(natures);
 }
 
-/// A helper function that simply copies a nature specification across all states
-template<class Model, class T>
-PolicyNature<T> uniform_nature(const Model& m, NatureResponse<T> nature,
+/**
+A helper function that simply copies a nature specification across all states and actions
+*/
+template<class T>
+PolicyNature<T> uniform_nature(const RMDP& m, NatureResponse<T> nature,
                             T threshold){
-    return PolicyNature<T>(vector<NatureInstance<T>>(m.state_count(), make_pair(nature, threshold)));
+    vector<vector<NatureInstance<T>>> natures(m.state_count());
+
+    for(size_t stateid = 0; stateid < m.state_count(); stateid++){
+        natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
+    }
+    return PolicyNature<T>(natures);
 }
 
-
-// **************************************************************************
-// Convenient interface methods
-// **************************************************************************
 
 namespace internal{
 
+/// Zips two vectors
 template <class T1, class T2>
 vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
+
     assert(v1.size() == v2.size());
     vector<pair<T1,T2>> result(v1.size());
     for(size_t i=0; i< v1.size(); i++){
@@ -344,15 +395,46 @@ vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
     return result;
 }
 
+/// Zips two vectors of vectors
+template <class T1, class T2>
+vector<vector<pair<T1,T2>>> zip(const vector<vector<T1>>& v1, const vector<vector<T2>>& v2){
+
+    assert(v1.size() == v2.size());
+    vector<vector<pair<T1,T2>>> result(v1.size());
+    for(size_t i=0; i< v1.size(); i++){
+        result[i] = zip(v1[i], v2[i]);
+    }
+    return result;
+}
+
+/// Zips a single value with a vector
 template <class T1, class T2>
 vector<pair<T1,T2>> zip(const T1& v1, const vector<T2>& v2){
+
     vector<pair<T1,T2>> result(v2.size());
     for(size_t i=0; i< v2.size(); i++){
         result[i] = make_pair(v1, v2[i]);
     }
     return result;
 }
+
+/// Zips a single value with a vector of vectors
+template <class T1, class T2>
+vector<vector<pair<T1,T2>>> zip(const T1& v1, const vector<vector<T2>>& v2){
+
+    vector<vector<pair<T1,T2>>> result(v2.size());
+    for(size_t i=0; i< v2.size(); i++){
+        result[i] = zip(v1, v2[i]);
+    }
+    return result;
 }
+
+
+
+}
+// **************************************************************************
+// Convenient interface methods
+// **************************************************************************
 
 /** 
 Gauss-Seidel variant of value iteration (not parallelized).
@@ -366,8 +448,9 @@ This is a simplified method interface. Use vi_gs with PolicyNature for full func
 
 \param mdp The MDP to solve
 \param discount Discount factor.
-\param nature Response of nature, one function per state.
-\param thresholds Parameters passed to nature response functions. One value per state.
+\param nature Response of nature, the function is the same for all states and actions.
+\param thresholds Parameters passed to nature response functions.
+                    One value per state and then one value per action.
 \param valuefunction Initial value function. Passed by value, because it is modified. Optional, use
                     all zeros when not provided. Ignored when size is 0.
 \param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
@@ -379,33 +462,20 @@ This is a simplified method interface. Use vi_gs with PolicyNature for full func
 */
 template<class SType, class T = prec_t >
 inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
-                        const vector<NatureResponse<T>>& nature, const vector<T>& thresholds,
+                        const NatureResponse<T>& nature, const vector<vector<T>>& thresholds,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
     {
+    // check that the provided sizes are OK
     assert(nature.size() == thresholds.size());
     assert(nature.size() == mdp.state_count());
+    for(size_t t = 0; t < thresholds.size(); t++)
+        assert(thresholds[t].size() == mdp[t].size());
 
     return vi_gs<SType, PolicyNature<T>>(mdp, discount, move(valuefunction), 
             PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
             iterations, maxresidual);
 }
-
-/// Simplified function call with a single nature for all states.
-template<class SType, class T = prec_t >
-inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
-                        const NatureResponse<T>& nature, const vector<T>& thresholds,
-                        numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
-                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
-    {
-    assert(nature.size() == thresholds.size());
-    assert(nature.size() == mdp.state_count());
-
-    return vi_gs<SType, PolicyNature<T>>(mdp, discount, move(valuefunction), 
-            PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
-            iterations, maxresidual);
-}
-
 
 
 /**
@@ -418,8 +488,8 @@ This is a simplified method interface. Use mpi_jac with PolicyNature for full fu
 Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 \param type Type of realization of the uncertainty
 \param discount Discount factor
-\param nature Response of nature, one function per state.
-\param thresholds Parameters passed to nature response functions. One value per state.
+\param nature Response of nature; the same value is used for all states and actions.
+\param thresholds Parameters passed to nature response functions. One value per state (outer) and action (inner).
 \param valuefunction Initial value function
 \param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
 \param iterations_pi Maximal number of policy iteration steps
@@ -432,14 +502,14 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
  */
 template<class SType, class T = prec_t>
 inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
-                const vector<NatureResponse<T>>& nature, const vector<T>& thresholds,
+                const NatureResponse<T>& nature, const vector<vector<T>>& thresholds,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
+
     assert(nature.size() == thresholds.size());
     assert(nature.size() == mdp.state_count());
-
 
     return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
                     PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
@@ -448,24 +518,9 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                     print_progress);
 }
 
-/// Simplified function call with a single nature for all states.
-template<class SType, class T = prec_t>
-inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
-                const NatureResponse<T>& nature, const vector<T>& thresholds,
-                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
-                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
-                bool print_progress=false) {
-    assert(nature.size() == thresholds.size());
-    assert(nature.size() == mdp.state_count());
-
-
-    return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
-                    PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
-                    iterations_pi, maxresidual_pi,
-                    iterations_vi, maxresidual_vi, 
-                    print_progress);
-}
+// ******************************************************************
+// Helper functions for a Python or R interface
+// ******************************************************************
 
 /**
 Converts a string representation of nature response to the appropriate nature response call.
@@ -485,6 +540,30 @@ inline NatureResponse<prec_t> string_to_nature(string nature){
     throw invalid_argument("Unknown nature.");
 }
 
+/**
+Creates a vector of vector of state thresholds. This function can be used to provide the parameters
+to rsolve_mpi and rsolve_vi.
 
+All state-action combinations should be provided. Values that are not provided are undefined.
+
+@param states Indexes of states. The values are 0-based.
+@param actions Indexes of actions. The values are 0-based.
+@param values Values that correspond to the states and actions.
+*/
+template<class T>
+vector<vector<T>> pack_thresholds(const indvec& states, const indvec& actions, const vector<T>& values){
+    assert(states.size() == actions.size());
+    assert(states.size() == values.size());
+
+    vector<vector<T>> result(*max_element(states.cbegin(), states.cend()));
+
+    for(size_t i = 0; i < states.size(); i++){
+        auto& statelist = result[states[i]];
+        if(statelist.size() <= actions[i])
+            statelist.resize(actions[i]+1);
+        statelist[actions[i]] = values[i];
+    }
+    return result;
+}
 
 }}
