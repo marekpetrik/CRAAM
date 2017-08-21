@@ -297,10 +297,6 @@ public:
 
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
-
-        //if(valuefunction.size() != statecount)
-         //   throw invalid_argument("Size of value function specification does not match the number of states.");
-
         process_valuefunction(statecount, valuefunction);
         SolutionRobust solution =  SolutionRobust(move(valuefunction), process_policy(statecount));
         return solution;
@@ -464,12 +460,9 @@ This is a simplified method interface. Use vi_gs with PolicyNature for full func
 template<class SType, class T = prec_t >
 inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         const NatureResponse<T>& nature, const vector<vector<T>>& thresholds,
-                        numvec valuefunction, const indvec& policy = indvec(0),
+                        numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
     {
-    // check that the provided sizes are OK
-    //assert(nature.size() == thresholds.size());
-    //assert(nature.size() == mdp.state_count());
     for(size_t t = 0; t < thresholds.size(); t++)
         assert(thresholds[t].size() == mdp[t].size());
 
@@ -504,13 +497,10 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 template<class SType, class T = prec_t>
 inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const NatureResponse<T>& nature, const vector<vector<T>>& thresholds,
-                const numvec& valuefunction, const indvec& policy = indvec(0),
+                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
-
-    assert(nature.size() == thresholds.size());
-    assert(nature.size() == mdp.state_count());
 
     return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
                     PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
