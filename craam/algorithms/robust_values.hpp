@@ -195,12 +195,12 @@ inline ind_vec_scal_t
 value_max_state(const SAState<AType>& state, const numvec& valuefunction,
                 prec_t discount, const vector<NatureInstance<T>>& natures) {
 
-    // make sure that the number of natures is the same as the number of actions
-    assert(natures.size() == state.size());
-
     // can finish immediately when the state is terminal
     if(state.is_terminal())
         return make_tuple(-1,numvec(),0);
+
+    // make sure that the number of natures is the same as the number of actions
+    assert(natures.size() == state.size());
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
 
@@ -297,9 +297,6 @@ public:
 
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
-        if(natspec.size() != statecount)
-            throw invalid_argument("Size of nature specification does not match the number of states.");
-
         process_valuefunction(statecount, valuefunction);
         SolutionRobust solution =  SolutionRobust(move(valuefunction), process_policy(statecount));
         return solution;
@@ -466,9 +463,6 @@ inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
     {
-    // check that the provided sizes are OK
-    assert(nature.size() == thresholds.size());
-    assert(nature.size() == mdp.state_count());
     for(size_t t = 0; t < thresholds.size(); t++)
         assert(thresholds[t].size() == mdp[t].size());
 
@@ -507,9 +501,6 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
-
-    assert(nature.size() == thresholds.size());
-    assert(nature.size() == mdp.state_count());
 
     return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
                     PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
@@ -555,7 +546,7 @@ vector<vector<T>> pack_thresholds(const indvec& states, const indvec& actions, c
     assert(states.size() == actions.size());
     assert(states.size() == values.size());
 
-    vector<vector<T>> result(*max_element(states.cbegin(), states.cend()));
+    vector<vector<T>> result(*max_element(states.cbegin(), states.cend())+1);
 
     for(size_t i = 0; i < states.size(); i++){
         auto& statelist = result[states[i]];
