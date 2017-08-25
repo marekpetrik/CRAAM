@@ -233,7 +233,7 @@ public:
 
     /** Returns a random action */
     Action operator() (State state){
-        vector<Action> valid_actions = sim.valid_actions(state);
+        vector<Action> valid_actions = sim.get_valid_actions(state);
         uniform_int_distribution<long> dst(0,valid_actions.size()-1);
         return valid_actions[dst(gen)];
     };
@@ -484,7 +484,7 @@ public:
     size_t action_count(State state) const 
         {return (*mdp)[state].size();};
 
-    vector<Action> valid_actions(State state) const{
+    vector<Action> get_valid_actions(State state){
         vector<Action> valid_actions;
         const auto& mdpstate = (*mdp)[state];
         for(Action a=0l;a<mdpstate.size();a++){
