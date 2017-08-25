@@ -107,6 +107,10 @@ public:
     int action(State , long index) const{
         return actions_list[index];
     }
+    
+    vector<int> get_valid_actions(State state){
+        return actions_list;
+    }
 
     size_t action_count(State) const{return actions_list.size();};
 };
