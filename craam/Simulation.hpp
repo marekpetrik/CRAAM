@@ -233,8 +233,9 @@ public:
 
     /** Returns a random action */
     Action operator() (State state){
-        uniform_int_distribution<long> dst(0,sim.action_count(state)-1);
-        return sim.action(state,dst(gen));
+        vector<Action> valid_actions = sim.valid_actions(state);
+        uniform_int_distribution<long> dst(0,valid_actions.size()-1);
+        return valid_actions[dst(gen)];
     };
 
 private:
@@ -482,7 +483,18 @@ public:
     /// State dependent action list 
     size_t action_count(State state) const 
         {return (*mdp)[state].size();};
-    
+
+    vector<Action> valid_actions(State state) const{
+        vector<Action> valid_actions;
+        const auto& mdpstate = (*mdp)[state];
+        for(Action a=0;a<mdpstate.size();a++){
+            if(mdpstate.is_valid(a)){
+                valid_actions.push_back(a);
+            }
+        }
+        return valid_actions;
+    }
+
     /// Returns an action with the given index
     Action action(State, long index) const
         {return index;};
