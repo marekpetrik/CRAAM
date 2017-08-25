@@ -487,7 +487,7 @@ public:
     vector<Action> valid_actions(State state) const{
         vector<Action> valid_actions;
         const auto& mdpstate = (*mdp)[state];
-        for(Action a=0;a<mdpstate.size();a++){
+        for(Action a=0l;a<mdpstate.size();a++){
             if(mdpstate.is_valid(a)){
                 valid_actions.push_back(a);
             }
