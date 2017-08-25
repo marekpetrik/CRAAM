@@ -108,7 +108,7 @@ public:
         return actions_list[index];
     }
     
-    vector<int> get_valid_actions(State state){
+    vector<int> get_valid_actions(State state) const{
         return actions_list;
     }
 
