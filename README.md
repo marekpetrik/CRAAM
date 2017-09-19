@@ -59,25 +59,26 @@ Note that Boost must be present in order to build the tests in the first place.
     $ cmake --build . --target testit
 ```
 
-### Build a benchmark executable
+### Build a command-line executable
 
 To run a benchmark problem, download and decompress one of the following test files:
 
 -   Small problem with 100 states: <https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip>
 -   Medium problem with 2000 states (7zip): <https://www.dropbox.com/s/k0znc23xf9mpe5i/ms.7z>
 
-These two benchmark problems were generated randomly.
+These two benchmark problems were generated from a uniform random distribution.
 
-The small benchmark example, for example, can be executed as follows:
+The small benchmark problem, for example, can be solved as follows:
 
 ``` bash
-    $ cmake --build . --target benchmark
+    $ cmake -DCMAKE_BUILD_TYPE=Release .
+    $ cmake --build . --target craam-cli
     $ mkdir data
     $ cd data
     $ wget https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip
     $ unzip ss.zip
     $ cd ..
-    $ bin/benchmark data/smallsize_test.csv
+    $ bin/craam-cli -i data/smallsize_test.csv -i data/smallsize_policy.csv
 ```
 
 Install Python Interface

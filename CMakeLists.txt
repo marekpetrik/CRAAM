@@ -66,7 +66,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wuninitialized")
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG "-g -rdynamic") # -D_GLIBCXX_DEBUG -- incompatible with boost :(
-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native")
 endif()
 
 # **** PROCESS CONFIGURATION FILE ****
@@ -122,10 +122,8 @@ if (BUILD_TESTS)
                         COMMENT "Running unit tests")
 endif (BUILD_TESTS)
 
-# **** BENCHMARK ****
-add_executable(benchmark EXCLUDE_FROM_ALL ${BENCH} )
-#cotire(benchmark)
-#target_link_libraries(benchmark ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} craam)
+# **** COMMAND-LINE EXECUTABLE ****
+add_executable(craam-cli EXCLUDE_FROM_ALL ${BENCH} )
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)

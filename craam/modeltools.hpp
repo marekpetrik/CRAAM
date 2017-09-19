@@ -75,11 +75,12 @@ Note that outcome distributions are not restored.
 \param input Source of the RMDP
 \param header Whether the first line of the file represents the header.
                 The column names are not checked for correctness or number!
+\param has_outcome Whether the outcome column is included. If not, it is assumed to be 0.
 \returns The input model
  */
 template<class Model>
 inline
-Model& from_csv(Model& mdp, istream& input, bool header = true){
+Model& from_csv(Model& mdp, istream& input, bool header = true, bool has_outcome = true){
     string line;
     // skip the first row if so instructed
     if(header) input >> line;
@@ -97,17 +98,21 @@ Model& from_csv(Model& mdp, istream& input, bool header = true){
         getline(linestream, cellstring, ',');
         idaction = stoi(cellstring);
         // read idoutcome
-        getline(linestream, cellstring, ',');
-        idoutcome = stoi(cellstring);
+        if(has_outcome){
+            getline(linestream, cellstring, ',');
+            idoutcome = stoi(cellstring);
+        }else{
+            idoutcome = 0;
+        }
         // read idstateto
         getline(linestream, cellstring, ',');
         idstateto = stoi(cellstring);
         // read probability
         getline(linestream, cellstring, ',');
-        probability = stof(cellstring);
+        probability = stod(cellstring);
         // read reward
         getline(linestream, cellstring, ',');
-        reward = stof(cellstring);
+        reward = stod(cellstring);
         // add transition
         add_transition<Model>(mdp,idstatefrom,idaction,idoutcome,idstateto,probability,reward);
         input >> line;

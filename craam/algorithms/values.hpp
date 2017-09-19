@@ -266,7 +266,6 @@ public:
 
     Solution new_solution(size_t statecount, numvec valuefunction) const {
         process_valuefunction(statecount, valuefunction);
-        assert(valuefunction.size() == statecount);
         Solution solution =  Solution(move(valuefunction), process_policy(statecount));
         return solution;
     }
@@ -298,6 +297,11 @@ public:
         return value_fix_state(state, valuefunction, discount, solution.policy[stateid]);
     }
 protected:
+    /**
+     * @brief process_valuefunction Resizes value function to the proper length when it is empty (size == 0)
+     * @param statecount Number of states in the MDP
+     * @param valuefunction Value function
+     */
     void process_valuefunction(size_t statecount, numvec& valuefunction) const{
         // check if the value function is a correct size, and if it is length 0
         // then creates an appropriate size
@@ -306,7 +310,17 @@ protected:
         }else{
             valuefunction.assign(statecount, 0.0);
         }
+        assert(valuefunction.size() == statecount);
     }
+
+    /**
+     * @brief process_policy Initializes policy to match the number of states.
+     *
+     * Does not modify internal policy object, but returns the new policy.
+     *
+     * @param statecount Number of states in the MDP
+     * @return Policy of the appropriate size.
+     */
     indvec process_policy(size_t statecount) const {
         // check the dimensions of the policy
         if(!policy.empty()){
