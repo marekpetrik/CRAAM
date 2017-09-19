@@ -78,7 +78,7 @@ The small benchmark problem, for example, can be solved as follows:
     $ wget https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip
     $ unzip ss.zip
     $ cd ..
-    $ bin/craam-cli -i data/smallsize_test.csv -i data/smallsize_policy.csv
+    $ bin/craam-cli -i data/smallsize_test.csv -o data/smallsize_policy.csv
 ```
 
 Install Python Interface
