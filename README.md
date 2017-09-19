@@ -81,10 +81,10 @@ The small benchmark problem, for example, can be solved as follows:
     $ bin/craam-cli -i data/smallsize_test.csv -o data/smallsize_policy.csv
 ```
 
-Install Python Interface
-========================
+Installing Python Interface
+===========================
 
-This install a package `craam`, with most of the classes and method provided by `craam.crobust`.
+A python interface is provided by package `craam`. Most of the classes and methods are contained in `craam.crobust`.
 
 Requirements
 ------------

@@ -31,7 +31,7 @@ const prec_t tolerance = 1e-5;
 class Transition {
 
 public:
-    Transition() : indices(0), probabilities(0), rewards(0) {};
+    Transition() : indices(0), probabilities(0), rewards(0) {}
 
     /**
     Creates a single transition from raw data.
@@ -81,7 +81,7 @@ public:
     */
     Transition(const numvec& probabilities) : Transition() {
         for(auto k : util::lang::indices(probabilities))
-            add_sample(k, probabilities[k], 0.0);
+            add_sample(long(k), probabilities[k], 0.0);
     }
 
     /**
@@ -152,9 +152,9 @@ public:
                 rewards[findex] = new_reward;
             // the transition is not there, the element needs to be inserted
             }else{
-                indices.insert(indices.cbegin()+findex,stateid);
-                probabilities.insert(probabilities.cbegin()+findex,probability);
-                rewards.insert(rewards.cbegin()+findex,reward);
+                indices.insert(indices.cbegin() + findex, stateid);
+                probabilities.insert(probabilities.cbegin() + findex,probability);
+                rewards.insert(rewards.cbegin() + findex,reward);
             }
         }
 
@@ -248,12 +248,12 @@ public:
     /** Returns the number of target states with non-zero transition probabilities.  */
     size_t size() const {
         return indices.size();
-    };
+    }
 
     /** Checks if the transition is empty. */
     bool empty() const {
         return indices.empty();
-    };
+    }
 
     /**
     Returns the maximal indexes involved in the transition.
@@ -261,7 +261,7 @@ public:
     */
     long max_index() const {
         return indices.empty() ? -1 : indices.back();
-    };
+    }
 
     /**
     Scales transition probabilities according to the provided parameter
@@ -272,7 +272,7 @@ public:
     */
     void probabilities_addto(prec_t scale, numvec& transition) const{
         for(size_t i : util::lang::indices(*this))
-            transition[indices[i]] += scale*probabilities[i];
+            transition[indices[i]] += scale * probabilities[i];
     }
 
     /**

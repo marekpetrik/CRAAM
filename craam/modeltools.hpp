@@ -93,20 +93,20 @@ Model& from_csv(Model& mdp, istream& input, bool header = true, bool has_outcome
 
         // read idstatefrom
         getline(linestream, cellstring, ',');
-        idstatefrom = stoi(cellstring);
+        idstatefrom = stol(cellstring);
         // read idaction
         getline(linestream, cellstring, ',');
-        idaction = stoi(cellstring);
+        idaction = stol(cellstring);
         // read idoutcome
         if(has_outcome){
             getline(linestream, cellstring, ',');
-            idoutcome = stoi(cellstring);
+            idoutcome = stol(cellstring);
         }else{
-            idoutcome = 0;
+            idoutcome = 0l;
         }
         // read idstateto
         getline(linestream, cellstring, ',');
-        idstateto = stoi(cellstring);
+        idstateto = stol(cellstring);
         // read probability
         getline(linestream, cellstring, ',');
         probability = stod(cellstring);
