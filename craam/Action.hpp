@@ -1,3 +1,25 @@
+// This file is part of CRAAM, a C++ library for solving plain
+// and robust Markov decision processes.
+//
+// MIT License
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 #pragma once
 
 #include "definitions.hpp"
@@ -117,7 +139,6 @@ public:
     }
 };
 
-
 // **************************************************************************************
 //  Outcome Management (a helper class)
 // **************************************************************************************
@@ -133,13 +154,13 @@ protected:
 
 public:
     /** Empty list of outcomes */
-    OutcomeManagement() : outcomes() {};
+    OutcomeManagement() : outcomes() {}
 
     /** Initializes with a list of outcomes */
-    OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {};
+    OutcomeManagement(const vector<Transition>& outcomes) : outcomes(outcomes) {}
 
     /** Empty virtual destructor */
-    virtual ~OutcomeManagement() {};
+    virtual ~OutcomeManagement() {}
 
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a valid identifier.
@@ -151,7 +172,7 @@ public:
         if(outcomeid < 0)
             throw invalid_argument("Outcomeid must be non-negative.");
 
-        if(outcomeid >= (long) outcomes.size())
+        if(outcomeid >= long(outcomes.size()))
             outcomes.resize(outcomeid + 1);
 
         return outcomes[outcomeid];
@@ -160,17 +181,17 @@ public:
     /**
     Creates a new outcome at the end. Similar to push_back.
     */
-    virtual Transition& create_outcome(){return create_outcome(outcomes.size());};
+    virtual Transition& create_outcome(){return create_outcome(outcomes.size());}
 
     /** Returns a transition for the outcome. The transition must exist. */
     const Transition& get_outcome(long outcomeid) const {
         assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
+        return outcomes[outcomeid];}
 
     /** Returns a transition for the outcome. The transition must exist. */
     Transition& get_outcome(long outcomeid) {
-        assert((outcomeid >= 0l && outcomeid < (long) outcomes.size()));
-        return outcomes[outcomeid];};
+        assert((outcomeid >= 0l && outcomeid < long(outcomes.size()) ));
+        return outcomes[outcomeid];}
 
     /** Returns a transition for the outcome. The transition must exist. */
     const Transition& operator[](long outcomeid) const {return get_outcome(outcomeid);}
@@ -179,10 +200,10 @@ public:
     Transition& operator[](long outcomeid) {return get_outcome(outcomeid);}
 
     /** Returns number of outcomes. */
-    size_t outcome_count() const {return outcomes.size();};
+    size_t outcome_count() const {return outcomes.size();}
 
     /** Returns number of outcomes. */
-    size_t size() const {return outcome_count();};
+    size_t size() const {return outcome_count();}
 
     /** Adds an outcome defined by the transition.
     \param outcomeid Id of the new outcome. Intermediate ids are created empty
@@ -191,10 +212,10 @@ public:
 
     /** Adds an outcome defined by the transition as the last outcome.
     \param t Transition that defines the outcome*/
-    void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);};
+    void add_outcome(const Transition& t){add_outcome(outcomes.size(), t);}
 
     /** Returns the list of outcomes */
-    const vector<Transition>& get_outcomes() const {return outcomes;};
+    const vector<Transition>& get_outcomes() const {return outcomes;}
 
     /** Normalizes transitions for outcomes */
     void normalize(){
@@ -204,7 +225,7 @@ public:
 
     /** Whether the provided outcomeid is correct */
     bool is_nature_correct(numvec oid) const
-        {return (oid.size() == outcomes.size());};
+        {return (oid.size() == outcomes.size());}
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
@@ -237,12 +258,12 @@ public:
 
     /** Creates an empty action. */
     WeightedOutcomeAction()
-        : OutcomeManagement(), distribution(0) {};
+        : OutcomeManagement(), distribution(0) {}
 
     /** Initializes outcomes to the provided vector */
     WeightedOutcomeAction(const vector<Transition>& outcomes)
         : OutcomeManagement(outcomes), distribution(outcomes.size(), 
-            1.0 / prec_t(outcomes.size())) {};
+            1.0 / prec_t(outcomes.size())) {}
 
     using OutcomeManagement::create_outcome;
 
