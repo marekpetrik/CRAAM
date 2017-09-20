@@ -15,11 +15,57 @@ The **RMPD** model adds a set of *outcomes* that model possible actions that can
 
 The available algorithms are *value iteration* and *modified policy iteration*. The library support both the plain worst-case outcome method and a worst case with respect to a base distribution.
 
-A python interface is also supported. See the instructions below.
+A python interface is also supported. See the installation instructions below.
+
+## Build and Run Command-line Executable ##
+
+To run a benchmark problem, download and decompress one of the following test files:
+
+-   Small problem with 100 states: <https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip>
+-   Medium problem with 2000 states (7zip): <https://www.dropbox.com/s/k0znc23xf9mpe5i/ms.7z>
+
+These two benchmark problems were generated from a uniform random distribution.
+
+First, download the code.
+
+``` bash
+    $ git clone --depth 1 git@github.com:marekpetrik/CRAAM.git
+    $ cmake -DCMAKE_BUILD_TYPE=Release .
+    $ cmake --build . --target craam-cli
+```
+
+Second, install Eigen in the same directory.
+
+``` bash
+    $ cd craam
+    $ wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
+    $ tar xzf 3.3.4.tar.gz
+    $ rm 3.3.4.tar.gz
+    $ mv eigen-eigen-5a0156e40feb/Eigen .
+```
+
+
+Finally, download and solve a simple benchmark problem:
+
+``` bash
+    $ mkdir data
+    $ cd data
+    $ wget https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip
+    $ unzip ss.zip
+    $ cd ..
+    $ bin/craam-cli -i data/smallsize_test.csv -o data/smallsize_policy.csv
+```
+
+To see the list of command-line options, run:
+
+``` bash
+    $ bin/craam-cli -h
+```
+
 
 ## Installing C++ Library ##
 
-It is sufficient to copy the entire root directory to a convenient location. A copy of the Eigen linear algebra library is included for convenience, but any other recent version should work fine too.
+It is sufficient to copy the entire root directory to a convenient location.
 
 Numerous asserts are enabled in the code by default. To disable them, insert the following line *before* including any files:
 
@@ -40,7 +86,7 @@ The library has minimal dependencies and was tested on Linux. It has not been te
 
 #### Optional Dependencies
 
--   [CMake](http://cmake.org/): 3.1.0 to build tests and documentation
+-   [CMake](http://cmake.org/): 3.1.0 to build tests, command line executable, and the documentation
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
 -   [Boost](http://boost.org) for compiling and running unit tests
@@ -64,34 +110,6 @@ Note that Boost must be present in order to build the tests in the first place.
     $ cmake --build . --target testit
 ```
 
-## Build and Run Command-line Executable ##
-
-To run a benchmark problem, download and decompress one of the following test files:
-
--   Small problem with 100 states: <https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip>
--   Medium problem with 2000 states (7zip): <https://www.dropbox.com/s/k0znc23xf9mpe5i/ms.7z>
-
-These two benchmark problems were generated from a uniform random distribution.
-
-The small benchmark problem, for example, can be solved as follows:
-
-``` bash
-    $ git clone --depth 1 git@github.com:marekpetrik/CRAAM.git
-    $ cmake -DCMAKE_BUILD_TYPE=Release .
-    $ cmake --build . --target craam-cli
-    $ mkdir data
-    $ cd data
-    $ wget https://www.dropbox.com/s/b9x8sz7q5ow1vm4/ss.zip
-    $ unzip ss.zip
-    $ cd ..
-    $ bin/craam-cli -i data/smallsize_test.csv -o data/smallsize_policy.csv
-```
-
-To display help for the command-line arguments, run:
-
-``` bash
-    $ bin/craam-cli -h
-```
 
 ## Installing Python Interface ##
 
