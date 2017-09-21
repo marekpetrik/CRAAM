@@ -164,13 +164,13 @@ public:
 
     /** Returns the mean reward following the action (and outcome). */
     prec_t mean_reward(long actionid, numvec nataction) const{
-        if(is_terminal()) return 0;
+        if(is_terminal() || !is_valid(actionid)) return 0;
         else return get_action(actionid).mean_reward(nataction);
     }
 
     /** Returns the mean reward following the action. */
     prec_t mean_reward(long actionid) const{
-        if(is_terminal()) return 0;
+        if(is_terminal() || !is_valid(actionid)) return 0;
         else return get_action(actionid).mean_reward(); 
     }
 
