@@ -363,7 +363,7 @@ void test_simple_mdp_save_load(){
 
     stringstream store;
 
-    rmdp1.to_csv(store);
+    to_csv(rmdp1, store);
     store.seekg(0);
 
     Model rmdp2;
@@ -395,7 +395,7 @@ void test_simple_mdp_save_load_save_load() {
 
     stringstream store;
 
-    rmdp1.to_csv(store);
+    to_csv(rmdp1, store);
     store.seekg(0);
 
     auto string1 = store.str();
@@ -405,7 +405,7 @@ void test_simple_mdp_save_load_save_load() {
 
     stringstream store2;
 
-    rmdp2.to_csv(store2);
+    to_csv(rmdp2, store2);
 
     auto string2 = store2.str();
 

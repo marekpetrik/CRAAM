@@ -28,7 +28,7 @@ find_package(OpenMP)
 find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
-    message(WARNING "Unit tests (testit) require Boost unit test library and may not compile." )
+    message(WARNING "Unit tests (testit) require Boost unit test library and may not compile otherwise." )
 endif()
 
 # DEBUG
@@ -79,7 +79,9 @@ configure_file (
 )
 
 # **** SOURCE FILES ****
-include_directories (.)
+include_directories (. )
+# do not report warnings from included libraries
+include_directories (SYSTEM include)
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/definitions.hpp  

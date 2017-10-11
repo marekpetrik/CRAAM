@@ -29,7 +29,7 @@ These two benchmark problems were generated from a uniform random distribution.
 First, download the code.
 
 ``` bash
-    $ git clone --depth 1 git@github.com:marekpetrik/CRAAM.git
+    $ git clone --depth 1 https://github.com/marekpetrik/CRAAM.git
     $ cmake -DCMAKE_BUILD_TYPE=Release .
     $ cmake --build . --target craam-cli
 ```
@@ -41,7 +41,7 @@ Second, install Eigen in the same directory.
     $ wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
     $ tar xzf 3.3.4.tar.gz
     $ rm 3.3.4.tar.gz
-    $ mv eigen-eigen-5a0156e40feb/Eigen .
+    $ mv eigen-eigen-5a0156e40feb/Eigen ./include
 ```
 
 

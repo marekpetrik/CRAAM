@@ -92,7 +92,8 @@ commas, and rows by new lines.
 The file is formatted with the following columns:
 idstatefrom, idaction, idoutcome, idstateto, probability, reward
 
-Note that outcome distributions are not restored.
+\see from_csv for conveniently specialized methods
+
 \param mdp Model output (also returned)
 \param input Source of the RMDP
 \param header Whether the first line of the file represents the header.
@@ -102,7 +103,7 @@ Note that outcome distributions are not restored.
  */
 template<class Model>
 inline
-Model& from_csv(Model& mdp, istream& input, bool header = true, bool has_outcome = true){
+Model& from_csv_general(Model& mdp, istream& input, bool header = true, bool has_outcome = true){
     string line;
     // skip the first row if so instructed
     if(header) input >> line;
@@ -143,7 +144,147 @@ Model& from_csv(Model& mdp, istream& input, bool header = true, bool has_outcome
 }
 
 /**
-Loads the transition probabilities and rewards from a CSV file.
+A specialization of from_csv_general.
+ */
+MDP& from_csv(MDP& mdp, istream& input, bool header = true, bool has_outcome = false){
+    return from_csv_general(mdp, input, header, has_outcome);
+}
+
+/**
+A specialization of from_csv_general.
+ */
+RMDP& from_csv(RMDP& mdp, istream& input, bool header = true, bool has_outcome = true){
+    return from_csv_general(mdp, input, header, has_outcome);
+}
+
+/**
+Loads an MDP definition from a simple csv file. States, actions, and
+outcomes are identified by 0-based ids. The columns are separated by
+commas, and rows by new lines.
+
+The file is formatted with the following columns:
+idstatefrom, idaction, idstateto, probability, reward
+
+
+\param input Source of the MDP
+\param header Whether the first line of the file represents the header.
+                The column names are not checked for correctness or number!
+\param has_outcome Whether the outcome column is included. If not, it is assumed to be 0.
+
+\returns The input model
+ */
+MDP from_csv_mdp(istream& input, bool header = true, bool has_outcome = false){
+    MDP mdp;
+    return from_csv(mdp, input, header, has_outcome);
+}
+
+/**
+Saves the RMDP model to a stream as a simple csv file. States, actions, and outcomes
+are identified by 0-based ids. Columns are separated by commas, and rows by new lines.
+
+The file is formatted with the following columns:
+idstatefrom, idaction, idoutcome, idstateto, probability, reward
+
+Exported and imported MDP will be be slightly different. Since action/transitions
+will not be exported if there are no actions for the state. However, when
+there is data for action 1 and action 3, action 2 will be created with no outcomes.
+
+Note that underlying nominal distributions are not saved.
+
+\param output Output for the stream
+\param header Whether the header should be written as the
+      first line of the file represents the header.
+*/
+void to_csv(const RMDP& rmdp, ostream& output, bool header = true) {
+
+    //write header if so requested
+    if(header){
+        output << "idstatefrom," << "idaction," <<
+            "idoutcome," << "idstateto," << "probability," << "reward" << endl;
+    }
+
+    //idstatefrom
+    for(size_t i = 0l; i < rmdp.get_states().size(); i++){
+        const auto& actions = rmdp.get_state(i).get_actions();
+        //idaction
+        for(size_t j = 0; j < actions.size(); j++){
+
+            const auto& outcomes = actions[j].get_outcomes();
+            //idoutcome
+            for(size_t k = 0; k < outcomes.size(); k++){
+                const auto& tran = outcomes[k];
+
+                auto& indices = tran.get_indices();
+                const auto& rewards = tran.get_rewards();
+                const auto& probabilities = tran.get_probabilities();
+                //idstateto
+                for (size_t l = 0; l < tran.size(); l++){
+                    output << i << ',' << j << ',' << k << ',' << indices[l] << ','
+                            << probabilities[l] << ',' << rewards[l] << endl;
+                }
+            }
+        }
+    }
+}
+
+/**
+Saves the MDP model to a stream as a simple csv file. States, actions, and outcomes
+are identified by 0-based ids. Columns are separated by commas, and rows by new lines.
+
+The file is formatted with the following columns:
+idstatefrom, idaction, idstateto, probability, reward
+
+Exported and imported MDP will be be slightly different. Since action/transitions
+will not be exported if there are no actions for the state. However, when
+there is data for action 1 and action 3, action 2 will be created with no outcomes,
+but will be marked as invalid in the state.
+
+\param output Output for the stream
+\param header Whether the header should be written as the
+      first line of the file represents the header.
+*/
+void to_csv(const MDP& mdp, ostream& output, bool header = true) {
+    //write header if so requested
+    if(header){
+        output << "idstatefrom," << "idaction," << "idstateto," << "probability," << "reward" << endl;
+    }
+
+    //idstatefrom
+    for(size_t i = 0l; i < mdp.get_states().size(); i++){
+        const auto& actions = mdp.get_state(i).get_actions();
+        //idaction
+        for(size_t j = 0; j < actions.size(); j++){
+            const auto& tran = actions[j].get_outcome();
+
+            const auto& indices = tran.get_indices();
+            const auto& rewards = tran.get_rewards();
+            const auto& probabilities = tran.get_probabilities();
+            //idstateto
+            for (size_t l = 0; l < tran.size(); l++){
+                output << i << ',' << j << ',' << indices[l] << ','
+                        << probabilities[l] << ',' << rewards[l] << endl;
+            }
+        }
+    }
+}
+
+/**
+Saves the transition probabilities and rewards to a CSV file. See to_csv for
+a detailed description.
+
+\param filename Name of the file
+\param header Whether to create a header of the file too
+ */
+template<class M>
+void to_csv_file(const M& mdp, const string& filename, bool header = true) {
+    ofstream ofs(filename, ofstream::out);
+    to_csv(mdp, ofs,header);
+    ofs.close();
+}
+
+
+/**
+Loads transition probabilities and rewards from a CSV file.
 \param mdp Model output (also returned)
 \param filename Name of the file
 \param header Whether to create a header of the file too

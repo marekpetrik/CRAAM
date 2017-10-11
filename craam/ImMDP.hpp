@@ -208,7 +208,7 @@ public:
     void to_csv(ostream& output_mdp, ostream& output_state2obs, ostream& output_initial,
                     bool headers = true) const{
         // save the MDP
-        mdp->to_csv(output_mdp, headers);
+        craam::to_csv(*mdp, output_mdp, headers);
         // save state maps
         if(headers){
             output_state2obs << "idstate,idobs" << endl;
