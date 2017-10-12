@@ -135,7 +135,38 @@ To install the Python extension, first compile the C++ library as described abov
 
 Omit `--user` to install the package for all users rather than just the current one.
 
-### Development ###
+## Installing R interface ##
+
+The R interface is experimental and has very limited functionality. Method signatures are expected to change.
+
+
+The package can be installed directly from the github repository using devtools:
+```R
+library(devtools)
+devtools::install_github("marekpetrik/craam/rcraam")
+```
+
+Alternatively, install from bitbucket (less stable):
+
+```R
+library(devtools)
+devtools::install_bitbucket("marekpetrik/craam/rcraam")
+```
+
+R version 3.4 is recommended, but the package probably works with earlier versions too.
+
+The following short program can be used to load and solve and MDP:
+
+```R
+library(rcraam)
+m <- MDP()
+data <- read.csv("mdp.csv")
+m$from_dataframe(data)
+m$solve_mpi(0.95)
+```
+
+
+## C++ Development ##
 
 
 The instruction above generate a release version of the project. The release version is optimized for speed, but lacks debugging symbols and many intermediate checks are eliminated. For development purposes, is better to use the Debug version of the code. This can be generated as follows:
