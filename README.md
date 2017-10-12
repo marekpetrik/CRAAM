@@ -5,6 +5,8 @@
 
 Craam is a **header-only** C++ library for solving Markov decision processes with support for handling uncertainty in transition probabilities. The library can handle uncertainties using both *robust*, or *optimistic* objectives.
 
+The library includes Python and R interfaces. See below for detailed installation instructions.
+
 When using the *robust objective*, adversarial nature chooses the worst plausible realization of the uncertain values. When using the *optimistic objective*, collaborative nature chooses the best plausible realization of the uncertain values. 
 
 The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
@@ -135,12 +137,12 @@ To install the Python extension, first compile the C++ library as described abov
 
 Omit `--user` to install the package for all users rather than just the current one.
 
-## Installing R interface ##
+## Installing R inIerface ##
 
 The R interface is experimental and has very limited functionality. Method signatures are expected to change.
 
 
-The package can be installed directly from the github repository using devtools:
+Te package can be installed directly from the github repository using devtools:
 ```R
 library(devtools)
 devtools::install_github("marekpetrik/craam/rcraam")
