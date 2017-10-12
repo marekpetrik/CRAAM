@@ -28,7 +28,7 @@ Provides abstractions that allow generalization to both robust and regular MDPs.
 
 #include "craam/RMDP.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include <functional>
 #include <type_traits>
 

@@ -28,7 +28,7 @@
 #include "Action.hpp"
 #include "RMDP.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include <vector>
 #include <istream>
 #include <fstream>
@@ -68,19 +68,17 @@ void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long
 }
 
 /**
-Adds a transition probability and reward for a model with no outcomes.
+Adds a transition probability and reward for an MDP model.
 \param mdp model to add the transition to
 \param fromid Starting state ID
 \param actionid Action ID
-\param outcomeid Outcome ID (A single outcome corresponds to a regular MDP)
 \param toid Destination ID
 \param probability Probability of the transition (must be non-negative)
 \param reward The reward associated with the transition.
 */
-template<class Model>
-inline
-void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
-    add_transition<Model>(mdp, fromid, actionid, 0l, toid, probability, reward);
+
+inline void add_transition(MDP& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
+    add_transition(mdp, fromid, actionid, 0, toid, probability, reward);
 }
 
 

@@ -29,7 +29,7 @@
 #include "craam/algorithms/robust_values.hpp"
 #include "craam/algorithms/occupancies.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include <vector>
 #include <memory>
 #include <random>

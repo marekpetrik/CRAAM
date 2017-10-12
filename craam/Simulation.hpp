@@ -25,8 +25,7 @@
 #include "Samples.hpp"
 #include "definitions.hpp"
 
-#include "range.hpp"
-
+#include <rm/range.hpp>
 #include <utility>
 #include <vector>
 #include <memory>

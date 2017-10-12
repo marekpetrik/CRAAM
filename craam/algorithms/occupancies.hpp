@@ -3,7 +3,7 @@
 #include "craam/RMDP.hpp"
 
 #include <Eigen/Dense>
-#include "range.hpp"
+#include <rm/range.hpp>
 
 namespace craam{namespace algorithms{
 

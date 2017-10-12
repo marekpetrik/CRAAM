@@ -25,8 +25,7 @@
 
 #include "State.hpp"
 
-#include "range.hpp"
-
+#include <rm/range.hpp>
 #include <vector>
 #include <istream>
 #include <fstream>
@@ -258,7 +257,6 @@ public:
 
     /** Retrieves an existing state */
     const SType& operator[](long stateid) const {return get_state(stateid);};
-
 
     /** Retrieves an existing state */
     SType& get_state(long stateid) {

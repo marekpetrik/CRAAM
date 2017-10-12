@@ -1,0 +1,13 @@
+Package: rcraam
+Type: Package
+Title: Library for robust reinforcement learning
+Version: 0.1.0
+Author: Marek Petrik
+Maintainer: Marek Petrik <marek@petrik.us>
+Description: Solves regular and robust Markov decision processes, builds MDPs from samples. 
+             It also contains methods for basic value function approximation and simulation.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Depends: Rcpp (>= 0.12.12)
+LinkingTo: Rcpp

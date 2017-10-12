@@ -1,0 +1,8 @@
+## -*- mode: makefile; -*-
+
+PKG_CXXFLAGS = -I../../ -I../../include -fopenmp -DNDEBUG
+PKG_LIBS= -fopenmp
+
+## And with R 3.4.0, we turn C++14 on as OpenMP
+## support within Armadillo prefers / requires it
+CXX_STD = CXX14

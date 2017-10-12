@@ -26,7 +26,7 @@
 #include "RMDP.hpp"
 #include "modeltools.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include <set>
 #include <memory>
 #include <unordered_map>

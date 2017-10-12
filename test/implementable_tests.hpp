@@ -28,7 +28,7 @@
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 
 #include <boost/functional/hash.hpp>
 #include <iostream>

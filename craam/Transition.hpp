@@ -24,7 +24,7 @@
 
 #include "definitions.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include<vector>
 #include<string>
 #include <algorithm>

@@ -25,7 +25,7 @@
 #include "definitions.hpp"
 #include "Transition.hpp"
 
-#include "range.hpp"
+#include <rm/range.hpp>
 #include <utility>
 #include <vector>
 #include <limits>
