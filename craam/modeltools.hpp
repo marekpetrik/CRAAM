@@ -66,6 +66,21 @@ void add_transition(Model& mdp, long fromid, long actionid, long outcomeid, long
     Transition& outcome = action.create_outcome(outcomeid);
     outcome.add_sample(toid,probability,reward);
 }
+/**
+Adds a transition probability and reward for an GMDP model. The
+outcomeid is 0.
+
+\param mdp model to add the transition to
+\param fromid Starting state ID
+\param actionid Action ID
+\param toid Destination ID
+\param probability Probability of the transition (must be non-negative)
+\param reward The reward associated with the transition.
+*/
+template<class Model>
+inline void add_transition(Model& mdp, long fromid, long actionid, long toid, prec_t probability, prec_t reward){
+    add_transition(mdp, fromid, actionid, 0, toid, probability, reward);
+}
 
 /**
 Adds a transition probability and reward for an MDP model.

@@ -137,7 +137,7 @@ To install the Python extension, first compile the C++ library as described abov
 
 Omit `--user` to install the package for all users rather than just the current one.
 
-## Installing R inIerface ##
+## Installing R Interface ##
 
 The R interface is experimental and has very limited functionality. Method signatures are expected to change.
 
