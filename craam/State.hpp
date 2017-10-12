@@ -24,6 +24,7 @@
 
 #include "Action.hpp"
 
+#include "range.hpp"
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -31,7 +32,6 @@
 #include <limits>
 #include <string>
 
-#include "cpp11-range-master/range.hpp"
 
 
 namespace craam {

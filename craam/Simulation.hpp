@@ -25,6 +25,8 @@
 #include "Samples.hpp"
 #include "definitions.hpp"
 
+#include "range.hpp"
+
 #include <utility>
 #include <vector>
 #include <memory>
@@ -35,7 +37,6 @@
 #include <cmath>
 #include <string>
 
-#include "cpp11-range-master/range.hpp"
 
 
 namespace craam{

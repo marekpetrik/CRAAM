@@ -25,6 +25,8 @@
 
 #include "State.hpp"
 
+#include "range.hpp"
+
 #include <vector>
 #include <istream>
 #include <fstream>
@@ -38,7 +40,6 @@
 #include <utility>
 #include <iostream>
 
-#include "cpp11-range-master/range.hpp"
 
 /** \mainpage
 

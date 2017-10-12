@@ -22,13 +22,14 @@
 
 #pragma once
 
-#include "RMDP.hpp"
-#include "Transition.hpp"
-#include "modeltools.hpp"
-#include "algorithms/values.hpp"
-#include "algorithms/robust_values.hpp"
-#include "algorithms/occupancies.hpp"
+#include "craam/RMDP.hpp"
+#include "craam/Transition.hpp"
+#include "craam/modeltools.hpp"
+#include "craam/algorithms/values.hpp"
+#include "craam/algorithms/robust_values.hpp"
+#include "craam/algorithms/occupancies.hpp"
 
+#include "range.hpp"
 #include <vector>
 #include <memory>
 #include <random>
@@ -36,7 +37,6 @@
 #include <iostream>
 #include <iterator>
 
-#include "cpp11-range-master/range.hpp"
 
 namespace craam{
 /// A namespace with tools for implementable, interpretable, and aggregated MDPs

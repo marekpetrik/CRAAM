@@ -24,6 +24,7 @@
 
 #include "definitions.hpp"
 
+#include "range.hpp"
 #include<vector>
 #include<string>
 #include <algorithm>
@@ -31,7 +32,6 @@
 #include <numeric>
 #include <cmath>
 
-#include "cpp11-range-master/range.hpp"
 
 namespace craam {
 

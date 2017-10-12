@@ -5,7 +5,8 @@
 #include "craam/Samples.hpp"
 #include "craam/algorithms/values.hpp"
 
-#include "craam/cpp11-range-master/range.hpp"
+#include "range.hpp"
+
 #include <iostream>
 #include <iterator>
 #include <random>

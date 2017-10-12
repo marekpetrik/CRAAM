@@ -26,6 +26,7 @@
 #include "RMDP.hpp"
 #include "modeltools.hpp"
 
+#include "range.hpp"
 #include <set>
 #include <memory>
 #include <unordered_map>
@@ -35,7 +36,6 @@
 #include <vector>
 #include <string>
 
-#include "cpp11-range-master/range.hpp"
 
 namespace craam{
 

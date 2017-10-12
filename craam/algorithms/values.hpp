@@ -26,10 +26,11 @@ Provides abstractions that allow generalization to both robust and regular MDPs.
 */ 
 #pragma once
 
-#include "../RMDP.hpp"
+#include "craam/RMDP.hpp"
+
+#include "range.hpp"
 #include <functional>
 #include <type_traits>
-#include "../cpp11-range-master/range.hpp"
 
 namespace craam {
 /// Main namespace for algorithms that operate on MDPs and RMDPs

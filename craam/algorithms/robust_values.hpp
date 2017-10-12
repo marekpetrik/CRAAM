@@ -25,11 +25,13 @@ Robust MDP methods for computing value functions.
 */
 #pragma once
 
-#include "../RMDP.hpp"
+#include "craam/RMDP.hpp"
+
+#include "range.hpp"
+
 #include "values.hpp"
 #include <functional>
 #include <type_traits>
-#include "../cpp11-range-master/range.hpp"
 
 namespace craam { namespace algorithms{
 

@@ -28,6 +28,7 @@
 #include "Action.hpp"
 #include "RMDP.hpp"
 
+#include "range.hpp"
 #include <vector>
 #include <istream>
 #include <fstream>
@@ -36,7 +37,6 @@
 #include <cassert>
 #include <sstream>
 
-#include "cpp11-range-master/range.hpp"
 
 // **********************************************************************
 // ***********************    HELPER FUNCTIONS    ***********************

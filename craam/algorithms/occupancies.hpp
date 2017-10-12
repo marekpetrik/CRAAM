@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../RMDP.hpp"
+#include "craam/RMDP.hpp"
 
 #include <Eigen/Dense>
-#include "../cpp11-range-master/range.hpp"
+#include "range.hpp"
 
 namespace craam{namespace algorithms{
 
