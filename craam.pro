@@ -31,7 +31,8 @@ HEADERS += \
     craam/algorithms/values.hpp \
     test/core_tests.hpp \
     test/implementable_tests.hpp \
-    test/simulation_tests.hpp
+    test/simulation_tests.hpp \
+    craam/fastopt.hpp
 
 QMAKE_CXXFLAGS += -fopenmp
 

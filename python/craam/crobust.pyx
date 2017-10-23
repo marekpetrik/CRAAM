@@ -1038,7 +1038,7 @@ cdef class SampledMDP:
         return np.array(t.probabilities_vector(state_count))
             
   
-cdef extern from "craam/definitions.hpp" namespace 'craam' nogil:
+cdef extern from "craam/fastopt.hpp" namespace 'craam' nogil:
     pair[numvec,double] c_worstcase_l1 "craam::worstcase_l1" (const vector[double] & z, \
                         const vector[double] & q, double t)
 

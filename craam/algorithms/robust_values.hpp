@@ -26,6 +26,7 @@ Robust MDP methods for computing value functions.
 #pragma once
 
 #include "craam/RMDP.hpp"
+#include "craam/fastopt.hpp"
 
 #include <rm/range.hpp>
 
