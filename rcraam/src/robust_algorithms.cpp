@@ -3,7 +3,8 @@
 #include "craam/fastopt.hpp"
 
 /// Computes the maximum distribution subject to L1 constraints
-//[[Rcpp::export]]
+
+// [[Rcpp::export]]
 Rcpp::List worstcase_l1(Rcpp::NumericVector z, Rcpp::NumericVector q, double t){
     // resulting probability
     craam::numvec p;
