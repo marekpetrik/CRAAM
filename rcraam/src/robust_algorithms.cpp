@@ -5,7 +5,7 @@
 /// Computes the maximum distribution subject to L1 constraints
 
 // [[Rcpp::export]]
-/*Rcpp::List worstcase_l1(Rcpp::NumericVector z, Rcpp::NumericVector q, double t){
+Rcpp::List worstcase_l1(Rcpp::NumericVector z, Rcpp::NumericVector q, double t){
     // resulting probability
     craam::numvec p;
     // resulting objective value
@@ -19,4 +19,4 @@
     result["obj"] = objective;
 
     return result;
-}*/
+}
