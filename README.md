@@ -139,8 +139,7 @@ Omit `--user` to install the package for all users rather than just the current 
 
 ## Installing R Interface ##
 
-The R interface is experimental and has very limited functionality. Method signatures are expected to change.
-
+The R interface is experimental and has very limited functionality. Method signatures are expected to change. The package should work on Linux, Mac, and Windows (with RTools 3.4+).
 
 Te package can be installed directly from the github repository using devtools:
 ```R
@@ -157,7 +156,7 @@ devtools::install_bitbucket("marekpetrik/craam/rcraam")
 
 R version 3.4 is recommended, but the package probably works with earlier versions too.
 
-The following short program can be used to load and solve and MDP:
+The following short program can be used to load and solve an MDP:
 
 ```R
 library(rcraam)
