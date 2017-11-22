@@ -997,6 +997,7 @@ cdef extern from "craam/Simulation.hpp" namespace 'craam::msen' nogil:
         CSampledMDP();
         void add_samples(const CDiscreteSamples& samples);
         shared_ptr[CMDP] get_mdp_mod()
+        vector[vector[double]] get_state_action_weights()
         CTransition get_initial()
         long state_count();
 
@@ -1028,6 +1029,9 @@ cdef class SampledMDP:
         cdef MDP m = MDP(0, discount = discount)
         m.thisptr = dereference(self._thisptr).get_mdp_mod()
         return m
+        
+    cpdef get_state_action_weights(self):
+        return dereference(self._thisptr).get_state_action_weights()
 
     cpdef get_initial(self):
         """
