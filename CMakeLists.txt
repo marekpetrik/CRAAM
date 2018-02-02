@@ -11,6 +11,12 @@ project (CRAAM)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+
+# enable colors in the output
+SET(CMAKE_COLOR_MAKEFILE ON)
+# And optionally
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
+
 # **** Build type ****
 if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting build type to 'Release' as none was specified.")

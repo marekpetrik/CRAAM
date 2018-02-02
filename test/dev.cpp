@@ -5,7 +5,7 @@
 #include "craam/Samples.hpp"
 #include "craam/algorithms/values.hpp"
 
-#include "range.hpp"
+#include "rm/range.hpp"
 
 #include <iostream>
 #include <iterator>
@@ -72,6 +72,10 @@ public:
 
     int action(State state, long index) const{
         return actions_list[index];
+    }
+
+    const vector<int>& get_valid_actions(int state) const{
+        return actions_list; 
     }
 
     size_t action_count(State) const{return actions_list.size();};
