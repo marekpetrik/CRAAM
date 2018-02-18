@@ -382,6 +382,41 @@ protected:
     const Sim& sim;
 };
 
+/**
+A random inventory policy.
+
+\tparam Sim Simulator class for which the policy is to be constructed.
+            Must implement an instance method actions(State).
+ */
+template<class Sim>
+class InventoryPolicy{
+
+public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
+
+    InventoryPolicy(const Sim& sim, prec_t prior_mean, prec_t prior_std, prec_t demand_std,
+                    random_device::result_type seed = random_device{}()) :
+                sim(sim), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std), gen(seed){
+        normal_distribution<prec_t> prior_distribution(prior_mean,prior_std);
+        demand_mean = prior_distribution(gen);
+        demand_distribution = normal_distribution<prec_t>(demand_mean, demand_std);
+    };
+
+    /** Returns a random action. State parameter is not necessary, will remove it. */
+    int operator() (State state){
+        int demand = max(0,(int)demand_distribution(gen));
+        return demand;
+    };
+
+private:
+    /// Internal reference to the originating simulator
+    const Sim& sim;
+    prec_t prior_mean, prior_std, demand_mean, demand_std;
+    /// Random number engine
+    default_random_engine gen;
+    normal_distribution<prec_t> demand_distribution;
+};
 
 
 // ************************************************************************************
@@ -532,6 +567,84 @@ protected:
     Transition initial;
 };
 
+
+/**
+A simulator that generates inventory data.
+
+*/
+class InventorySimulator{
+
+public:
+    /// Type of states
+    typedef long State;
+    /// Type of actions
+    typedef long Action;
+
+    /**
+    Build a model simulator
+
+    The initial inventory level is 0
+    */
+    InventorySimulator(int initial, prec_t purchase_cost, prec_t sale_price, prec_t delivery_cost,
+                       prec_t holding_cost, prec_t backlog_cost, int max_inventory, int max_backlog, int max_order,
+                       random_device::result_type seed = random_device{}()) :
+                gen(seed), initial(initial), purchase_cost(purchase_cost), sale_price(sale_price),
+                delivery_cost(delivery_cost), holding_cost(holding_cost), backlog_cost(backlog_cost),
+                max_inventory(max_inventory), max_backlog(max_backlog), max_order(max_order), inventory_status(initial) {}
+
+    /**
+    Build a model simulator
+
+    The initial inventory level is 0
+    */
+    InventorySimulator(int initial, prec_t purchase_cost, prec_t sale_price, int max_inventory,
+                       random_device::result_type seed = random_device{}()) :
+        gen(seed), initial(initial), purchase_cost(purchase_cost), sale_price(sale_price),
+        max_inventory(max_inventory), inventory_status(initial) {}
+
+    int init_state(){
+        return initial;
+    }
+
+    bool end_condition(State s) const
+        {return inventory_status<0;}
+
+    int get_order_amount(int current_inventory){
+        return max(0, max_inventory-current_inventory);
+    }
+
+    /**
+    Returns a sample of the reward and a decision state following a state
+    \param state Current state
+    \param action Current action
+    */
+    pair<double,int> transition(int current_inventory, int action_demand){
+
+        assert(current_inventory >= 0 );
+        assert(action_demand >= 0);
+
+        int order_amount = get_order_amount(current_inventory);
+        int next_inventory= order_amount + current_inventory-action_demand;
+        int sold_amount = current_inventory-next_inventory + order_amount;
+        prec_t revenue = sold_amount * sale_price;
+        prec_t expense = order_amount * purchase_cost;
+        prec_t reward = revenue - expense;
+        inventory_status = next_inventory;
+
+        return make_pair(reward, next_inventory);
+    }
+
+protected:
+    /// Random number engine
+    default_random_engine gen;
+
+    /** Initial state */
+    int initial;
+
+    prec_t purchase_cost, sale_price, delivery_cost, holding_cost, backlog_cost;
+    int max_inventory, max_backlog, max_order, inventory_status;
+};
+
 /// Random (uniformly) policy to be used with the model simulator
 using ModelRandomPolicy = RandomPolicy<ModelSimulator>;
 
@@ -546,6 +659,8 @@ using ModelRandomizedPolicy = RandomizedPolicy<ModelSimulator>;
 /// Deterministic policy to be used with MDP model simulator
 using ModelDeterministicPolicy = DeterministicPolicy<ModelSimulator>;
 
+///Inventory policy to be used
+using ModelInventoryPolicy = InventoryPolicy<InventorySimulator>;
 
 } // end namespace msen
 } // end namespace craam
