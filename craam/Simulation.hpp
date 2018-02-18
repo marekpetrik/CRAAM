@@ -395,27 +395,23 @@ public:
     using State = typename Sim::State;
     using Action = typename Sim::Action;
 
-    InventoryPolicy(const Sim& sim, prec_t prior_mean, prec_t prior_std, prec_t demand_std,
+    InventoryPolicy(const Sim& sim, int max_inventory,
                     random_device::result_type seed = random_device{}()) :
-                sim(sim), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std), gen(seed){
-        normal_distribution<prec_t> prior_distribution(prior_mean,prior_std);
-        demand_mean = prior_distribution(gen);
-        demand_distribution = normal_distribution<prec_t>(demand_mean, demand_std);
-    };
+                sim(sim), max_inventory(max_inventory), gen(seed){
+    }
 
-    /** Returns a random action. State parameter is not necessary, will remove it. */
-    int operator() (State state){
-        int demand = max(0,(int)demand_distribution(gen));
-        return demand;
-    };
+    /** Returns an action accrding to the S,s policy, orders required amount to have
+    the inventory to max level. */
+    int operator() (int current_state){
+        return max(0, max_inventory-current_state);
+    }
 
 private:
     /// Internal reference to the originating simulator
     const Sim& sim;
-    prec_t prior_mean, prior_std, demand_mean, demand_std;
+    int max_inventory;
     /// Random number engine
     default_random_engine gen;
-    normal_distribution<prec_t> demand_distribution;
 };
 
 
@@ -554,7 +550,7 @@ public:
 
     /// Returns an action with the given index
     Action action(State, long index) const
-        {return index;};
+        {return index;}
 
 protected:
     /// Random number engine
@@ -585,49 +581,58 @@ public:
 
     The initial inventory level is 0
     */
-    InventorySimulator(int initial, prec_t purchase_cost, prec_t sale_price, prec_t delivery_cost,
-                       prec_t holding_cost, prec_t backlog_cost, int max_inventory, int max_backlog, int max_order,
-                       random_device::result_type seed = random_device{}()) :
-                gen(seed), initial(initial), purchase_cost(purchase_cost), sale_price(sale_price),
-                delivery_cost(delivery_cost), holding_cost(holding_cost), backlog_cost(backlog_cost),
-                max_inventory(max_inventory), max_backlog(max_backlog), max_order(max_order), inventory_status(initial) {}
+    InventorySimulator(int initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
+                       prec_t sale_price, prec_t delivery_cost, prec_t holding_cost, prec_t backlog_cost,
+                       int max_inventory, int max_backlog, int max_order, random_device::result_type seed = random_device{}()) :
+                initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std),
+                purchase_cost(purchase_cost), sale_price(sale_price), delivery_cost(delivery_cost), holding_cost(holding_cost),
+                backlog_cost(backlog_cost), max_inventory(max_inventory), max_backlog(max_backlog), max_order(max_order),
+                gen(seed), inventory_status(initial) {
+
+                init_demand_distribution();
+    }
 
     /**
     Build a model simulator
 
     The initial inventory level is 0
     */
-    InventorySimulator(int initial, prec_t purchase_cost, prec_t sale_price, int max_inventory,
-                       random_device::result_type seed = random_device{}()) :
-        gen(seed), initial(initial), purchase_cost(purchase_cost), sale_price(sale_price),
-        max_inventory(max_inventory), inventory_status(initial) {}
+    InventorySimulator(int initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
+                       prec_t sale_price, int max_inventory, random_device::result_type seed = random_device{}()) :
+        initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std), purchase_cost(purchase_cost),
+        sale_price(sale_price), max_inventory(max_inventory), gen(seed), inventory_status(initial) {
+
+        init_demand_distribution();
+    }
 
     int init_state(){
         return initial;
     }
 
+    void init_demand_distribution(){
+        normal_distribution<prec_t> prior_distribution(prior_mean,prior_std);
+        demand_mean = prior_distribution(gen);
+        demand_distribution = normal_distribution<prec_t>(demand_mean, demand_std);
+    }
+
     bool end_condition(State s) const
         {return inventory_status<0;}
-
-    int get_order_amount(int current_inventory){
-        return max(0, max_inventory-current_inventory);
-    }
 
     /**
     Returns a sample of the reward and a decision state following a state
     \param state Current state
     \param action Current action
     */
-    pair<double,int> transition(int current_inventory, int action_demand){
+    pair<double,int> transition(int current_inventory, int action_order){
 
         assert(current_inventory >= 0 );
-        assert(action_demand >= 0);
+        assert(action_order >= 0);
 
-        int order_amount = get_order_amount(current_inventory);
-        int next_inventory= order_amount + current_inventory-action_demand;
-        int sold_amount = current_inventory-next_inventory + order_amount;
+        int demand = max(0,(int)demand_distribution(gen));
+        int next_inventory = action_order + current_inventory-demand;
+        int sold_amount = current_inventory-next_inventory + action_order;
         prec_t revenue = sold_amount * sale_price;
-        prec_t expense = order_amount * purchase_cost;
+        prec_t expense = action_order * purchase_cost;
         prec_t reward = revenue - expense;
         inventory_status = next_inventory;
 
@@ -636,13 +641,13 @@ public:
 
 protected:
     /// Random number engine
-    default_random_engine gen;
-
-    /** Initial state */
     int initial;
-
+    normal_distribution<prec_t> demand_distribution;
+    prec_t prior_mean, prior_std, demand_std, demand_mean;
     prec_t purchase_cost, sale_price, delivery_cost, holding_cost, backlog_cost;
-    int max_inventory, max_backlog, max_order, inventory_status;
+    int max_inventory, max_backlog, max_order;
+    default_random_engine gen;
+    int inventory_status;
 };
 
 /// Random (uniformly) policy to be used with the model simulator

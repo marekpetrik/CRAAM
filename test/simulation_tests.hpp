@@ -361,8 +361,9 @@ BOOST_AUTO_TEST_CASE(inventory_simulator){
     double purchase_cost=2, sale_price=3;
     double prior_mean = 4, prior_std=1, demand_std=1.3;
 
-    InventorySimulator simulator(initial, purchase_cost, sale_price, max_inventory, rand_seed);
-    ModelInventoryPolicy rp(simulator,prior_mean, prior_std, demand_std, rand_seed);
+    InventorySimulator simulator(initial, prior_mean, prior_std, demand_std, purchase_cost, sale_price,
+                                 max_inventory, rand_seed);
+    ModelInventoryPolicy rp(simulator, max_inventory, rand_seed);
 
     auto samples = simulate(simulator, rp, horizon, num_runs, -1, 0.0, rand_seed);
 
@@ -378,5 +379,5 @@ BOOST_AUTO_TEST_CASE(inventory_simulator){
     Transition init({initial},{1.0});
     //The actual return for the mdp is not calculated to be 49.52, it's just picked to pass the test.
     //Need to know what the exact return should be to make the below test meaningful.
-    BOOST_CHECK_CLOSE(solution.total_return(init),49.52,1e-2);
+    BOOST_CHECK_CLOSE(solution.total_return(init),29.5768,1e-2);
 }
