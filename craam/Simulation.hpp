@@ -395,21 +395,56 @@ public:
     using State = typename Sim::State;
     using Action = typename Sim::Action;
 
-    InventoryPolicy(const Sim& sim, int max_inventory,
+    InventoryPolicy(const Sim& sim, long max_inventory,
                     random_device::result_type seed = random_device{}()) :
                 sim(sim), max_inventory(max_inventory), gen(seed){
     }
 
     /** Returns an action accrding to the S,s policy, orders required amount to have
     the inventory to max level. */
-    int operator() (int current_state){
-        return max(0, max_inventory-current_state);
+    long operator() (long current_state){
+        return max(0l, max_inventory-current_state);
     }
 
 private:
     /// Internal reference to the originating simulator
     const Sim& sim;
-    int max_inventory;
+    long max_inventory;
+    /// Random number engine
+    default_random_engine gen;
+};
+
+/**
+A policy for invasive species management that depends on current population level.
+
+\tparam Sim Simulator class for which the policy is to be constructed.
+            Must implement an instance method actions(State).
+ */
+template<class Sim>
+class InvasiveSpeciesPolicy{
+
+public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
+
+    InvasiveSpeciesPolicy(const Sim& sim, long carrying_cap,
+                    random_device::result_type seed = random_device{}()) :
+                sim(sim), carrying_cap(carrying_cap), gen(seed){
+    }
+
+    /** Returns the population after applying the control measure. When the population level
+    is close to the carrying capacity, a control measure with higher magnitude is applied.
+    This control policy is not justified & not well thought, need to work more about it.
+    */
+    long operator() (long current_state){
+        long control_effect = current_state/(carrying_cap-current_state);
+        return control_effect;//max(0, current_state-control_effect);
+    }
+
+private:
+    /// Internal reference to the originating simulator
+    const Sim& sim;
+    long carrying_cap;
     /// Random number engine
     default_random_engine gen;
 };
@@ -581,9 +616,9 @@ public:
 
     The initial inventory level is 0
     */
-    InventorySimulator(int initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
+    InventorySimulator(long initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
                        prec_t sale_price, prec_t delivery_cost, prec_t holding_cost, prec_t backlog_cost,
-                       int max_inventory, int max_backlog, int max_order, random_device::result_type seed = random_device{}()) :
+                       long max_inventory, long max_backlog, long max_order, random_device::result_type seed = random_device{}()) :
                 initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std),
                 purchase_cost(purchase_cost), sale_price(sale_price), delivery_cost(delivery_cost), holding_cost(holding_cost),
                 backlog_cost(backlog_cost), max_inventory(max_inventory), max_backlog(max_backlog), max_order(max_order),
@@ -597,15 +632,15 @@ public:
 
     The initial inventory level is 0
     */
-    InventorySimulator(int initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
-                       prec_t sale_price, int max_inventory, random_device::result_type seed = random_device{}()) :
+    InventorySimulator(long initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
+                       prec_t sale_price, long max_inventory, random_device::result_type seed = random_device{}()) :
         initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std), purchase_cost(purchase_cost),
         sale_price(sale_price), max_inventory(max_inventory), gen(seed), inventory_status(initial) {
 
         init_demand_distribution();
     }
 
-    int init_state(){
+    long init_state(){
         return initial;
     }
 
@@ -623,14 +658,14 @@ public:
     \param state Current state
     \param action Current action
     */
-    pair<double,int> transition(int current_inventory, int action_order){
+    pair<double,int> transition(long current_inventory, long action_order){
 
         assert(current_inventory >= 0 );
         assert(action_order >= 0);
 
-        int demand = max(0,(int)demand_distribution(gen));
-        int next_inventory = action_order + current_inventory-demand;
-        int sold_amount = current_inventory-next_inventory + action_order;
+        long demand = max(0l,(long)demand_distribution(gen));
+        long next_inventory = action_order + current_inventory-demand;
+        long sold_amount = current_inventory-next_inventory + action_order;
         prec_t revenue = sold_amount * sale_price;
         prec_t expense = action_order * purchase_cost;
         prec_t reward = revenue - expense;
@@ -641,13 +676,68 @@ public:
 
 protected:
     /// Random number engine
-    int initial;
+    long initial;
     normal_distribution<prec_t> demand_distribution;
     prec_t prior_mean, prior_std, demand_std, demand_mean;
     prec_t purchase_cost, sale_price, delivery_cost, holding_cost, backlog_cost;
-    int max_inventory, max_backlog, max_order;
+    long max_inventory, max_backlog, max_order;
     default_random_engine gen;
-    int inventory_status;
+    long inventory_status;
+};
+
+/**
+A simulator that generates inventory data.
+
+*/
+class InvasiveSpeciesSimulator{
+
+public:
+    /// Type of states
+    typedef long State;
+    /// Type of actions
+    typedef long Action;
+
+    /**
+    Build a model simulator
+    */
+    InvasiveSpeciesSimulator(long initial_population, long carrying_capacity, prec_t mean_growth_rate, prec_t std_growth_rate,
+                       prec_t std_observation, random_device::result_type seed = random_device{}()) :
+        initial_population(initial_population), carrying_capacity(carrying_capacity), mean_growth_rate(mean_growth_rate),
+        std_growth_rate(std_growth_rate), std_observation(std_observation), gen(seed) {
+
+        growth_rate_distribution = normal_distribution<prec_t>(mean_growth_rate, std_growth_rate);
+    }
+
+    long init_state(){
+        return initial_population;
+    }
+
+    bool end_condition(State s) const
+        {return initial_population<0;}
+
+    /**
+    Returns a sample of the reward and a decision state following a state
+    \param state Current state
+    \param action effect of the current action, e.g. how much of the population gets reduced because of the taken action.
+    */
+    pair<prec_t,long> transition(long current_population, long action_effect){
+
+        assert(current_population >= 0 );
+
+        prec_t growth_rate = growth_rate_distribution(gen);
+        long next_population = max(0l, (long)growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity - action_effect);
+        normal_distribution<prec_t> observation_distribution(next_population, std_observation);
+        long observed_population = max(0l, (long) observation_distribution(gen));
+        prec_t reward = ((prec_t)current_population- (prec_t)observed_population)/10; //reward linearly depends on the population increase/decrease
+        return make_pair(reward, observed_population);
+    }
+
+protected:
+    /// Random number engine
+    normal_distribution<prec_t> growth_rate_distribution;
+    long initial_population, carrying_capacity;
+    prec_t mean_growth_rate, std_growth_rate, std_observation;
+    default_random_engine gen;
 };
 
 /// Random (uniformly) policy to be used with the model simulator
@@ -666,6 +756,9 @@ using ModelDeterministicPolicy = DeterministicPolicy<ModelSimulator>;
 
 ///Inventory policy to be used
 using ModelInventoryPolicy = InventoryPolicy<InventorySimulator>;
+
+///Invasive Species policy to be used
+using ModelInvasiveSpeciesPolicy = InvasiveSpeciesPolicy<InvasiveSpeciesSimulator>;
 
 } // end namespace msen
 } // end namespace craam
