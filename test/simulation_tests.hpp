@@ -26,6 +26,8 @@
 #include "craam/modeltools.hpp"
 #include "craam/RMDP.hpp"
 #include "craam/algorithms/values.hpp"
+#include "craam/simulators/inventory_simulation.hpp"
+#include "craam/simulators/invasive_species_simulation.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -386,12 +388,14 @@ BOOST_AUTO_TEST_CASE(inventory_simulator){
 BOOST_AUTO_TEST_CASE(invasive_species_simulator){
     long horizon = 10;
     long num_runs = 5;
-    long initial_population=30, carrying_capacity=100000;
+    long initial_population=30, carrying_capacity=1000;
     int rand_seed=7;
-    prec_t mean_lambda=1.02, sigma2_lambda=0.02, sigma2_y=20;
+    long n_hat = 300, threshold_control = 0;
+    prec_t mean_lambda=1.02, sigma2_lambda=0.02, sigma2_y=20, beta_1=0.001, beta_2=-0.0000021, prob_control = 0.5;
 
-    InvasiveSpeciesSimulator simulator(initial_population, carrying_capacity, mean_lambda, sigma2_lambda, sigma2_y, rand_seed);
-    ModelInvasiveSpeciesPolicy rp(simulator, carrying_capacity, rand_seed);
+    InvasiveSpeciesSimulator simulator(initial_population, carrying_capacity, mean_lambda, sigma2_lambda, sigma2_y,
+                                       beta_1, beta_2, n_hat, rand_seed);
+    ModelInvasiveSpeciesPolicy rp(simulator, threshold_control, prob_control, rand_seed);
 
     auto samples = simulate(simulator, rp, horizon, num_runs, -1, 0.0, rand_seed);
 
