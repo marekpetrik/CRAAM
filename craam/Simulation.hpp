@@ -382,8 +382,6 @@ protected:
     const Sim& sim;
 };
 
-
-
 // ************************************************************************************
 // **** MDP simulation ****
 // ************************************************************************************
@@ -519,7 +517,7 @@ public:
 
     /// Returns an action with the given index
     Action action(State, long index) const
-        {return index;};
+        {return index;}
 
 protected:
     /// Random number engine
@@ -531,6 +529,8 @@ protected:
     /** Initial distribution */
     Transition initial;
 };
+
+
 
 /// Random (uniformly) policy to be used with the model simulator
 using ModelRandomPolicy = RandomPolicy<ModelSimulator>;
@@ -545,7 +545,6 @@ using ModelRandomizedPolicy = RandomizedPolicy<ModelSimulator>;
 
 /// Deterministic policy to be used with MDP model simulator
 using ModelDeterministicPolicy = DeterministicPolicy<ModelSimulator>;
-
 
 } // end namespace msen
 } // end namespace craam
