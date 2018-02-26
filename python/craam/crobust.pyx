@@ -991,6 +991,202 @@ cdef class SimulatorMDP:
         finally:
             del rp
 
+cdef extern from "craam/simulators/inventory_simulation.hpp" namespace 'craam::msen' nogil:
+
+    cdef cppclass CInventorySimulator "craam::msen::InventorySimulator":
+        CInventorySimulator(long initial, double prior_mean, double prior_std, double demand_std, double purchase_cost,
+                       double sale_price, double delivery_cost, double holding_cost, double backlog_cost,
+                       long max_inventory, long max_backlog, long max_order, long seed);
+        CInventorySimulator(long initial, double prior_mean, double prior_std, double demand_std, double purchase_cost,
+                       double sale_price, long max_inventory, long seed);
+        long init_state();
+        void init_demand_distribution();
+
+    # this is a fake class just to fool cython to make the right calls
+    cdef cppclass Policy:
+        pass
+
+    cdef cppclass ModelInventoryPolicy(Policy):
+        ModelInventoryPolicy(const CInventorySimulator& sim, long max_inventory, long seed);               
+
+cdef class SimulatorInventory:
+    """
+    Simulates state evolution of an inventory
+
+    Example usage:
+    from craam import crobust
+    initial, max_inventory, purchase_cost, sale_price, prior_mean, prior_std, \
+                        demand_std, rand_seed = 0, 50, 2.0, 3.0, 10.0, 4.0, 6.0, 3
+    horizon, runs = 10, 5
+    inventory_simulator = crobust.SimulatorInventory(initial, prior_mean, prior_std, demand_std, purchase_cost, \
+                                                        sale_price, max_inventory, rand_seed)
+    samples = inventory_simulator.simulate_inventory(horizon, runs)
+    
+    
+    Parameters
+    ----------
+    initial : long
+        Initial inventory level
+    prior_mean : double
+        prior mean value for the demand distriubtion
+    prior_std : double
+        prior standard deviation for the demand distribution
+    demand_std : double
+        Known true standard deviation of the demand
+    purcahse_cost : double
+        Cost of purchasing each unit of product
+    sale_price : double
+        Selling price of each unit of item
+    max_inventory : long
+        Maximum possible level of the inventory
+    seed : long
+        Seed for the random number generator
+    """
+    cdef CInventorySimulator *_thisptr
+    cdef long max_inventory
+    cdef long seed
+    
+    def __cinit__(self, long initial, double prior_mean, double prior_std, double demand_std, double purchase_cost,
+                       double sale_price, long max_inventory, long seed):
+        self.seed = seed
+        self.max_inventory = max_inventory
+        self._thisptr = new CInventorySimulator(initial, prior_mean, prior_std, demand_std, purchase_cost, sale_price, max_inventory, seed)
+    
+    def __dealloc__(self):
+        del self._thisptr
+
+    def simulate_inventory(self, horizon, runs, tran_limit=0, prob_term=0.0):
+        """
+        Simulates a s-S policy based on the current inventory level & required inventory level
+    
+        Parameters
+        ----------
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        tran_limit : int, optional 
+            Limit on the total number of transitions generated
+            across all the runs. The simulation stops once 
+            this number is reached.
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
+
+        Returns
+        -------
+        out : DiscreteSamples
+        """
+        cdef ModelInventoryPolicy * rp = \
+                new ModelInventoryPolicy(dereference(self._thisptr), self.max_inventory, self.seed)
+        
+        try:
+            newsamples = DiscreteSamples()
+            newsamples._thisptr[0] = simulate[CInventorySimulator](dereference(self._thisptr), dereference(rp), horizon, runs, tran_limit, prob_term, self.seed);
+            return newsamples
+        finally:
+            del rp
+
+cdef extern from "craam/simulators/invasive_species_simulation.hpp" namespace 'craam::msen' nogil:
+
+    cdef cppclass CInvasiveSpeciesSimulator "craam::msen::InvasiveSpeciesSimulator":
+        CInvasiveSpeciesSimulator(long initial_population, long carrying_capacity, double mean_growth_rate, double std_growth_rate,
+                       double std_observation, double beta_1, double beta_2, long n_hat, long seed);
+        long init_state();
+
+    # this is a fake class just to fool cython to make the right calls
+    cdef cppclass Policy:
+        pass
+
+    cdef cppclass ModelInvasiveSpeciesPolicy(Policy):
+        ModelInvasiveSpeciesPolicy(const CInvasiveSpeciesSimulator& sim, double threshold_control, double prob_control, long seed);               
+
+cdef class SimulatorSpecies:
+    """
+    Simulates population for invasive species.
+    
+    Example usage:
+    from craam import crobust
+    initial_population, carrying_capacity, mean_growth_rate, std_growth_rate, std_observation, \
+    beta_1, beta_2, n_hat, threshold_control, prob_control, seed = 30, 1000, 1.02, 0.02, 10, 0.001, -0.0000021, 300, 0, 0.5, 3
+    
+    species_simulator = crobust.SimulatorSpecies(initial_population, carrying_capacity, mean_growth_rate, std_growth_rate, \
+                                                    std_observation, beta_1, beta_2, n_hat, threshold_control, prob_control, seed)
+    samples = species_simulator.simulate_species(horizon, runs)
+
+
+    Parameters
+    ----------
+    initial_population : long
+        Initial population level
+    carrying_capacity : long
+        Maximum carrying capacity of the ecosystem
+    mean_growth_rate : double
+        Mean growth rate of the population
+    std_growth_rate : double
+        Standard deviation of the population growth
+    std_observation : double
+        Standard deviation of the observation from actual population
+    beta_1 : double
+        Linear impact of the control
+    beta_2 : double
+        quadratic impact of the control
+    n_hat : long
+        point at which effectiveness of the control peaks
+    threshold_control : double
+        threshold at which the control is applied
+    prob_control : double
+        probability that the control is applied
+    seed : long
+        Seed for the random number generator
+    """
+    cdef CInvasiveSpeciesSimulator *_thisptr
+    cdef long seed
+    cdef double threshold_control
+    cdef double prob_control
+    
+    def __cinit__(self, long initial_population, long carrying_capacity, double mean_growth_rate, double std_growth_rate,
+                       double std_observation, double beta_1, double beta_2, long n_hat, double threshold_control,
+                       double prob_control, long seed):
+        self.seed = seed
+        self.threshold_control = threshold_control
+        self.prob_control = prob_control
+        self._thisptr = new CInvasiveSpeciesSimulator(initial_population, carrying_capacity, mean_growth_rate, std_growth_rate, std_observation, beta_1, beta_2, n_hat, seed)
+    
+    def __dealloc__(self):
+        del self._thisptr
+
+    def simulate_species(self, horizon, runs, tran_limit=0, prob_term=0.0):
+        """
+        Simulates a s-S policy based on the current inventory level & required inventory level
+    
+        Parameters
+        ----------
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        tran_limit : int, optional 
+            Limit on the total number of transitions generated
+            across all the runs. The simulation stops once 
+            this number is reached.
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
+
+        Returns
+        -------
+        out : DiscreteSamples
+        """
+        cdef ModelInvasiveSpeciesPolicy * rp = \
+                new ModelInvasiveSpeciesPolicy(dereference(self._thisptr), self.threshold_control, self.prob_control, self.seed)
+        
+        try:
+            newsamples = DiscreteSamples()
+            newsamples._thisptr[0] = simulate[CInvasiveSpeciesSimulator](dereference(self._thisptr), dereference(rp), horizon, runs, tran_limit, prob_term, self.seed);
+            return newsamples
+        finally:
+            del rp
 
 cdef extern from "craam/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass CSampledMDP "craam::msen::SampledMDP":
