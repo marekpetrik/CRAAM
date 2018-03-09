@@ -41,8 +41,6 @@ using namespace craam::msen;
 using namespace craam::algorithms;
 using namespace util::lang;
 
-
-
 struct TestState{
     int index;
 
@@ -335,7 +333,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     //cout << "Computed policy " << policy << endl;
     indvec policytarget{1,1,1};
     BOOST_CHECK_EQUAL_COLLECTIONS(policy.begin(), policy.end(), policytarget.begin(), policytarget.end());
-    auto solution3 = mpi_jac(*m, 0.9, numvec(0), PolicyDeterministic(policy));
+    auto solution3 = mpi_jac(*m, 0.9, numvec(0), PlainBellman(policy));
 
     BOOST_CHECK_CLOSE(solution3.total_return(initial), 8.90916, 1e-2);
     //cout << "Return of sampled policy in the original MDP " << solution3.total_return(initial) << endl;

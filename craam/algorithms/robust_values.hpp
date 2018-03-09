@@ -74,7 +74,6 @@ inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
 /// L1 optimistic response
 inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
     assert(v.size() == p.size());
-    //TODO: this could be faster without copying the vector and just modifying the function
     numvec minusv(v.size());
     transform(begin(v), end(v), begin(minusv), negate<prec_t>());
     auto&& result = worstcase_l1(minusv,p,threshold);
@@ -83,7 +82,7 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
 
 /// worst outcome, threshold is ignored
 template<class T>
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T){
+inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = min_element(begin(v), end(v)) - begin(v);
@@ -93,7 +92,7 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T){
 
 /// best outcome, threshold is ignored
 template<class T>
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
+inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec&, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = max_element(begin(v), end(v)) - begin(v);
@@ -104,7 +103,6 @@ inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
 // *******************************************************
 // RegularAction computation methods
 // *******************************************************
-
 
 /**
 Computes an ambiguous value (e.g. robust) of the action, depending on the type
@@ -295,7 +293,7 @@ various types of robust MDPs. It can be used in place of response in mpi_jac or 
 solve robust MDP objectives.
 */
 template<class T>
-class PolicyNature : public PolicyDeterministic {
+class SARobustBellman : public PlainBellman {
 public:
     using solution_type = SolutionRobust;
 
@@ -309,16 +307,16 @@ public:
     @param policy Index of the action to take for each state
     @param natspec Responce of nature for each state and each action
     */
-    PolicyNature(indvec policy, vector<vector<NatureInstance<T>>> natspec):
-        PolicyDeterministic(move(policy)), natspec(move(natspec)) {}
+    SARobustBellman(indvec policy, vector<vector<NatureInstance<T>>> natspec):
+        PlainBellman(move(policy)), natspec(move(natspec)) {}
 
     /**
     Constructs the object from a specification of nature. No decision maker's
     policy is provided.
     @param natspec Responce of nature for each state and each action
     */
-    PolicyNature(vector<vector<NatureInstance<T>>> natspec):
-        PolicyDeterministic(indvec(0)), natspec(move(natspec)) {}
+    SARobustBellman(vector<vector<NatureInstance<T>>> natspec):
+        PlainBellman(indvec(0)), natspec(move(natspec)) {}
 
     /// Constructs a new robust solution
     SolutionRobust new_solution(size_t statecount, numvec valuefunction) const {
@@ -326,7 +324,6 @@ public:
         SolutionRobust solution =  SolutionRobust(move(valuefunction), process_policy(statecount));
         return solution;
     }
-
 
     /**
     Computes the Bellman update and updates the action in the solution to the best response
@@ -339,19 +336,19 @@ public:
     @returns New value for the state
      */
     template<class SType>
-    prec_t update_solution(SolutionRobust& solution, const SType& state, long stateid,
+    prec_t policy_update(SolutionRobust& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
         prec_t newvalue = 0;
         // check whether this state should only be evaluated or also optimized
         // optimizing action
-        if(policy.empty() || policy[stateid] < 0){
+        if(initial_policy.empty() || initial_policy[stateid] < 0){
             tie(solution.policy[stateid], solution.natpolicy[stateid], newvalue) =
                     value_max_state(state, valuefunction, discount, natspec[stateid]);
         }
         // fixed-action, do not copy
         else{
             prec_t newvalue;
-            const long actionid = policy[stateid];
+            const long actionid = initial_policy[stateid];
             tie(solution.natpolicy[stateid], newvalue) = value_fix_state(state, valuefunction, discount, actionid, natspec[stateid][actionid]);
         }
         return newvalue;
@@ -367,7 +364,7 @@ public:
     @returns New value for the state
     */
     template<class SType>
-    prec_t update_value(const SolutionRobust& solution, const SType& state, long stateid,
+    prec_t compute_value(const SolutionRobust& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
         return value_fix_state(state, valuefunction, discount, solution.policy[stateid],
                 solution.natpolicy[stateid]);
@@ -378,30 +375,29 @@ public:
 A helper function that simply copies a nature specification across all states and actions
 */
 template<class T>
-PolicyNature<T> uniform_nature(const MDP& m, NatureResponse<T> nature,
+SARobustBellman<T> uniform_nature(const MDP& m, NatureResponse<T> nature,
                             T threshold){
     vector<vector<NatureInstance<T>>> natures(m.state_count());
 
     for(size_t stateid = 0; stateid < m.state_count(); stateid++){
         natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
     }
-    return PolicyNature<T>(natures);
+    return SARobustBellman<T>(natures);
 }
 
 /**
 A helper function that simply copies a nature specification across all states and actions
 */
 template<class T>
-PolicyNature<T> uniform_nature(const RMDP& m, NatureResponse<T> nature,
+SARobustBellman<T> uniform_nature(const RMDP& m, NatureResponse<T> nature,
                             T threshold){
     vector<vector<NatureInstance<T>>> natures(m.state_count());
 
     for(size_t stateid = 0; stateid < m.state_count(); stateid++){
         natures[stateid] = vector<NatureInstance<T>>(m[stateid].action_count(), make_pair(nature, threshold));
     }
-    return PolicyNature<T>(natures);
+    return SARobustBellman<T>(natures);
 }
-
 
 namespace internal{
 
@@ -468,14 +464,15 @@ in the temporal order.
 
 This is a simplified method interface. Use vi_gs with PolicyNature for full functionality.
 
-\param mdp The MDP to solve
+\param mdp      The MDP to solve
 \param discount Discount factor.
-\param nature Response of nature, the function is the same for all states and actions.
+\param nature   Response of nature, the function is the same for all states and actions.
 \param thresholds Parameters passed to nature response functions.
                     One value per state and then one value per action.
 \param valuefunction Initial value function. Passed by value, because it is modified. Optional, use
                     all zeros when not provided. Ignored when size is 0.
-\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param policy    Partial policy specification. Optimize only actions that are  policy[state] = -1. Use
+                 policy length 0 to optimize all actions.
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
 
@@ -491,8 +488,8 @@ inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
     for(size_t t = 0; t < thresholds.size(); t++)
         assert(thresholds[t].size() == mdp[t].size());
 
-    return vi_gs<SType, PolicyNature<T>>(mdp, discount, move(valuefunction), 
-            PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+    return vi_gs<SType, SARobustBellman<T>>(mdp, discount, move(valuefunction),
+            SARobustBellman<T>(policy,internal::zip(nature,thresholds)),
             iterations, maxresidual);
 }
 
@@ -527,8 +524,8 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
 
-    return mpi_jac<SType, PolicyNature<T>>(mdp, discount, valuefunction, 
-                    PolicyNature<T>(policy,internal::zip(nature,thresholds)), 
+    return mpi_jac<SType, SARobustBellman<T>>(mdp, discount, valuefunction,
+                    SARobustBellman<T>(policy,internal::zip(nature,thresholds)),
                     iterations_pi, maxresidual_pi,
                     iterations_vi, maxresidual_vi, 
                     print_progress);
@@ -557,8 +554,8 @@ inline NatureResponse<prec_t> string_to_nature(string nature){
 }
 
 /**
-Creates a vector of vector of state thresholds. This function can be used to provide the parameters
-to rsolve_mpi and rsolve_vi.
+Creates a vector of vector of state thresholds. This function can be used to provide parameters
+needed by rsolve_mpi and rsolve_vi.
 
 All state-action combinations should be provided. Values that are not provided are undefined.
 

@@ -1017,7 +1017,12 @@ cdef class SampledMDP:
 
     cpdef add_samples(self, DiscreteSamples samples):
         """
-        Adds samples to the MDP
+        Adds samples to the MDP.
+
+        Parameters
+        ----------
+        samples : craam.DiscreteSamples
+            Source of samples to be added to transition probabilties
         """
         dereference(self._thisptr).add_samples(dereference(samples._thisptr))
 
