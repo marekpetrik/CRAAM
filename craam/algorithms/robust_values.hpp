@@ -82,7 +82,7 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
 
 /// worst outcome, threshold is ignored
 template<class T>
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
+inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = min_element(begin(v), end(v)) - begin(v);
@@ -92,7 +92,7 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
 
 /// best outcome, threshold is ignored
 template<class T>
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec&, T){
+inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
     assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     long index = max_element(begin(v), end(v)) - begin(v);

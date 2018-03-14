@@ -40,7 +40,6 @@ using namespace std;
 using namespace util::lang;
 
 
-
 // *******************************************************
 // RegularAction computation methods
 // *******************************************************
@@ -230,7 +229,7 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
 // RMDP computation methods
 // *******************************************************
 
-/** A solution to a plain MDP.  */
+/** A set of values that represent a solution to a plain MDP.  */
 struct Solution {
     /// Value function
     numvec valuefunction;
@@ -268,16 +267,19 @@ struct Solution {
 
 /**
 A Bellman update class for solving regular Markov decision processes. This class abstracts
-away from particular model properties and the goal is to plug it in into value or
-policy iteration methods for regular and robust kinds of MDPs.
+away from particular model properties and the goal is to be able to plug it in into value or
+policy iteration methods for MDPs.
 
+Many of the methods are parametrized by the type of the state.
 */
 class PlainBellman{
-public:
-    using solution_type = Solution;
-
+protected:
     /// Partial policy specification (action -1 is ignored and optimized)
     indvec initial_policy;
+
+public:
+    /// Provides the type of the solution for the consumption of methods that call this value
+    using solution_type = Solution;
 
     /// Constructs the update with no constraints on the initial policy
     PlainBellman() : initial_policy(0) {}
@@ -288,6 +290,12 @@ public:
      */
     PlainBellman(indvec policy) : initial_policy(move(policy)) {}
 
+    /**
+     * @brief Constructs a solution for the
+     * @param statecount
+     * @param valuefunction
+     * @return
+     */
     Solution new_solution(size_t statecount, numvec valuefunction) const {
         process_valuefunction(statecount, valuefunction);
         Solution solution =  Solution(move(valuefunction), process_policy(statecount));
@@ -361,7 +369,6 @@ protected:
         }
     }
 };
-
 
 
 // **************************************************************************
