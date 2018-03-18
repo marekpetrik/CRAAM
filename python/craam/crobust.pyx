@@ -357,6 +357,21 @@ cdef class MDP:
         """
         dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().set_reward(sampleid, reward)
         
+    cpdef set_probabilities(self, long stateid, long actionid, vector[double] probabilities):
+        """
+        Sets the reward for the given state, action, outcome, and sample
+
+        Parameters
+        ----------
+        stateid : int
+            Originating state
+        actionid : int
+            Action taken
+        probabilities : vector<double >
+            New probabilities
+        """
+        dereference(self.thisptr).get_state(stateid).get_action(actionid).get_outcome().set_probabilities(probabilities)
+        
     cpdef long get_sample_count(self, long stateid, long actionid):
         """
         Returns the number of samples (single-state transitions) for the action and outcome
