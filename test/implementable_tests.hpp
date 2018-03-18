@@ -338,13 +338,13 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     isol = mdpi.solve_reweighted(1, 0.9, randompolicy);
 
-    auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
+    auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PlainBellman(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
     BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
-    sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PolicyDeterministic(mdpi.obspol2statepol(isol)));
+    sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PlainBellman(mdpi.obspol2statepol(isol)));
 
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
     BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
