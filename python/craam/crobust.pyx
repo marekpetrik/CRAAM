@@ -56,6 +56,7 @@ cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
         CTransition(const numvec& probabilities)
 
         void set_reward(long sampleid, double reward) except +
+        void set_probabilities(numvec probabilities) except +
         double get_reward(long sampleid) except +
 
         numvec probabilities_vector(unsigned long size) 
@@ -148,8 +149,20 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
                     prec_t maxresidual_vi,
                     bool show_progress) except +
 
+cdef extern from "craam/algorithms/occupancies.hpp" namespace 'craam::algorithms' nogil:
+    vector[double] csolve_occfreq_mat "craam::algorithms::occfreq_mat"(CMDP& mdp, 
+                    const CTransition& init, 
+                    prec_t discount, 
+                    const indvec& policies) except +
+
 cdef extern from "craam/modeltools.hpp" namespace 'craam' nogil:
-    void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
+    void add_transition[Model](Model& mdp, 
+                    long fromid, 
+                    long actionid, 
+                    long outcomeid, 
+                    long toid, 
+                    prec_t probability, 
+                    prec_t reward)
 
 DEFAULT_ITERS = 500
 
@@ -204,7 +217,19 @@ cdef class MDP:
         r = MDP(0, self.discount)
         r.thisptr.reset(new CMDP(dereference(self.thisptr)))
         return r
-
+    
+    cpdef occfreq_mat(self, np.ndarray[double] init, prec_t discount, indvec policies):
+        """
+        Computes the return for a policy
+        
+        Parameters
+        ----------
+        init: distribution over the initial states
+        discount: discount factor
+        policies: policy to evaluate
+        """
+        return csolve_occfreq_mat(dereference(self.thisptr), CTransition(init), discount, policies)
+    
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
         """
         Adds a single transition sample using outcome with id = 0. This function
