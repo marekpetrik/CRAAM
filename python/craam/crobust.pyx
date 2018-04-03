@@ -154,6 +154,9 @@ cdef extern from "craam/algorithms/occupancies.hpp" namespace 'craam::algorithms
                     const CTransition& init, 
                     prec_t discount, 
                     const indvec& policies) except +
+                    
+    vector[double] csolve_rewards_vec "craam::algorithms::rewards_vec"(CMDP& mdp, 
+                    const indvec& policies) except +
 
 cdef extern from "craam/modeltools.hpp" namespace 'craam' nogil:
     void add_transition[Model](Model& mdp, 
@@ -229,6 +232,18 @@ cdef class MDP:
         policies: policy to evaluate
         """
         return csolve_occfreq_mat(dereference(self.thisptr), CTransition(init), discount, policies)
+        
+    cpdef rewards_vec(self, indvec policies):
+        """
+        Computes the return for a policy
+        
+        Parameters
+        ----------
+        init: distribution over the initial states
+        discount: discount factor
+        policies: policy to evaluate
+        """
+        return csolve_rewards_vec(dereference(self.thisptr), policies)
     
     cpdef add_transition(self, long fromid, long actionid, long toid, double probability, double reward):
         """
