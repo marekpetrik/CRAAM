@@ -75,15 +75,14 @@ A simulator that generates inventory data.
 class InventorySimulator{
 
 public:
-    /// Type of states
-    typedef long State;
-    /// Type of actions
-    typedef long Action;
+    /// Type of states: invenotry level
+    using State = long;
+    /// Type of actions: how much to purchase
+    using Action = long;
 
     /**
     Build a model simulator for the inventory problem
-
-    The initial inventory level is 0
+    @param initial Initial inventory level
     */
     InventorySimulator(long initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
                        prec_t sale_price, prec_t delivery_cost, prec_t holding_cost, prec_t backlog_cost,
@@ -91,20 +90,19 @@ public:
                 initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std),
                 purchase_cost(purchase_cost), sale_price(sale_price), delivery_cost(delivery_cost), holding_cost(holding_cost),
                 backlog_cost(backlog_cost), max_inventory(max_inventory), max_backlog(max_backlog), max_order(max_order),
-                gen(seed), inventory_status(initial) {
+                gen(seed) {
 
                 init_demand_distribution();
     }
 
     /**
-    Build a model simulator
-
-    The initial inventory level is 0
-    */
+     * Build a model simulator
+     */
     InventorySimulator(long initial, prec_t prior_mean, prec_t prior_std, prec_t demand_std, prec_t purchase_cost,
                        prec_t sale_price, long max_inventory, random_device::result_type seed = random_device{}()) :
+
         initial(initial), prior_mean(prior_mean), prior_std(prior_std), demand_std(demand_std), purchase_cost(purchase_cost),
-        sale_price(sale_price), max_inventory(max_inventory), gen(seed), inventory_status(initial) {
+        sale_price(sale_price), max_inventory(max_inventory), gen(seed) {
 
         init_demand_distribution();
     }
@@ -119,8 +117,8 @@ public:
         demand_distribution = normal_distribution<prec_t>(demand_mean, demand_std);
     }
 
-    bool end_condition(State s) const
-        {return inventory_status<0;}
+    bool end_condition(State inventory) const
+        {return inventory < 0;}
 
     /**
     Returns a sample of the reward and a decision state following a state
@@ -133,41 +131,39 @@ public:
         assert(current_inventory >= 0 );
         assert(action_order >= 0);
 		
-		///Genrate demand from the normal demand distribution
-        long demand = max(0l,(long)demand_distribution(gen));
+        // Generate demand from the normal demand distribution
+        long demand = max( 0l, (long) demand_distribution(gen) );
         
-        ///Compute the next inventory level
+        // Compute the next inventory level
         long next_inventory = action_order + current_inventory - demand;
         
-        ///Back calculate how many items were sold
-        long sold_amount = current_inventory-next_inventory + action_order;
+        // Back calculate how many items were sold
+        long sold_amount = current_inventory - next_inventory + action_order;
         
-        ///Compute the obtained revenue
+        // Compute the obtained revenue
         prec_t revenue = sold_amount * sale_price;
         
-        ///Compute the expense
+        // Compute the expense
         prec_t expense = action_order * purchase_cost;
         
-        ///Reward is equivalent to the profit & obtained from revenue & total expense
+        // Reward is equivalent to the profit & obtained from revenue & total expense
         prec_t reward = revenue - expense;
-        
-        ///Keep track of the current inventory level
-        inventory_status = next_inventory;
 
         return make_pair(reward, next_inventory);
     }
 
 protected:
+    /// initial state
     long initial;
-    ///Distribution for the demand
+    /// Distribution for the demand
     normal_distribution<prec_t> demand_distribution;
-    ///Distribution parameters
+    /// Distribution parameters
     prec_t prior_mean, prior_std, demand_std, demand_mean;
     prec_t purchase_cost, sale_price, delivery_cost, holding_cost, backlog_cost;
     long max_inventory, max_backlog, max_order;
     /// Random number engine
     default_random_engine gen;
-    long inventory_status;
+
 };
 
 ///Inventory policy to be used

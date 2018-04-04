@@ -88,10 +88,10 @@ A simulator to generate invasive species simulation data.
 class InvasiveSpeciesSimulator{
 
 public:
-    /// Type of states
-    typedef long State;
-    /// Type of actions
-    typedef long Action;
+    /// Type of state: current population
+    using State = long;
+    /// Type of actions: whether to apply control/treatment or not
+    using Action = bool;
 
     /**
     Build a model simulator for invasive species.
@@ -103,7 +103,7 @@ public:
 	\param std_observation Standard deviation for the observation from the actual underlying population
 	\param beta_1 Coefficient of effectiveness
 	\param beta_2 Coefficient of effectiveness for the quadratic term
-	\param n_hat Threhold when the quadratic effects kick in
+    \param n_hat Threshold when the quadratic effects kick in
 	\param seed Seed for random number generation
     */
     InvasiveSpeciesSimulator(long initial_population, long carrying_capacity, prec_t mean_growth_rate, prec_t std_growth_rate,
@@ -115,8 +115,8 @@ public:
         return initial_population;
     }
 
-    bool end_condition(State s) const{
-		return initial_population<0;
+    bool end_condition(State population) const{
+        return false;
 	}
 
     /**
@@ -141,13 +141,19 @@ public:
 
 	\returns a pair of reward & next population level
     */
-    pair<prec_t,long> transition(long current_population, long action){
+    pair<prec_t,long> transition(long current_population, bool action){
         assert(current_population >= 0 );
 		
-        normal_distribution<prec_t> growth_rate_distribution(max(0.0, mean_growth_rate - action*current_population*beta_1 - action*pow(max(current_population-n_hat,0l), 2)*beta_2 ), std_growth_rate);
+        const double action_multiplier = action ? 1.0 : 0.0;
+
+        const double growth_rate_adj = action_multiplier*current_population * beta_1 +
+                                            action_multiplier*pow(max(current_population-n_hat,0l), 2) * beta_2;
+        const double exp_growth_rate = max(0.0, mean_growth_rate - growth_rate_adj );
+        normal_distribution<prec_t> growth_rate_distribution(exp_growth_rate, std_growth_rate);
 		
         prec_t growth_rate = growth_rate_distribution(gen);
-        long next_population = max(0l, min(carrying_capacity, (long)growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity));
+        long next_population = clamp(long(growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity), 0l, carrying_capacity );
+
         normal_distribution<prec_t> observation_distribution(next_population, std_observation);
         long observed_population = max(0l, (long) observation_distribution(gen));
         prec_t reward = next_population * (-1) + action * (-4000);
