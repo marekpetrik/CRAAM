@@ -147,7 +147,8 @@ public:
         normal_distribution<prec_t> growth_rate_distribution(max(0.0, mean_growth_rate - action*current_population*beta_1 - action*pow(max(current_population-n_hat,0l), 2)*beta_2 ), std_growth_rate);
 		
         prec_t growth_rate = growth_rate_distribution(gen);
-        long next_population = max(0l, min(carrying_capacity, (long)growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity));
+        //cout<<"growth_rate: "<<growth_rate<<endl;
+        long next_population = max(0l, min(carrying_capacity, (long)(growth_rate * current_population) * (carrying_capacity-current_population)/carrying_capacity));
         normal_distribution<prec_t> observation_distribution(next_population, std_observation);
         long observed_population = max(0l, (long) observation_distribution(gen));
         prec_t reward = next_population * (-1) + action * (-4000);
