@@ -352,6 +352,11 @@ public:
     get_indices. See also probabilities_vector.
     */
     const numvec& get_probabilities() const {return probabilities;};
+
+    void set_probabilities(numvec probabilities){
+        this->probabilities = probabilities;
+    }
+
     /**
     Rewards for indices with positive probabilities returned by
     get_indices. See also rewards_vector.

@@ -82,6 +82,8 @@ private:
 };
 
 
+
+
 /**
 A simulator to generate invasive species simulation data.
 */
@@ -91,12 +93,17 @@ public:
     /// Type of state: current population
     using State = long;
     /// Type of actions: whether to apply control/treatment or not
-    using Action = bool;
+    using Action = long;
+
+
+    enum class Growth{
+        Exponential, Logistic
+    };
 
     /**
-    Build a model simulator for invasive species.
+    Build a model simulator for invasive species. Initializes to an exponential growth model by default.
 
-	\param initial_population Startning population to start the simulation
+	\param initial_population Starting population to start the simulation
 	\param carrying_capacity Maximum possible amount of population
 	\param mean_growth_rate Mean of the population growth rate
 	\param std_growth_rate Standard deviation of the growth rate
@@ -109,7 +116,7 @@ public:
     InvasiveSpeciesSimulator(long initial_population, long carrying_capacity, prec_t mean_growth_rate, prec_t std_growth_rate,
                        prec_t std_observation, prec_t beta_1, prec_t beta_2, long n_hat, random_device::result_type seed = random_device{}()) :
         initial_population(initial_population), carrying_capacity(carrying_capacity), mean_growth_rate(mean_growth_rate),
-        std_growth_rate(std_growth_rate), std_observation(std_observation), beta_1(beta_1), beta_2(beta_2), n_hat(n_hat), gen(seed) {}
+        std_growth_rate(std_growth_rate), std_observation(std_observation), beta_1(beta_1), beta_2(beta_2), n_hat(n_hat), gen(seed), growth_model(Growth::Exponential) {}
 
     long init_state() const{
         return initial_population;
@@ -128,7 +135,7 @@ public:
 	When the treatment is applied (action=1), 
 	then the growth rate depends on the current population level & the beta_x parameters come into play.
 	
-	The next population is obtained using the logistic population growth model: 
+	The next population is obtained using the logistic or exponential population growth model: 
 		min(carrying_capacity, growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity)
     
     The observed population deviates from the actual population & is stored in observed_population.
@@ -141,7 +148,7 @@ public:
 
 	\returns a pair of reward & next population level
     */
-    pair<prec_t,long> transition(long current_population, bool action){
+    pair<prec_t,long> transition(long current_population, long action){
         assert(current_population >= 0 );
 		
         const double action_multiplier = action ? 1.0 : 0.0;
@@ -152,7 +159,16 @@ public:
         normal_distribution<prec_t> growth_rate_distribution(exp_growth_rate, std_growth_rate);
 		
         prec_t growth_rate = growth_rate_distribution(gen);
-        long next_population = clamp(long(growth_rate * current_population * (carrying_capacity-current_population)/carrying_capacity), 0l, carrying_capacity );
+        long next_population = 0;
+        if(growth_model == Growth::Exponential){
+            // TODO: change to clamp for c++17
+            next_population = min(max(long(growth_rate * current_population), 0l), carrying_capacity);
+        }else if(growth_model == Growth::Logistic){
+            // TODO: change to clamp for c++17
+            next_population = min(max(long(growth_rate * current_population * (carrying_capacity-current_population)/double(carrying_capacity)), 0l), carrying_capacity);
+        }else{
+            assert(false); // TODO: throw an exception here
+        }
 
         normal_distribution<prec_t> observation_distribution(next_population, std_observation);
         long observed_population = max(0l, (long) observation_distribution(gen));
@@ -160,12 +176,18 @@ public:
         return make_pair(reward, observed_population);
     }
 
+    Growth get_growth() const{return growth_model;}
+
+    void set_growth(Growth model){ growth_model = model;}
+
 protected:
     /// Random number engine
     long initial_population, carrying_capacity;
     prec_t mean_growth_rate, std_growth_rate, std_observation, beta_1, beta_2;
     long n_hat;
     default_random_engine gen;
+    /// Growth model
+    Growth growth_model;
 };
 
 ///Invasive Species policy to be used
