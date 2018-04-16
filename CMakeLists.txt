@@ -8,9 +8,10 @@ cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
 set(VERSION "2.0.0")
 project (CRAAM)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+set (GUROBI_HOME "/home/marek/Software/gurobi")
 
 # enable colors in the output
 SET(CMAKE_COLOR_MAKEFILE ON)
@@ -31,11 +32,18 @@ endif()
 
 # **** Find packages ****
 find_package(OpenMP)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(Boost COMPONENTS unit_test_framework ) 
 find_package(Doxygen)
 if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests (testit) require Boost unit test library and may not compile otherwise." )
 endif()
+
+
+find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "${GUROBI_HOME}/lib")
+find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi75.so PATHS "${GUROBI_HOME}/lib")
+find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "${GUROBI_HOME}/include")
+
 
 # DEBUG
 # Prints all variables (for debugging)
@@ -50,6 +58,7 @@ endif()
 
 option (BUILD_TESTS "Build tests (requires Boost)" ON)
 option (BUILD_DOCUMENTATION "Build source code documentation" ${DOXYGEN_FOUND})
+option (USE_GUROBI "Use Gurobi linear program solver" ON)
 
 # **** CONFIGURATION ****
 
@@ -69,7 +78,7 @@ endif()
 # set gcc-specific parameters
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.9.0")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wuninitialized")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wuninitialized") #-Wpedantic
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG "-g -rdynamic") # -D_GLIBCXX_DEBUG -- incompatible with boost :(
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native")
@@ -85,7 +94,7 @@ configure_file (
 )
 
 # **** SOURCE FILES ****
-include_directories (. )
+include_directories (.)
 # do not report warnings from included libraries
 include_directories (SYSTEM include)
 
@@ -96,9 +105,11 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/robust_values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/nature_response.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Simulation.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Samples.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/ImMDP.hpp)
@@ -116,7 +127,7 @@ set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 
 # **** DEVELOPMENT EXECUTABLE ****
 add_executable (develop_exe ${DEV} ${SRCS})
-target_link_libraries(develop_exe)
+target_link_libraries (develop_exe Eigen3::Eigen)
 add_custom_target (develop COMMAND develop_exe
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running executable")
@@ -125,11 +136,12 @@ add_custom_target (develop COMMAND develop_exe
 if (BUILD_TESTS)
     add_executable (unit_tests ${TSTS} ${SRCS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-    #cotire(unit_tests)
-    add_custom_target (testit   COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
+    target_link_libraries (unit_tests Eigen3::Eigen)
+    add_custom_target (testit COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
 endif (BUILD_TESTS)
+
 
 # **** COMMAND-LINE EXECUTABLE ****
 add_executable(craam-cli EXCLUDE_FROM_ALL ${BENCH} ${SRCS} )

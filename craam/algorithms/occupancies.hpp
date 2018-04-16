@@ -2,10 +2,10 @@
 
 #include "craam/RMDP.hpp"
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <rm/range.hpp>
 
-namespace craam{namespace algorithms{
+namespace craam::algorithms{
 
 using namespace std;
 using namespace Eigen;
@@ -139,4 +139,4 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     return result;
 }
 
-}}
+}

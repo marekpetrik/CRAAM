@@ -27,6 +27,7 @@ Robust MDP methods for computing value functions.
 
 #include "craam/RMDP.hpp"
 #include "craam/fastopt.hpp"
+#include "craam/algorithms/nature_response.hpp"
 
 #include <rm/range.hpp>
 
@@ -34,71 +35,10 @@ Robust MDP methods for computing value functions.
 #include <functional>
 #include <type_traits>
 
-namespace craam { namespace algorithms{
+namespace craam::algorithms{
 
 using namespace std;
 using namespace util::lang;
-
-// *******************************************************
-// Nature definitions 
-// *******************************************************
-
-/**
-Function representing constraints on nature. The function computes
-the best response of nature and can be used in value iteration.
-
-This function represents a nature which computes (in general) a randomized
-policy (response). If the response is always deterministic, it may be better
-to define and use a nature that computes and uses a deterministic response.
-
-The parameters are the q-values v, the reference distribution p, and the threshold.
-The function returns the worst-case solution and the objective value. The threshold can
-be used to determine the desired robustness of the solution.
-*/
-template<class T>
-using NatureResponse = vec_scal_t (*)(numvec const& v, numvec const& p, T threshold);
-
-/**
-Represents an instance of nature that can be used to directly compute the response.
-*/
-template<class T>
-using NatureInstance = pair<NatureResponse<T>, T>;
-
-
-/// L1 robust response
-inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
-    assert(v.size() == p.size());
-    return worstcase_l1(v,p,threshold);
-}
-
-/// L1 optimistic response
-inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
-    assert(v.size() == p.size());
-    numvec minusv(v.size());
-    transform(begin(v), end(v), begin(minusv), negate<prec_t>());
-    auto&& result = worstcase_l1(minusv,p,threshold);
-    return make_pair(result.first, -result.second);
-}
-
-/// worst outcome, threshold is ignored
-template<class T>
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec& p, T){
-    assert(v.size() == p.size());
-    numvec dist(v.size(),0.0);
-    long index = min_element(begin(v), end(v)) - begin(v);
-    dist[index] = 1;
-    return make_pair(dist,v[index]);
-}
-
-/// best outcome, threshold is ignored
-template<class T>
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec& p, T){
-    assert(v.size() == p.size());
-    numvec dist(v.size(),0.0);
-    long index = max_element(begin(v), end(v)) - begin(v);
-    dist[index] = 1;
-    return make_pair(dist,v[index]);
-}
 
 // *******************************************************
 // RegularAction computation methods
@@ -188,7 +128,7 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
 
     assert(actionid >= 0 && actionid < long(state.size()));
 
-    if(actionid < 0 || actionid >= (long) state.size()) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
+    if(actionid < 0 || actionid >= long(state.size())) throw range_error("invalid actionid: " + to_string(actionid) + " for action count: " + to_string(state.get_actions().size()) );
 
     const auto& action = state[actionid];
     // cannot assume that the action is valid
@@ -239,7 +179,7 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
         auto value = value_action(action, valuefunction, discount, natures[i]);
         if(value.second > maxvalue){
             maxvalue = value.second;
-            result = i;
+            result = long(i);
             result_outcome = move(value.first);
         }
     }
@@ -287,6 +227,7 @@ struct SolutionRobust : public Solution {
         Solution(move(valuefunction), move(policy), residual, iterations),
         natpolicy(move(natpolicy)) {}
 };
+
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
 various types of robust MDPs. It can be used in place of response in mpi_jac or vi_gs to 
@@ -579,4 +520,4 @@ vector<vector<T>> pack_thresholds(const indvec& states, const indvec& actions, c
     return result;
 }
 
-}}
+}

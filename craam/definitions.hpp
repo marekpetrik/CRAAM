@@ -34,7 +34,6 @@
 
 
 #ifdef IS_DEBUG
-// TODO: this is DEBUG ONLY
 #include <iostream>
 #include <string>
 #endif
@@ -43,19 +42,18 @@ namespace craam {
 
 using namespace std;
 
-/** Default precision used throughout the code.*/
+/// Default precision type
 using prec_t = double;
-
-/** Default numerical vector */
+/// Numerical vector
 using numvec = vector<prec_t>;
-
-/** Default index vector */
+/// Vector of indices
 using indvec = vector<long>;
+/// Vector of size_t
+using sizvec = std::vector<size_t>;
 
-/** Pair of a vector and a scalar */
+/// Pair of a vector and a scalar
 using vec_scal_t = pair<numvec, prec_t> ;
-
-/** Tuple of a index, vector and a scalar */
+/// Tuple of a index, vector and a scalar
 using ind_vec_scal_t = tuple<prec_t, numvec, prec_t> ;
 
 /** Default solution precision */
