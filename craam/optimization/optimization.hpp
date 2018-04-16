@@ -21,12 +21,14 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-#include "definitions.hpp"
+#include "craam/definitions.hpp"
 
 #include <tuple>
 // if available, use gurobi
 #ifdef GUROBI_USE
 #include "gurobi_c++.h"
+#include <memory>   // unique_pointer for gurobi
+#include <cmath>    // pow in gurobi
 #endif
 
 
@@ -90,6 +92,77 @@ pair<numvec,double> worstcase_l1(numvec const& z, numvec const& pbar, prec_t xi)
     prec_t r = inner_product(o.cbegin(),o.cend(),z.cbegin(), prec_t(0.0));
     return make_pair(move(o),r);
 }
+
+/**
+@brief Worstcase deviation given a linear constraint. Used to compute s-rectangular solutions
+
+Efficiently computes the solution of:
+min_{p,t} ||p - q||
+s.t.    z^T p <= b
+        1^T p = 1
+        p >= 0
+
+When the problem is infeasible, then the returned objective value is infinite
+and the solution is a vector of length 0.
+
+Notes
+-----
+This implementation works in O(n log n) time because of the sort. Using
+quickselect to choose the right quantile would work in O(n) time.
+
+This function does not check whether the provide probability distribution sums to 1.
+
+@see worstcase_l1
+@param z Reward values
+@param p Distribution
+@param b Constant in the linear inequality
+@return Optimal solution p and the objective value (t).
+        Important: returns the objective value and not the dot product
+*/
+pair<numvec,prec_t> worstcase_l1_deviation(numvec const& z, numvec const& p, prec_t b){
+    assert(*min_element(p.cbegin(), p.cend()) >= - EPSILON);
+    assert(*max_element(p.cbegin(), p.cend()) <= 1 + EPSILON);
+    assert(b >= 0.0);
+    assert(z.size() > 0 && z.size() == p.size());
+
+    const size_t sz = z.size();
+    // sort z values (increasing order)
+    const vector<size_t> sorted_ind = sort_indexes<prec_t>(z);
+    // initialize output probability distribution; copy the values because most may be unchanged
+    numvec o(p);
+    // initialize the difference t for the output (this is 1/2 of the output value)
+    prec_t t = 0;
+    // start with t = 0 and increase it progressively until the constraint is satisifed
+    // epsilon is the remainder of the constraint that needs to be satisfied
+    prec_t epsilon = inner_product(z.cbegin(), z.cend(), p.cbegin(), 0.0) - b;
+    // now, simply add violation until the constraint is tight
+    // start with the largest element and move towards the beginning
+    size_t i = sz - 1;
+    // cache the smallest element
+    const prec_t smallest_z = z[sorted_ind[0]];
+    while(epsilon > 0 && i > 0){
+        size_t k = sorted_ind[i];
+        // adjustment size
+        prec_t derivative = z[k] - smallest_z;
+        // compute how much of epsilon remains and can be addressed by the current element
+        prec_t diff = min( epsilon / derivative, o[k]);
+        // adjust the output and epsilon accordingly
+        o[k] -= diff; t += diff;
+        epsilon -= derivative*diff;
+        i--;
+    }
+    // if there is still some value epsilon, then the solution is not feasible
+    if(epsilon > 0){
+        return make_pair(numvec(0), numeric_limits<prec_t>::infinity());
+    }
+    else{
+        // adjust the smallest element
+        o[sorted_ind[0]] += t;
+        // the l1 norm is twice the difference for the smallest element
+        return make_pair(move(o), 2 * t);
+    }
+}
+
 
 /**
 Identifies knots of the piecewise linear function of the worstcase l1-constrained
@@ -395,7 +468,7 @@ worstcase_l1_w_knots(const GradientsL1_w& gradients, const numvec& z, const numv
 
 /// See the overloaded method
 pair<numvec, numvec> worstcase_l1_w_knots(const numvec& z, const numvec& pbar, const numvec& w){
-    return worstcase_l1_w_knots(GradientsL1_w(z,pbar,w),z,pbar,w);
+    return worstcase_l1_w_knots(GradientsL1_w(z,w),z,pbar,w);
 }
 
 

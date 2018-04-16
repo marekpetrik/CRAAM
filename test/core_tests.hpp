@@ -27,6 +27,7 @@
 #include "craam/algorithms/values.hpp"
 #include "craam/algorithms/robust_values.hpp"
 #include "craam/algorithms/occupancies.hpp"
+#include "craam/optimization/bisection.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -869,3 +870,270 @@ BOOST_AUTO_TEST_CASE(test_robustification){
     BOOST_CHECK_CLOSE(mpi_jac(rmdp_z, 0.9, numvec(0), uniform_nature(rmdp_z,robust_l1,0.5) ).valuefunction[0],
                     (1.0 * (0.5) + 2.0 * (0.5 - 0.25) + 0.0 * 0.25), 1e-4);
 }
+
+
+// ********************************************************************************
+//  Test optimization methods
+// ********************************************************************************
+
+#ifdef GUROBI_USE
+GRBEnv& get_gurobi(){
+   static GRBEnv env = GRBEnv();
+   env.set(GRB_IntParam_OutputFlag, 0);
+   return env;
+}
+#endif
+
+BOOST_AUTO_TEST_CASE(test_piecewise_linear_f){
+    // make sure that the piecewise linear function is indeed linear between knots.
+
+    // the nominal probability distribution
+    const numvec p{0.3, 0.2, 0.1, 0.4};
+    const numvec z{3.0, 2.0, 4.0, 1.0};
+
+    numvec knots = worstcase_l1_knots(z,p).first;
+    //std::cout << "knots = " << knots << std::endl;
+
+    // make sure that each value between the knots is indeed a linear function
+    for(size_t i = 0; i < knots.size() - 1; i++){
+        double knot1 = knots[i];
+        double knot2 = knots[i+1];
+
+        double val1 = worstcase_l1_deviation(z,p,knot1).second;
+        double val2 = worstcase_l1_deviation(z,p,knot2).second;
+
+        for(double alpha : linspace(0,1,100)){
+            double computed = worstcase_l1_deviation(z,p,alpha*knot1 + (1-alpha)*knot2).second;
+            double expected = alpha*val1 + (1-alpha)*val2;
+
+            BOOST_CHECK_CLOSE(computed, expected, 1e-5);
+        }
+    }
+}
+
+
+#ifdef GUROBI_USE
+BOOST_AUTO_TEST_CASE(test_solve_srect){
+    // set parameters
+    const vector<numvec> p{{0.3, 0.2, 0.1, 0.4},
+                           {0.3, 0.6, 0.1},
+                           {0.1, 0.3, 0.6}};
+    const vector<numvec> z{{3.0, 2.0, 4.0, 1.0},
+                           {3.0, 1.3, 4.0},
+                           {6.0, 0.3, 4.5}};
+    const vector<numvec> w{{0.3,0.3,0.3,0.1},
+                           {0.2,0.5,0.3},
+                           {0.7,0.1,0.2}};
+
+    // uniform weights
+    const vector<numvec> wu{{1.0,1.0,1.0,1.0},
+                            {1.0,1.0,1.0},
+                            {1.0,1.0,1.0}};
+
+
+    GRBEnv env = get_gurobi();
+
+    for(double psi = 0.0; psi < 3.0; psi += 0.1){
+        auto [obj, d, xi] = solve_srect_bisection(z, p, psi, numvec(0), w);
+        auto [gd, gobj] = srect_solve_gurobi(env, z, p, psi, w);
+
+        // xi values can be smaller if actions are not active.
+        BOOST_CHECK_GE(psi+1e-5, accumulate(xi.cbegin(), xi.cend(), 0.0));
+
+        // compute static value
+        // make sure that xi values are correct
+        double expected_result = 0;
+        for(size_t i = 0; i < z.size(); i++){
+            numvec x = worstcase_l1_w(z[i], p[i], w[i], xi[i]).first;
+            expected_result += d[i] * inner_product(x.cbegin(), x.cend(), z[i].cbegin(), 0.0);
+        }
+
+        BOOST_CHECK_CLOSE(obj, gobj, 1e-3);
+        BOOST_CHECK_CLOSE(obj, expected_result, 1e-3);
+        CHECK_CLOSE_COLLECTION(d, gd, 1e-3);
+    }
+
+
+}
+#endif
+
+BOOST_AUTO_TEST_CASE(test_responses){
+    // set parameters
+    const vector<numvec> p{{0.3, 0.2, 0.1, 0.4},
+                           {0.3, 0.6, 0.1},
+                           {0.1, 0.3, 0.6}};
+    const vector<numvec> z{{3.0, 2.0, 4.0, 1.0},
+                           {3.0, 1.3, 4.0},
+                           {6.0, 0.3, 4.5}};
+    const vector<numvec> w{{0.3,0.3,0.3,0.1},
+                           {0.2,0.5,0.3},
+                           {0.7,0.1,0.2}};
+
+    // uniform weights
+    const vector<numvec> wu{{1.0,1.0,1.0,1.0},
+                            {1.0,1.0,1.0},
+                            {1.0,1.0,1.0}};
+
+    #ifdef GUROBI_USE
+    GRBEnv env = get_gurobi();
+    #endif
+
+    for(size_t i = 0; i < p.size(); i++){
+        const auto& pi = p[i];
+        const auto& zi = z[i];
+        const auto& wi = w[i];
+        const auto& wui = wu[i];
+
+        auto expected = inner_product(pi.cbegin(), pi.cend(), zi.cbegin(), 0.0);
+        auto min = *min_element(zi.cbegin(), zi.cend());
+
+        // psi = 0
+        {
+        double psi = 0;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        CHECK_CLOSE_COLLECTION(pol, pol_w, 1e-3);
+        CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_w, 1e-4);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+        BOOST_CHECK_CLOSE(obj, expected, 1e-4);
+        }
+
+        // psi = 1
+        {
+        double psi = 1;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+
+        #ifdef GUROBI_USE
+        auto [pol_g,obj_g] = worstcase_l1_w_gurobi(env,zi,pi,wui,psi);
+        auto [pol_w_g,obj_w_g] = worstcase_l1_w_gurobi(env,zi,pi,wi,psi);
+
+        CHECK_CLOSE_COLLECTION(pol, pol_g, 1e-3);
+        CHECK_CLOSE_COLLECTION(pol_w, pol_w_g, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_g, 1e-4);
+        BOOST_CHECK_CLOSE(obj_w, obj_w, 1e-4);
+        #endif
+        }
+        // psi = 2
+        {
+        double psi = 2;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+        BOOST_CHECK_CLOSE(obj, min, 1e-4);
+
+        #ifdef GUROBI_USE
+        auto [pol_g,obj_g] = worstcase_l1_w_gurobi(env,zi,pi,wui,psi);
+        auto [pol_w_g,obj_w_g] = worstcase_l1_w_gurobi(env,zi,pi,wi,psi);
+
+        CHECK_CLOSE_COLLECTION(pol, pol_g, 1e-3);
+        CHECK_CLOSE_COLLECTION(pol_w, pol_w_g, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_g, 1e-4);
+        BOOST_CHECK_CLOSE(obj_w, obj_w, 1e-4);
+        #endif
+
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_knots_deviation){
+    // the nominal probability distribution
+    const numvec p{0.3, 0.2, 0.1, 0.4};
+    const numvec z{3.0, 2.0, 4.0, 1.0};
+
+    numvec knots = worstcase_l1_knots(z,p).first;
+
+    //cout << "knots = " << knots << endl;
+
+    // make sure that each value between the knots is indeed a linear function
+    for(size_t i = 0; i < knots.size() - 1; i++){
+        double knot1 = knots[i];
+        double knot2 = knots[i+1];
+
+        double val1 = worstcase_l1_deviation(z,p,knot1).second;
+        double val2 = worstcase_l1_deviation(z,p,knot2).second;
+
+        for(double alpha = 0; alpha <= 0.99; alpha += 0.1){
+            double val = worstcase_l1_deviation(z,p,alpha*knot1 + (1-alpha)*knot2).second;
+               //cout << alpha << endl;
+            BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
+        }
+    }
+};
+
+BOOST_AUTO_TEST_CASE(test_knots){
+    // the nominal probability distribution
+    const numvec p{0.3, 0.2, 0.1, 0.4};
+    const numvec z{3.0, 2.0, 4.0, 1.0};
+
+    numvec knots = worstcase_l1_knots(z,p).second;
+
+    //cout << "knots = " << knots << endl;
+
+    // make sure that each value between the knots is indeed a linear function
+    for(size_t i = 0; i < knots.size() - 1; i++){
+        double knot1 = knots[i];
+        double knot2 = knots[i+1];
+
+        double val1 = worstcase_l1(z,p,knot1).second;
+        double val2 = worstcase_l1(z,p,knot2).second;
+
+        for(double alpha = 0; alpha <= 1; alpha += 0.1){
+            double val = worstcase_l1(z,p,alpha*knot1 + (1-alpha)*knot2).second;
+               //cout << alpha << endl;
+            BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
+        }
+    }
+};
+
+BOOST_AUTO_TEST_CASE(test_knots_w){
+    // the nominal probability distribution
+    const numvec p{0.3, 0.2, 0.1, 0.4};
+    const numvec z{3.0, 2.0, 4.0, 1.0};
+    const numvec w{2.0, 2.0, 3.0, 1.0};
+
+    numvec knots = worstcase_l1_w_knots(z,p,w).second;
+
+    //cout << "knots = " << knots << endl;
+
+    // make sure that each value between the knots is indeed a linear function
+    for(size_t i = 0; i < knots.size() - 1; i++){
+        double knot1 = knots[i];
+        double knot2 = knots[i+1];
+
+        double val1 = worstcase_l1_w(z,p,w,knot1).second;
+        double val2 = worstcase_l1_w(z,p,w,knot2).second;
+
+        for(double alpha = 0; alpha <= 1; alpha += 0.1){
+            double val = worstcase_l1_w(z,p,w,alpha*knot1 + (1-alpha)*knot2).second;
+               //cout << alpha << endl;
+            BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
+        }
+    }
+};
+
+/// tests weighted knots
+BOOST_AUTO_TEST_CASE(test_knots_wu){
+    // the nominal probability distribution
+    const numvec p{0.3, 0.2, 0.1, 0.4};
+    const numvec z{3.0, 2.0, 4.0, 1.0};
+    const numvec w{1.0, 1.0, 1.0, 1.0};
+
+    auto [knots,values] = worstcase_l1_knots(z,p);
+    auto [knots_w,values_w] = worstcase_l1_w_knots(z,p,w);
+
+    CHECK_CLOSE_COLLECTION(knots, knots_w, 1e-5);
+    CHECK_CLOSE_COLLECTION(values, values_w, 1e-5);
+
+}
+
+
+
+

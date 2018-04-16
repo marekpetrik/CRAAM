@@ -50,6 +50,8 @@ using numvec = vector<prec_t>;
 using indvec = vector<long>;
 /// Vector of size_t
 using sizvec = std::vector<size_t>;
+/// A vector of numeric vectors
+using numvecvec = vector<numvec>;
 
 /// Pair of a vector and a scalar
 using vec_scal_t = pair<numvec, prec_t> ;
@@ -113,5 +115,33 @@ vector<size_t> sort_indexes_desc(vector<T> const& v){
     return idx;
 }
 
+
+/**
+ * @brief Computes the l1 norm between two vectors of equal length
+ */
+prec_t l1norm(numvec p1, numvec p2){
+    prec_t result = 0;
+    for(size_t i=0; i < p1.size(); i++)
+        result += std::abs(p1[i] - p2[i]);
+    return result;
+}
+
+/**
+ * @brief Generates linearly spaced points
+ *
+ * @param a Start value
+ * @param b End value
+ * @param N Number of points
+ */
+template <typename T = double>
+std::vector<T> linspace(T a, T b, size_t N) {
+    T h = (b - a) / static_cast<T>(N-1);
+    std::vector<T> xs(N);
+    typename std::vector<T>::iterator x;
+    T val;
+    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h)
+        *x = val;
+    return xs;
+}
 
 }

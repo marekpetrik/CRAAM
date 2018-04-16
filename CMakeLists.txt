@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
 set (GUROBI_HOME "/home/marek/Software/gurobi")
+set (GUROBI_USE TRUE)
 
 # enable colors in the output
 SET(CMAKE_COLOR_MAKEFILE ON)
@@ -95,8 +96,12 @@ configure_file (
 
 # **** SOURCE FILES ****
 include_directories (.)
+if(GUROBI_USE)
+    include_directories (. "${GUROBI_HOME}/include")
+endif()
 # do not report warnings from included libraries
 include_directories (SYSTEM include)
+
 
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
@@ -105,7 +110,8 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/State.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Transition.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization/optimization.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization/bisection.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/robust_values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp
@@ -131,12 +137,21 @@ target_link_libraries (develop_exe Eigen3::Eigen)
 add_custom_target (develop COMMAND develop_exe
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running executable")
+if(GUROBI_USE)
+    target_link_libraries(develop_exe ${GUROBI_CXX_LIBRARY_1})
+    target_link_libraries(develop_exe ${GUROBI_CXX_LIBRARY_2})
+endif()
+
 
 # **** TEST ****
 if (BUILD_TESTS)
     add_executable (unit_tests ${TSTS} ${SRCS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
     target_link_libraries (unit_tests Eigen3::Eigen)
+    if(GUROBI_USE)
+        target_link_libraries(unit_tests ${GUROBI_CXX_LIBRARY_1})
+        target_link_libraries(unit_tests ${GUROBI_CXX_LIBRARY_2})
+    endif()
     add_custom_target (testit COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
                         COMMENT "Running unit tests")
@@ -145,6 +160,10 @@ endif (BUILD_TESTS)
 
 # **** COMMAND-LINE EXECUTABLE ****
 add_executable(craam-cli EXCLUDE_FROM_ALL ${BENCH} ${SRCS} )
+if(GUROBI_USE)
+    target_link_libraries(craam-cli ${GUROBI_CXX_LIBRARY_1})
+    target_link_libraries(craam-cli ${GUROBI_CXX_LIBRARY_2})
+endif()
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)
