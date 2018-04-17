@@ -484,7 +484,8 @@ map_sa(const MDP& mdp, std::function<T(const RegularState&, const RegularAction&
         const RegularState& s = mdp[i];
         statesres[i] = vector<T>(s.size());
         for(size_t j = 0; j < s.size(); j++){
-            statesres[i][j] = fun();
+        const RegularAction& a = s[j];
+            statesres[i][j] = fun(s,a);
         }
     }
     return statesres;
