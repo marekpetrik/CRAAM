@@ -65,7 +65,7 @@ constexpr prec_t SOLPREC = 0.0001;
 constexpr unsigned long MAXITER = 100000;
 
 /// Numerical threshold
-constexpr prec_t THRESHOLD = 1e-5;
+constexpr prec_t THRESHOLD = 1e-10;
 
 
 #ifdef IS_DEBUG

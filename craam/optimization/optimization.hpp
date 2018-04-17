@@ -59,8 +59,8 @@ This function does not check whether the provide probability distribution sums t
 @return Optimal solution p and the objective value
 */
 pair<numvec,double> worstcase_l1(numvec const& z, numvec const& pbar, prec_t xi){
-    assert(*min_element(pbar.cbegin(), pbar.cend()) >= - EPSILON);
-    assert(*max_element(pbar.cbegin(), pbar.cend()) <= 1 + EPSILON);
+    assert(*min_element(pbar.cbegin(), pbar.cend()) >= - THRESHOLD);
+    assert(*max_element(pbar.cbegin(), pbar.cend()) <= 1 + THRESHOLD);
     assert(xi >= 0.0);
     assert(z.size() > 0 && z.size() == pbar.size());
 
@@ -120,8 +120,8 @@ This function does not check whether the provide probability distribution sums t
         Important: returns the objective value and not the dot product
 */
 pair<numvec,prec_t> worstcase_l1_deviation(numvec const& z, numvec const& p, prec_t b){
-    assert(*min_element(p.cbegin(), p.cend()) >= - EPSILON);
-    assert(*max_element(p.cbegin(), p.cend()) <= 1 + EPSILON);
+    assert(*min_element(p.cbegin(), p.cend()) >= - THRESHOLD);
+    assert(*max_element(p.cbegin(), p.cend()) <= 1 + THRESHOLD);
     assert(b >= 0.0);
     assert(z.size() > 0 && z.size() == p.size());
 

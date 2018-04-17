@@ -102,7 +102,13 @@ inline vec_scal_t robust_l1_gurobi(const numvec& v, const numvec& p, pair<GRBEnv
 }
 
 inline vec_scal_t robust_l1_g(const numvec& v, const numvec& p, prec_t budget){
-    static GRBEnv env;
+    static GRBEnv env = [](){
+        GRBEnv env;     
+        env.set(GRB_IntParam_OutputFlag, 0);
+        // make sure it is run in a single thread so it can be parallelized
+        env.set(GRB_IntParam_Threads, 1);
+        return env;
+        }();
     assert(v.size() == p.size());
     return worstcase_l1_w_gurobi(env,v,p,numvec(0), budget);
 }
@@ -138,7 +144,7 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
 /// worst outcome, threshold is ignored
 template<class T>
 inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
-    assert(v.size() == p.size());
+    //assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     size_t index = size_t(min_element(begin(v), end(v)) - begin(v));
     dist[index] = 1;
@@ -148,7 +154,7 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
 /// best outcome, threshold is ignored
 template<class T>
 inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec&, T){
-    assert(v.size() == p.size());
+    //assert(v.size() == p.size());
     numvec dist(v.size(),0.0);
     size_t index = size_t(max_element(begin(v), end(v)) - begin(v));
     dist[index] = 1;

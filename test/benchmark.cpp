@@ -221,8 +221,8 @@ int main(int argc, char * argv []){
         ("d,discount", "Discount factor", cxxopts::value<double>()->default_value("0.9"))
         ("e,precision", "Maximum residual", cxxopts::value<double>()->default_value("0.0001"))
         ("l,iterations", "Maximum number of iterations", cxxopts::value<unsigned long>()->default_value("2000"))
-        ("b budget", "Robustness budget", cxxopts::value<double>()->default_value("0.0"))
-        ("u ambiguity", "Type of ambiguity", cxxopts::value<string>());
+        ("b,budget", "Robustness budget", cxxopts::value<double>()->default_value("0.0"))
+        ("u,ambiguity", "Type of ambiguity", cxxopts::value<string>());
 
     try {
         options.parse(argc,argv);
