@@ -24,6 +24,8 @@
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
 #include "craam/Samples.hpp"
+#include "craam/algorithms/nature_response.hpp"
+#include "craam/algorithms/robust_values.hpp"
 
 // library for processing command-line options
 #include "cxxopts/cxxopts.hpp"
@@ -68,8 +70,11 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
     cout << "Computing solution ... " << endl;
     auto start = std::chrono::high_resolution_clock::now();
 
+    // output values
+    int iters; prec_t residual; indvec policy; numvec valuefunction;
+
     if(ambiguity.empty()) {
-        algorithms::PlainBellman::solution_type sol;
+        algorithms::Solution sol;
         if(solver == Solver::MPI) {
             sol = algorithms::solve_mpi(mdp,discount,numvec(0),indvec(0),
                                         iterations,precision,iterations,precision);
@@ -79,26 +84,65 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         } else {
             throw invalid_argument("Unknown solver type.");
         }
-    } else if(ambiguity == "L1") {
+        iters = sol.iterations;
+        residual = sol.residual;
+        policy = move(sol.policy);
+        valuefunction = move(sol.valuefunction);
 
+    }
+    else if(ambiguity == "L1") {
+        algorithms::SolutionRobust sol;
 
-        algorithms:: sol;
+        prec_t budget = options["budget"].as<prec_t>();
+        numvecvec budgets = map_sa<prec_t>(mdp,
+            [budget](const RegularState&,const RegularAction&){return budget;});
+
         if(solver == Solver::MPI) {
-            sol = algorithms::rsolve_mpi(mdp,discount, numvec(0), indvec(0),
+            sol = algorithms::rsolve_mpi(mdp, discount, &algorithms::robust_l1, budgets, numvec(0), indvec(0),
                                         iterations, precision, iterations, precision);
         } else if(solver == Solver::VI) {
-            sol = algorithms::rsolve_vi(mdp, discount, numvec(0), indvec(0),
+            sol = algorithms::rsolve_vi(mdp, discount, &algorithms::robust_l1, budgets, numvec(0), indvec(0),
                                        iterations, precision);
         } else {
             throw invalid_argument("Unknown solver type.");
         }
+        iters = sol.iterations;
+        residual = sol.residual;
+        policy = move(sol.policy);
+        valuefunction = move(sol.valuefunction);
     }
+    #ifdef GUROBI_USE
+    else if(ambiguity == "L1g") {
+        algorithms::SolutionRobust sol;
 
+        prec_t budget = options["budget"].as<prec_t>();
+        numvecvec budgets = map_sa<prec_t>(mdp,
+            [budget](const RegularState&,const RegularAction&){return  budget;});
 
+        if(solver == Solver::MPI) {
+            sol = algorithms::rsolve_mpi(mdp, discount, &algorithms::robust_l1_g,
+                                        budgets, numvec(0), indvec(0),
+                                        iterations, precision, iterations, precision);
+        } else if(solver == Solver::VI) {
+            sol = algorithms::rsolve_vi(mdp, discount, &algorithms::robust_l1_g,
+                                        budgets, numvec(0), indvec(0),
+                                        iterations, precision);
+        } else {
+            throw invalid_argument("Unknown solver type.");
+        }
+        iters = sol.iterations;
+        residual = sol.residual;
+        policy = move(sol.policy);
+        valuefunction = move(sol.valuefunction);
+    }
+    #endif
+    else {
+        throw invalid_argument("Unknown uncertainty set type.");
+    }
 
     auto finish = std::chrono::high_resolution_clock::now();
     cout << "Done computing." << endl;
-    cout << "Iterations: " << sol.iterations <<  ", Residual: " << sol.residual << endl;
+    cout << "Iterations: " << iters <<  ", Residual: " << residual << endl;
     std::cout << "Duration:  *** " << std::chrono::duration_cast<std::chrono::milliseconds>(finish-start).count() << "ms *** \n";
 
     // only do this when an output file has been provided
@@ -112,7 +156,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         }
         ofs << "idstate,idaction,value" << endl;
         for(size_t i = 0; i < mdp.state_count(); i++){
-            ofs << i << "," << sol.policy[i] << "," << sol.valuefunction[i] << endl;
+            ofs << i << "," << policy[i] << "," << valuefunction[i] << endl;
         }
         ofs.close();
     }

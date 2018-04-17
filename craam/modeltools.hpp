@@ -36,6 +36,7 @@
 #include <string>
 #include <cassert>
 #include <sstream>
+#include <functional>
 
 
 // **********************************************************************
@@ -463,6 +464,33 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
             }
         }
     }    
-    return rmdp;
-}}
+   return rmdp;
+}
+
+
+/**
+ * Creates a vector of vectors with one entry for each state and action
+ *
+ * @tparam T Type of the method output.
+ *
+ * @param mdp The mdp to map
+ * @param fun Function that takes a state and action as an input
+ */
+template<class T>
+inline vector<vector<T>>
+map_sa(const MDP& mdp, std::function<T(const RegularState&, const RegularAction&)> fun){
+    vector<vector<T>> statesres(mdp.size());
+    for(size_t i=0; i < mdp.size(); i++){
+        const RegularState& s = mdp[i];
+        statesres[i] = vector<T>(s.size());
+        for(size_t j = 0; j < s.size(); j++){
+            statesres[i][j] = fun();
+        }
+    }
+    return statesres;
+}
+
+}
+
+
 

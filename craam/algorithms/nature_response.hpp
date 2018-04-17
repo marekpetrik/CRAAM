@@ -25,6 +25,8 @@
 #include "craam/definitions.hpp"
 #include "craam/optimization/optimization.hpp"
 
+#include <functional>
+
 namespace craam::algorithms{
 
 // *******************************************************
@@ -97,6 +99,12 @@ inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
 inline vec_scal_t robust_l1_gurobi(const numvec& v, const numvec& p, pair<GRBEnv,prec_t> gur_budget){
     assert(v.size() == p.size());
     return worstcase_l1_w_gurobi(gur_budget.first,v,p,numvec(0), gur_budget.second);
+}
+
+inline vec_scal_t robust_l1_g(const numvec& v, const numvec& p, prec_t budget){
+    static GRBEnv env;
+    assert(v.size() == p.size());
+    return worstcase_l1_w_gurobi(env,v,p,numvec(0), budget);
 }
 #endif
 
