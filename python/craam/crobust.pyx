@@ -150,6 +150,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
 cdef extern from "craam/modeltools.hpp" namespace 'craam' nogil:
     void add_transition[Model](Model& mdp, long fromid, long actionid, long outcomeid, long toid, prec_t probability, prec_t reward)
+    void to_csv_file(const CMDP& mdp, const string& filename, bool header)
 
 DEFAULT_ITERS = 500
 
@@ -700,6 +701,14 @@ cdef class MDP:
 
         return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations, sol.natpolicy)
+
+
+    def to_csv(self,filename):
+        """
+        Saves the MDP definition to a CSV file
+        """
+        to_csv_file(dereference(self.thisptr), filename, True)
+
 cdef extern from "craam/Samples.hpp" namespace 'craam::msen':
     
     cdef cppclass CDiscreteSamples "craam::msen::DiscreteSamples":
