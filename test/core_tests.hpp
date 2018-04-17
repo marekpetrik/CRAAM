@@ -28,6 +28,7 @@
 #include "craam/algorithms/robust_values.hpp"
 #include "craam/algorithms/occupancies.hpp"
 #include "craam/optimization/bisection.hpp"
+#include "craam/optimization/srect_gurobi.hpp"
 
 #include <iostream>
 #include <sstream>

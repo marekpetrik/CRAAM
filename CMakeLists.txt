@@ -112,6 +112,7 @@ set (SRCS
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/modeltools.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization/optimization.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization/bisection.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/craam/optimization/srect_gurobi.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/robust_values.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/algorithms/occupancies.hpp

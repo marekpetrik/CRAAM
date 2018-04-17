@@ -32,9 +32,8 @@ Provides abstractions that allow generalization to both robust and regular MDPs.
 #include <functional>
 #include <type_traits>
 
-namespace craam {
 /// Main namespace for algorithms that operate on MDPs and RMDPs
-namespace algorithms{
+namespace craam::algorithms{
 
 using namespace std;
 using namespace util::lang;
@@ -551,7 +550,8 @@ in the temporal order.
 \returns Solution that can be used to compute the total return, or the optimal policy.
 */
 template<class SType>
-inline auto solve_vi(const GRMDP<SType>& mdp, prec_t discount,
+inline PlainBellman::solution_type
+solve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
@@ -579,7 +579,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType>
-inline auto solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+inline PlainBellman::solution_type
+solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
@@ -591,4 +592,4 @@ inline auto solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                      print_progress);
 }
 
-}}
+}

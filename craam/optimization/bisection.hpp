@@ -6,7 +6,7 @@
 #include <tuple>
 
 
-namespace craam{
+namespace craam {
 
 using namespace std;
 
@@ -299,3 +299,4 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
 }
 
 
+}
