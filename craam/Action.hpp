@@ -84,6 +84,9 @@ public:
     /** Returns the single outcome. */
     Transition& get_outcome() {return outcome;}
 
+    /** Replaces internal transition probabilities by new ones. */
+    void set_outcome(Transition outcome){this->outcome = move(outcome);}
+
     /**
     Adds a sufficient number of empty outcomes for the outcomeid to be a correct identifier.
     This method does nothing in this action.

@@ -163,13 +163,13 @@ void test_simple_vi(const Model& rmdp){
 
     // small number of iterations (not the true value function)
     numvec val_rob{7.68072,8.67072,9.77072};
-    auto re = vi_gs(rmdp,0.9,initial,PolicyDeterministic(indvec(0)),20,0);
+    auto re = vi_gs(rmdp,0.9,initial,PlainBellman(indvec(0)),20,0);
 
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re.policy.begin(),re.policy.end());
 
     // test jac value iteration with small number of iterations ( not the true value function)
-    auto re2 = mpi_jac(rmdp, 0.9, initial, PolicyDeterministic(indvec(0)), 20,0,0);
+    auto re2 = mpi_jac(rmdp, 0.9, initial, PlainBellman(indvec(0)), 20,0,0);
 
     numvec val_rob2{7.5726,8.56265679,9.66265679};
     CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
@@ -209,7 +209,7 @@ void test_simple_vi(const Model& rmdp){
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re8.policy.begin(),re8.policy.end());
 
     // fixed evaluation
-    auto&& re9 = mpi_jac(rmdp,0.9,initial,PolicyDeterministic(pol_rob), 10000,0.0, 0);
+    auto&& re9 = mpi_jac(rmdp,0.9,initial,PlainBellman(pol_rob), 10000,0.0, 0);
     CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
 
     // check the computed returns
@@ -432,7 +432,7 @@ void test_value_function(const Model& rmdp) {
     auto&& result2 = vi_gs(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_unbounded,0.0), 1000, 0);
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
-    auto&& result3 = vi_gs(rmdp,0.9,initial,PolicyDeterministic(), 1000, 0);
+    auto&& result3 = vi_gs(rmdp,0.9,initial,PlainBellman(), 1000, 0);
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 
     // mpi
@@ -442,7 +442,7 @@ void test_value_function(const Model& rmdp) {
     result2 = mpi_jac(rmdp,0.9,initial,uniform_nature(rmdp,optimistic_unbounded,0.0), 1000, 0);
     BOOST_CHECK_CLOSE(result2.valuefunction[0], 20.0, 1e-3);
 
-    result3 = mpi_jac(rmdp,0.9,initial,PolicyDeterministic(), 1000, 0);
+    result3 = mpi_jac(rmdp,0.9,initial,PlainBellman(), 1000, 0);
     BOOST_CHECK_CLOSE(result3.valuefunction[0],15,1e-3);
 }
 
@@ -575,9 +575,9 @@ void test_randomized_threshold_average(const RMDP& rmdp, const numvec& desired){
 
     const prec_t gamma = 0.9;
     numvec value(0);
-    auto&& sol2 = vi_gs(rmdp,gamma,value,PolicyDeterministic(),1000,1e-5);
+    auto&& sol2 = vi_gs(rmdp,gamma,value,PlainBellman(),1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol2.valuefunction, desired, 0.001);
-    auto&& sol3 = mpi_jac(rmdp,gamma,value,PolicyDeterministic(),1000,1e-5);
+    auto&& sol3 = mpi_jac(rmdp,gamma,value,PlainBellman(),1000,1e-5);
     CHECK_CLOSE_COLLECTION(sol3.valuefunction, desired, 0.001);
 }
 

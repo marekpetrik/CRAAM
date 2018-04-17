@@ -88,6 +88,7 @@ configure_file (
 include_directories (. )
 # do not report warnings from included libraries
 include_directories (SYSTEM include)
+
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/definitions.hpp  
@@ -114,7 +115,7 @@ set (BENCH ${CMAKE_CURRENT_SOURCE_DIR}/test/benchmark.cpp)
 #add_library (craam STATIC ${SRCS} )
 
 # **** DEVELOPMENT EXECUTABLE ****
-add_executable (develop_exe ${DEV})
+add_executable (develop_exe ${DEV} ${SRCS})
 target_link_libraries(develop_exe)
 add_custom_target (develop COMMAND develop_exe
                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin
@@ -122,7 +123,7 @@ add_custom_target (develop COMMAND develop_exe
 
 # **** TEST ****
 if (BUILD_TESTS)
-    add_executable (unit_tests ${TSTS} )
+    add_executable (unit_tests ${TSTS} ${SRCS} )
     target_link_libraries(unit_tests ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
     #cotire(unit_tests)
     add_custom_target (testit   COMMAND unit_tests --detect_memory_leaks --detect_fp_exceptions --color-output -l unit_scope
@@ -131,7 +132,7 @@ if (BUILD_TESTS)
 endif (BUILD_TESTS)
 
 # **** COMMAND-LINE EXECUTABLE ****
-add_executable(craam-cli EXCLUDE_FROM_ALL ${BENCH} )
+add_executable(craam-cli EXCLUDE_FROM_ALL ${BENCH} ${SRCS} )
 
 # **** DOCUMENTATION ****
 if(BUILD_DOCUMENTATION)
