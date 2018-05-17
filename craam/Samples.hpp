@@ -446,8 +446,7 @@ protected:
 /**
 Constructs an MDP from integer samples.
 
-Integer samples: Each decision state, expectation state, and action are identified
-by an integer.
+Integer samples: All states and actions are identified by integers.
 
 
 \a Input: Sample set \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ \n
@@ -616,23 +615,24 @@ public:
         //  Normalize the transition probabilities and rewards
         mdp->normalize();
 
-        // set initial distribution
+        // set initial distribution (not normalized so it is updated correctly when adding more samples
         for(long state : samples.get_initial()){
+            if(state > state_count()) throw range_error("Initial state number larger than any transition state.");
+            if(state < 0) throw range_error("Initial state with a negative index is invalid.");
             initial.add_sample(state, 1.0, 0.0);
         }
-        initial.normalize();
     }
-
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
 
     /** \returns A modifiable pointer to the internal MDP.
-    Take care when changing. */
+    Take care when changing it. */
     shared_ptr<MDP> get_mdp_mod() {return mdp;}
 
-    /** \returns Initial distribution based on empirical sample data */
-    Transition get_initial() const {return initial;}
+    /** \returns Initial distribution based on empirical sample data. Could be
+     * somewhat expensive because it normalizes the transition. */
+    Transition get_initial() const {Transition t = initial; t.normalize(); return t;}
 
     /** \returns State-action cumulative weights \f$ z \f$.
     See class description for details. */
@@ -643,12 +643,13 @@ public:
     \returns 0 when there are no samples
     */
     long state_count(){return state_action_weights.size();}
+
 protected:
 
     /** Internal MDP representation */
     shared_ptr<MDP> mdp;
 
-    /** Initial distribution */
+    /** Initial distribution, not normalized */
     Transition initial;
 
     /** Sample counts */

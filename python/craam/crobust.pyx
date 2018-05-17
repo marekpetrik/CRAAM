@@ -65,6 +65,7 @@ cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
         numvec& get_probabilities()
         numvec& get_rewards() 
         size_t size() 
+        void normalize()
 
     cdef cppclass CRegularAction "craam::RegularAction":
         CTransition& get_outcome(long outcomeid)
