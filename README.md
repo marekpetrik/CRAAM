@@ -43,7 +43,7 @@ Second, install Eigen in the same directory.
     $ wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
     $ tar xzf 3.3.4.tar.gz
     $ rm 3.3.4.tar.gz
-    $ mv eigen-eigen-5a0156e40feb/Eigen ./include
+    $ mv eigen-eigen-5a0156e40feb/Eigen ../include
 ```
 
 
