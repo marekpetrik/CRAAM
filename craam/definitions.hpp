@@ -64,8 +64,8 @@ constexpr prec_t SOLPREC = 0.0001;
 /** Default number of iterations */
 constexpr unsigned long MAXITER = 100000;
 
-/// Numerical threshold
-constexpr prec_t THRESHOLD = 1e-10;
+/// Numerical threshold for reporting errors
+constexpr prec_t THRESHOLD = 1e-6;
 
 
 #ifdef IS_DEBUG
@@ -143,5 +143,60 @@ std::vector<T> linspace(T a, T b, size_t N) {
         *x = val;
     return xs;
 }
+
+
+namespace internal{
+
+/// Zips two vectors
+template <class T1, class T2>
+vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
+
+    assert(v1.size() == v2.size());
+    vector<pair<T1,T2>> result(v1.size());
+    for(size_t i=0; i< v1.size(); i++){
+        result[i] = make_pair(v1[i], v2[i]);
+    }
+    return result;
+}
+
+/// Zips two vectors of vectors
+template <class T1, class T2>
+vector<vector<pair<T1,T2>>> zip(const vector<vector<T1>>& v1, const vector<vector<T2>>& v2){
+
+    assert(v1.size() == v2.size());
+    vector<vector<pair<T1,T2>>> result(v1.size());
+    for(size_t i=0; i< v1.size(); i++){
+        result[i] = zip(v1[i], v2[i]);
+    }
+    return result;
+}
+
+/// Zips a single value with a vector
+template <class T1, class T2>
+vector<pair<T1,T2>> zip(const T1& v1, const vector<T2>& v2){
+
+    vector<pair<T1,T2>> result(v2.size());
+    for(size_t i=0; i< v2.size(); i++){
+        result[i] = make_pair(v1, v2[i]);
+    }
+    return result;
+}
+
+/// Zips a single value with a vector of vectors
+template <class T1, class T2>
+vector<vector<pair<T1,T2>>> zip(const T1& v1, const vector<vector<T2>>& v2){
+
+    vector<vector<pair<T1,T2>>> result(v2.size());
+    for(size_t i=0; i< v2.size(); i++){
+        result[i] = zip(v1, v2[i]);
+    }
+    return result;
+}
+
+
+
+}
+
+
 
 }

@@ -45,7 +45,6 @@ find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "${GUROBI_HOME
 find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi75.so PATHS "${GUROBI_HOME}/lib")
 find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "${GUROBI_HOME}/include")
 
-
 # DEBUG
 # Prints all variables (for debugging)
 #get_cmake_property(_variableNames VARIABLES)
@@ -101,7 +100,6 @@ if(GUROBI_USE)
 endif()
 # do not report warnings from included libraries
 include_directories (SYSTEM include)
-
 
 set (SRCS 
           ${CMAKE_CURRENT_SOURCE_DIR}/craam/Action.hpp  

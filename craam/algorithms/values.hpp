@@ -228,12 +228,18 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
 // RMDP computation methods
 // *******************************************************
 
-/** A set of values that represent a solution to a plain MDP.  */
+/**
+ * A set of values that represent a solution to a plain MDP.
+ *
+ * \tparam PolicyType Type of the policy used (int deterministic, numvec stochastic,
+ *          but could also have multiple components (such as an action and transition probability) )
+*/
+template<class PolicyType>
 struct Solution {
     /// Value function
     numvec valuefunction;
-    /// index of the action to take for each states
-    indvec policy;
+    /// Policy of the decision maker (and nature if applicable) for each state
+    vector<PolicyType> policy;
     /// Bellman residual of the computation
     prec_t residual;
     /// Number of iterations taken
@@ -245,7 +251,7 @@ struct Solution {
     Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {}
 
     /// Empty solution for a problem with a given value function and policy
-    Solution(numvec valuefunction, indvec policy, prec_t residual = -1, long iterations = -1) :
+    Solution(numvec valuefunction, vector<PolicyType> policy, prec_t residual = -1, long iterations = -1) :
         valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {}
 
     /**
@@ -270,15 +276,15 @@ away from particular model properties and the goal is to be able to plug it in i
 policy iteration methods for MDPs.
 
 Many of the methods are parametrized by the type of the state.
+
+The class also allows to use an initial policy specification. See the constructor for the
+definition.
 */
 class PlainBellman{
-protected:
-    /// Partial policy specification (action -1 is ignored and optimized)
-    indvec initial_policy;
 
 public:
-    /// Provides the type of the solution for the consumption of methods that call this value
-    using solution_type = Solution;
+    /// Provides the type of policy for each state (int represents a deterministic policy)
+    using policy_type = long;
 
     /// Constructs the update with no constraints on the initial policy
     PlainBellman() : initial_policy(0) {}
@@ -289,36 +295,26 @@ public:
      */
     PlainBellman(indvec policy) : initial_policy(move(policy)) {}
 
-    /**
-     * @brief Constructs a solution for the
-     * @param statecount
-     * @param valuefunction
-     * @return
-     */
-    Solution new_solution(size_t statecount, numvec valuefunction) const {
-        process_valuefunction(statecount, valuefunction);
-        Solution solution =  Solution(move(valuefunction), process_policy(statecount));
-        return solution;
-    }
 
     /**
-     *  Computes the Bellman update and updates the internal policy to the best response.
-     *  This function does *not* update the value function.
-     *  \returns New value for the state
+     *  Computes the Bellman update and returns the optimal action.
+     *  \returns New value for the state and the policy
      */
     template<class SType>
-    prec_t policy_update(Solution& solution, const SType& state, long stateid,
+    pair<prec_t,policy_type> policy_update(const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
         assert(stateid < long(solution.policy.size()));
 
-        prec_t newvalue;
         // check whether this state should only be evaluated
         if(initial_policy.empty() || initial_policy[stateid] < 0){    // optimizing
-            tie(solution.policy[stateid], newvalue) = value_max_state(state, valuefunction, discount);
+            prec_t newvalue;
+            policy_type action;
+
+            tie(action, newvalue) = value_max_state(state, valuefunction, discount);
+            return make_pair(newvalue,action);
         }else{// fixed-action, do not copy
             return value_fix_state(state, valuefunction, discount, initial_policy[stateid]);
         }
-        return newvalue;
     }
 
     /**
@@ -326,47 +322,14 @@ public:
      * \returns New value for the state
      */
     template<class SType>
-    prec_t compute_value(const Solution& solution, const SType& state, long stateid,
-                            const numvec& valuefunction, prec_t discount) const{
+    prec_t compute_value(const policy_type& action, const SType& state, const numvec& valuefunction,
+                            prec_t discount) const{
 
-        return value_fix_state(state, valuefunction, discount, solution.policy[stateid]);
+        return value_fix_state(state, valuefunction, discount, action);
     }
-
 protected:
-
-    /**
-     * Resizes value function to the proper length when it is empty (size == 0)
-     * @param statecount Number of states in the MDP
-     * @param valuefunction Value function
-     */
-    void process_valuefunction(size_t statecount, numvec& valuefunction) const{
-        // check if the value function is a correct size, and if it is length 0
-        // then creates an appropriate size
-        if(!valuefunction.empty()){
-            if(valuefunction.size() != statecount) throw invalid_argument("Incorrect dimensions of value function.");
-        }else{
-            valuefunction.assign(statecount, 0.0);
-        }
-        assert(valuefunction.size() == statecount);
-    }
-
-    /**
-     * @brief process_policy Initializes policy to match the number of states.
-     *
-     * Does not modify internal policy object, but returns the new policy.
-     *
-     * @param statecount Number of states in the MDP
-     * @return Policy of the appropriate size.
-     */
-    indvec process_policy(size_t statecount) const {
-        // check the dimensions of the policy
-        if(!initial_policy.empty()){
-            if(initial_policy.size() != statecount) throw invalid_argument("Incorrect dimensions of policy function.");
-            return initial_policy;
-        }else{
-            return indvec(statecount, -1);
-        }
-    }
+    /// Partial policy specification (action -1 is ignored and optimized)
+    const indvec initial_policy;
 };
 
 
@@ -393,6 +356,9 @@ in the temporal order.
 \param iterations Maximal number of iterations to run
 \param maxresidual Stop when the maximal residual falls below this value.
 
+\tparam SType Type of the state used
+\tparam ResponseType Class responsible for computing the Bellman updates. Should be
+                     compatible with PlainBellman
 
 \returns Solution that can be used to compute the total return, or the optimal policy.
  */
@@ -402,12 +368,13 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
 
-    const auto& states = mdp.get_states();
-    typename ResponseType::solution_type solution =
-            response.new_solution(states.size(), move(valuefunction));
+    using policy_type = typename ResponseType::policy_type;
 
+    const auto& states = mdp.get_states();
     // just quit if there are no states
-    if( mdp.state_count() == 0) return solution;
+    if( mdp.state_count() == 0) return Solution<policy_type>(0);
+
+    vector<policy_type> policy(mdp.state_count());
 
     // initialize values
     prec_t residual = numeric_limits<prec_t>::infinity();
@@ -417,15 +384,15 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
         residual = 0;
 
         for(size_t s = 0l; s < states.size(); s++){
-            prec_t newvalue = response.policy_update(solution, states[s], s, solution.valuefunction, discount);
+            prec_t newvalue;
+            tie(newvalue, policy[s]) = response.policy_update(states[s], s, valuefunction, discount);
 
-            residual = max(residual, abs(solution.valuefunction[s] - newvalue));
-            solution.valuefunction[s] = newvalue;
+            residual = max(residual, abs(valuefunction[s] - newvalue));
+            valuefunction[s] = newvalue;
         }
     }
-    solution.residual = residual;
-    solution.iterations = i;
-    return solution;
+
+    return Solution(move(valuefunction), move(policy),residual,iterations);
 }
 
 
@@ -449,6 +416,11 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
             This value should be smaller than maxresidual_pi
 \param print_progress Whether to report on progress during the computation
+
+\tparam SType Type of the state used
+\tparam ResponseType Class responsible for computing the Bellman updates. Should be compatible
+                      with PlainBellman
+
 \return Computed (approximate) solution
  */
 template<class SType, class ResponseType = PlainBellman>
@@ -458,15 +430,18 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
 
+    using policy_type = typename ResponseType::policy_type;
+
     const auto& states = mdp.get_states();
-    typename ResponseType::solution_type solution =
-            response.new_solution(states.size(), move(valuefunction));
 
     // just quit if there are no states
-    if( mdp.state_count() == 0) return solution;
+    if( mdp.state_count() == 0) return Solution<policy_type>(0);
 
-    numvec sourcevalue = solution.valuefunction;   // value function to compute the update
-    numvec targetvalue = sourcevalue;              // value function to hold the updated values
+    // intialize the policy
+    vector<policy_type> policy(mdp.state_count());
+
+    numvec sourcevalue = valuefunction;         // value function to compute the update
+    numvec targetvalue = sourcevalue;           // value function to hold the updated values
 
     numvec residuals(states.size());
 
@@ -489,7 +464,8 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         // update policies
         #pragma omp parallel for
         for(auto s = 0l; s < long(states.size()); s++){
-            prec_t newvalue = response.policy_update(solution, states[s], s, sourcevalue, discount);
+            prec_t newvalue;
+            tie(newvalue, policy[s]) = response.policy_update(states[s], s, sourcevalue, discount);
             residuals[s] = abs(sourcevalue[s] - newvalue);
             targetvalue[s] = newvalue;
         }
@@ -511,7 +487,7 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
             #pragma omp parallel for
             for(auto s = 0l; s < (long) states.size(); s++){
-                prec_t newvalue = response.compute_value(solution, states[s], s, sourcevalue, discount);
+                prec_t newvalue = response.compute_value(policy[s], states[s], sourcevalue, discount);
                 residuals[s] = abs(sourcevalue[s] - newvalue);
                 targetvalue[s] = newvalue;
             }
@@ -519,10 +495,8 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         }
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
-    solution.valuefunction = move(targetvalue);
-    solution.residual = residual_pi;
-    solution.iterations = i;
-    return solution;
+
+    return Solution(move(targetvalue), move(policy),residual_pi,i);
 }
 
 // **************************************************************************
@@ -550,7 +524,7 @@ in the temporal order.
 \returns Solution that can be used to compute the total return, or the optimal policy.
 */
 template<class SType>
-inline PlainBellman::solution_type
+inline Solution<long>
 solve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
@@ -579,7 +553,7 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType>
-inline PlainBellman::solution_type
+inline Solution<long>
 solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,

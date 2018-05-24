@@ -27,72 +27,38 @@
 
 #include <functional>
 
-namespace craam::algorithms{
+namespace craam::algorithms::nats{
 
 // *******************************************************
 // Nature definitions
 // *******************************************************
 
-/**
-Function representing constraints on nature for s,a-rectangular nature.
-The function computes the best response of nature and can be used in value iteration.
-
-This function represents a nature which computes (in general) a randomized
-policy (response). If the response is always deterministic, it may be better
-to define and use a nature that computes and uses a deterministic response.
-
-The parameters are the q-values v, the reference distribution p, and the threshold.
-The function returns the worst-case solution and the objective value. The threshold can
-be used to determine the desired robustness of the solution.
-
-The value of threshold T may be a single number, or could also be a set of weights for
-each state and action.
-
-@see NatureResponseS
-*/
-template<class T>
-using NatureResponse = pair<numvec, prec_t> (*)(numvec const& v, numvec const& p, T threshold);
-
-/**
-Represents an instance of nature and the corresponding threshold value
-which can be used to directly compute the response.
-*/
-template<class T>
-using NatureInstance = pair<NatureResponse<T>, T>;
-
-
-/**
-Function representing constraints on nature for s-rectangular nature.
-The function computes the best response of nature and can be used in value iteration.
-
-This function represents a nature which computes (in general) a randomized
-policy (response). If the response is always deterministic, it may be better
-to define and use a nature that computes and uses a deterministic response.
-
-The parameters are the q-values v, the reference distribution p, and the threshold.
-The function returns the worst-case solution and the objective value. The threshold can
-be used to determine the desired robustness of the solution.
-
-The value of threshold T may be a single number, or could also be a set of weights for
-each state and action.
-
-@see NatureResponse
-*/
-template<class T>
-using NatureResponseS = tuple<numvec, numvec, prec_t> (*)(numvec const& v, numvec const& p, T threshold);
-
-/**
-Represents an instance of nature and the corresponding threshold value
-which can be used to directly compute the response.
-*/
-template<class T>
-using NatureInstanceS = pair<NatureResponseS<T>, T>;
 
 /// L1 robust response
-inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
+/*inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
     assert(v.size() == p.size());
     return worstcase_l1(v,p,threshold);
-}
+}*/
+
+/**
+ * L1 robust response
+ *
+ * @see rsolve_mpi, rsolve_vi
+ */
+class robust_l1{
+protected:
+    vector<numvec> thresholds;
+public:
+    robust_l1(vector<numvec> thresholds) : thresholds(move(thresholds)) {};
+
+    pair<numvec, prec_t> operator() (long stateid,long actionid,
+                const numvec& nominalprob,const numvec& zfunction) const{
+        assert(stateid > 0 && stateid < thresholds.size());
+        assert(actionid > 0 && actionid < thresholds[stateid].size());
+
+        return worstcase_l1(zfunction,nominalprob,thresholds[stateid][actionid]);
+    }
+};
 
 #ifdef GUROBI_USE
 /// L1 robust response using gurobi (slower!)
@@ -131,7 +97,6 @@ inline vec_scal_t robust_l1_w_gurobi(const numvec& v, const numvec& p, tuple<GRB
 }
 #endif
 
-
 /// L1 optimistic response
 inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
     assert(v.size() == p.size());
@@ -141,7 +106,7 @@ inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t thresho
     return make_pair(result.first, -result.second);
 }
 
-/// worst outcome, threshold is ignored
+/// Absolutely worst outcome, the threshold is ignored
 template<class T>
 inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
     //assert(v.size() == p.size());
@@ -151,7 +116,7 @@ inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
     return make_pair(dist,v[index]);
 }
 
-/// best outcome, threshold is ignored
+/// Absolutely best outcome, the threshold is ignored
 template<class T>
 inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec&, T){
     //assert(v.size() == p.size());

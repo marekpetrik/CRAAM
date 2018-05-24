@@ -32,13 +32,9 @@
 #include <limits>
 #include <string>
 
-
-
 namespace craam {
 
 using namespace std;
-
-
 
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
