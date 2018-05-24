@@ -27,6 +27,7 @@
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
 #include "craam/algorithms/robust_values.hpp"
+#include "craam/algorithms/nature_response.hpp"
 #include "craam/algorithms/occupancies.hpp"
 
 #include <rm/range.hpp>
@@ -519,10 +520,11 @@ public:
             update_importance_weights(importanceweights);
 
             // compute solution of the robust MDP with the new weights
-            auto&& s = mpi_jac(robust_mdp, discount, numvec(0), uniform_nature(robust_mdp, robust_l1, threshold));
+            auto bu = SARobustBellman<WeightedRobustState>(nats::robust_l1u(threshold));
+            auto&& s = mpi_jac(robust_mdp, discount, numvec(0), bu);
 
             // update the policy for the underlying states
-            obspol = s.policy;
+            obspol = craam::internal::unzip(s.policy).first;
 
             // map the observation policy to the individual states
             obspol2statepol(obspol, statepol);

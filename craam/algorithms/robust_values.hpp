@@ -53,7 +53,6 @@ of nature that is provided.
 \param discount Discount factor
 \param nature Method used to compute the response of nature.
 */
-template<class T>
 inline vec_scal_t value_action(const RegularAction& action, const numvec& valuefunction,
                         prec_t discount, long stateid, long actionid, const SANature& nature){
 
@@ -86,7 +85,6 @@ Does not work when the number of outcomes is zero.
 
 \return Outcome distribution and the mean value for the choice of the nature
  */
-template<class T>
 inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction,
                                 prec_t discount, long stateid, long actionid, const SANature& nature) {
 
@@ -114,14 +112,16 @@ Computes the value of a fixed action and any response of nature.
 \param state State to compute the value for
 \param valuefunction Value function to use in computing value of states.
 \param discount Discount factor
+\param actionid Which action to take
+\param stateid Which state it is
 \param nature Instance of a nature optimizer
 
 \return Value of state, 0 if it's terminal regardless of the action index
 */
-template<class AType, class T>
+template<class SType>
 inline vec_scal_t
-value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t discount,
-                              long actionid, const SANature& nature) {
+value_fix_state(const SType& state, numvec const& valuefunction, prec_t discount,
+                              long actionid, long stateid, const SANature& nature) {
    // this is the terminal state, return 0
     if(state.is_terminal()) return make_pair(numvec(0),0);
 
@@ -133,7 +133,7 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
     // cannot assume that the action is valid
     if(!state.is_valid(actionid)) throw invalid_argument("Cannot take an invalid action");
 
-    return value_action(action, valuefunction, discount, nature);
+    return value_action(action, valuefunction, discount, stateid, actionid, nature);
 }
 
 /**
@@ -151,9 +151,9 @@ When there are no actions, the state is assumed to be terminal and the return is
 
 \return (Action index, outcome index, value), 0 if it's terminal regardless of the action index
 */
-template<typename AType, typename T>
+template<typename SType>
 inline ind_vec_scal_t
-value_max_state(const SAState<AType>& state, const numvec& valuefunction,
+value_max_state(const SType& state, const numvec& valuefunction,
                 prec_t discount, long stateid, const SANature& nature) {
 
     // can finish immediately when the state is terminal
@@ -174,7 +174,7 @@ value_max_state(const SAState<AType>& state, const numvec& valuefunction,
         // skip invalid state.get_actions()
         if(!state.is_valid(i)) continue;
 
-        auto value = value_action(action, valuefunction, discount, stateid, i, nature);
+        auto value = value_action(action, valuefunction, discount, stateid, long(i), nature);
         if(value.second > maxvalue){
             maxvalue = value.second;
             result = long(i);
@@ -202,7 +202,7 @@ solve robust MDP objectives.
 
 @see PlainBellman for a plain implementation
 */
-template<class SType>
+template<class SType = RegularState>
 class SARobustBellman  {
 protected:
 
@@ -244,18 +244,22 @@ public:
                             const numvec& valuefunction, prec_t discount) const{
         prec_t newvalue = 0;
         policy_type action;
+        numvec transition;
 
         // check whether this state should only be evaluated or also optimized
         // optimizing action
         if(initial_policy.empty() || initial_policy[stateid] < 0){
-            tie(action, action, newvalue) =
+            long actionid;
+            tie(actionid, transition, newvalue) =
                     value_max_state(state, valuefunction, discount, stateid, nature);
+            action = make_pair(actionid,transition);
         }
         // fixed-action, do not copy
         else{
             prec_t newvalue;
             const long actionid = initial_policy[stateid];
-            tie(action, newvalue) = value_fix_state(state, valuefunction, discount, actionid, nature);
+            tie(transition, newvalue) = value_fix_state(state, valuefunction, discount, actionid, stateid, nature);
+            action = make_pair(actionid,transition);
         }
         return {newvalue, action};
     }
@@ -316,8 +320,8 @@ inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC){
 
-    return vi_gs<SType, SARobustBellman<SType>>(mdp, discount, move(valuefunction), nature,
-            SARobustBellman<SType>(policy), iterations, maxresidual);
+    return vi_gs<SType, SARobustBellman<SType>>(mdp, discount, move(valuefunction),
+            SARobustBellman<SType>(nature,policy), iterations, maxresidual);
 }
 
 
@@ -350,8 +354,8 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC,
                 bool print_progress=false) {
 
-    return mpi_jac<SType, SARobustBellman<SType>>(mdp, discount, valuefunction, nature,
-                    SARobustBellman<SType>(policy),
+    return mpi_jac<SType, SARobustBellman<SType>>(mdp, discount, valuefunction,
+                    SARobustBellman<SType>(nature,policy),
                     iterations_pi, maxresidual_pi,
                     iterations_vi, maxresidual_vi, 
                     print_progress);

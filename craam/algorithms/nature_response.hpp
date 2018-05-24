@@ -47,16 +47,34 @@ namespace craam::algorithms::nats{
  */
 class robust_l1{
 protected:
-    vector<numvec> thresholds;
+    vector<numvec> budgets;
 public:
-    robust_l1(vector<numvec> thresholds) : thresholds(move(thresholds)) {};
+    robust_l1(vector<numvec> budgets) : budgets(move(budgets)) {};
 
     pair<numvec, prec_t> operator() (long stateid,long actionid,
                 const numvec& nominalprob,const numvec& zfunction) const{
         assert(stateid > 0 && stateid < thresholds.size());
         assert(actionid > 0 && actionid < thresholds[stateid].size());
 
-        return worstcase_l1(zfunction,nominalprob,thresholds[stateid][actionid]);
+        return worstcase_l1(zfunction,nominalprob,budgets[stateid][actionid]);
+    }
+};
+
+/**
+ * L1 robust response with a untiform budget/threshold
+ *
+ * @see rsolve_mpi, rsolve_vi
+ */
+class robust_l1u{
+protected:
+    prec_t budget;
+public:
+    robust_l1u(prec_t budget) : budget(move(budget)) {};
+
+    pair<numvec, prec_t> operator() (long stateid,long actionid,
+                const numvec& nominalprob,const numvec& zfunction) const{
+
+        return worstcase_l1(zfunction,nominalprob,budget);
     }
 };
 

@@ -119,6 +119,7 @@ vector<size_t> sort_indexes_desc(vector<T> const& v){
 /**
  * @brief Computes the l1 norm between two vectors of equal length
  */
+inline
 prec_t l1norm(numvec p1, numvec p2){
     prec_t result = 0;
     for(size_t i=0; i < p1.size(); i++)
@@ -134,6 +135,7 @@ prec_t l1norm(numvec p1, numvec p2){
  * @param N Number of points
  */
 template <typename T = double>
+inline
 std::vector<T> linspace(T a, T b, size_t N) {
     T h = (b - a) / static_cast<T>(N-1);
     std::vector<T> xs(N);
@@ -149,6 +151,7 @@ namespace internal{
 
 /// Zips two vectors
 template <class T1, class T2>
+inline
 vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
 
     assert(v1.size() == v2.size());
@@ -161,6 +164,7 @@ vector<pair<T1,T2>> zip(const vector<T1>& v1, const vector<T2>& v2){
 
 /// Zips two vectors of vectors
 template <class T1, class T2>
+inline
 vector<vector<pair<T1,T2>>> zip(const vector<vector<T1>>& v1, const vector<vector<T2>>& v2){
 
     assert(v1.size() == v2.size());
@@ -173,6 +177,7 @@ vector<vector<pair<T1,T2>>> zip(const vector<vector<T1>>& v1, const vector<vecto
 
 /// Zips a single value with a vector
 template <class T1, class T2>
+inline
 vector<pair<T1,T2>> zip(const T1& v1, const vector<T2>& v2){
 
     vector<pair<T1,T2>> result(v2.size());
@@ -184,6 +189,7 @@ vector<pair<T1,T2>> zip(const T1& v1, const vector<T2>& v2){
 
 /// Zips a single value with a vector of vectors
 template <class T1, class T2>
+inline
 vector<vector<pair<T1,T2>>> zip(const T1& v1, const vector<vector<T2>>& v2){
 
     vector<vector<pair<T1,T2>>> result(v2.size());
@@ -193,7 +199,18 @@ vector<vector<pair<T1,T2>>> zip(const T1& v1, const vector<vector<T2>>& v2){
     return result;
 }
 
+template<class T1, class T2>
+inline
+pair<vector<T1>,vector<T2>> unzip(const vector<pair<T1,T2>>& values){
+    vector<T1> first; first.reserve(values.size());
+    vector<T2> second; second.reserve(values.size());
 
+    for(const auto& x: values){
+        first.push_back(x.first);
+        second.push_back(x.second);
+    }
+    return {first, second};
+}
 
 }
 

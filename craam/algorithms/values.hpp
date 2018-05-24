@@ -248,7 +248,7 @@ struct Solution {
     Solution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {}
 
     /// Empty solution for a problem with statecount states
-    Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, -1), residual(-1),iterations(-1) {}
+    Solution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount), residual(-1), iterations(-1) {}
 
     /// Empty solution for a problem with a given value function and policy
     Solution(numvec valuefunction, vector<PolicyType> policy, prec_t residual = -1, long iterations = -1) :
@@ -313,7 +313,7 @@ public:
             tie(action, newvalue) = value_max_state(state, valuefunction, discount);
             return make_pair(newvalue,action);
         }else{// fixed-action, do not copy
-            return value_fix_state(state, valuefunction, discount, initial_policy[stateid]);
+            return {value_fix_state(state, valuefunction, discount, initial_policy[stateid]),initial_policy[stateid]};
         }
     }
 
@@ -450,7 +450,6 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
 
     size_t i; // defined here to be able to report the number of iterations
 
-
     for(i = 0; i < iterations_pi; i++){
 
         if(print_progress)
@@ -495,8 +494,7 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
         }
         if(print_progress) cout << endl << "    Residual (fixed policy): " << residual_vi << endl << endl;
     }
-
-    return Solution(move(targetvalue), move(policy),residual_pi,i);
+    return Solution<policy_type>(move(targetvalue), move(policy),residual_pi,i);
 }
 
 // **************************************************************************
