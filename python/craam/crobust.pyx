@@ -450,15 +450,42 @@ cdef class MDP:
             Any transition probability less than the threshold is ignored leading to 
             sparse representations. If not provided, no transitions are ignored
         """
+        self.from_matrices_with_reward_targets(transitions, np.expand_dims(rewards, 1).repeat(rewards.shape[0], 1), ignorethreshold)
+        
+
+    cpdef from_matrices_with_reward_targets(self, np.ndarray[double,ndim=3] transitions, np.ndarray[double,ndim=3] rewards, \
+        double ignorethreshold = 1e-10):
+        """
+        Constructs an MDP from transition matrices, with uniform
+        number of actions for each state. 
+        
+        The function replaces the current value of the object.
+        
+        Parameters
+        ----------
+        transitions : np.ndarray[double,double,double] (n x n x m)
+            The last dimension represents the actions as defined by
+            the parameter `action`. The first dimension represents
+            the originating state in a transition and the second dimension represents
+            the target state.
+        rewards : np.ndarray[double, double, double] (n x n x m)
+            The rewards for each state, target state, and action
+            ie rewards[3][2][5] is the reward for transitioning from state 3 to state 2 using action 5
+        ignorethreshold : double, optional
+            Any transition probability less than the threshold is ignored leading to 
+            sparse representations. If not provided, no transitions are ignored
+        """
+
         cdef long actioncount = transitions.shape[2]
         cdef long statecount = transitions.shape[0]
 
         # erase the current MDP object
         self.thisptr = make_shared[CMDP](statecount)
 
-        if actioncount != rewards.shape[1]:
+        if actioncount != rewards.shape[2]:
             raise ValueError('The number of actions must match 2nd dimension of rewards.')
-        if statecount != transitions.shape[1] or statecount != rewards.shape[0]:
+        if statecount != transitions.shape[1] or statecount != rewards.shape[0] or \
+           statecount != rewards.shape[1]:
             raise ValueError('The number of states in transitions and rewards is inconsistent.')
 
         cdef long aoindex, fromid, toid
@@ -472,7 +499,7 @@ cdef class MDP:
                     transitionprob = transitions[fromid,toid,aoindex]
                     if transitionprob <= ignorethreshold:
                         continue
-                    rewardval = rewards[fromid,aoindex]
+                    rewardval = rewards[fromid,toid,aoindex]
                     self.add_transition(fromid,actionid,toid,transitionprob,rewardval)
 
     cpdef to_matrices(self):
