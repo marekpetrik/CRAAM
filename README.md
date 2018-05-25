@@ -91,10 +91,7 @@ The library has minimal dependencies and was tested on Linux. It has not been te
 -   [CMake](http://cmake.org/): 3.1.0 to build tests, command line executable, and the documentation
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
--   [Boost](http://boost.org) for compiling and running unit tests
-``` bash
-    $ sudo yum install boost-devel
-```
+-   [Boost](http://boost.org) for compiling and running unit tests (`boost-devel` package)
 
 ### Documentation
 
