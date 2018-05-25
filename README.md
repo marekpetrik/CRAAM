@@ -43,7 +43,7 @@ Second, install Eigen in the same directory.
     $ wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
     $ tar xzf 3.3.4.tar.gz
     $ rm 3.3.4.tar.gz
-    $ mv eigen-eigen-5a0156e40feb/Eigen ./include
+    $ mv eigen-eigen-5a0156e40feb/Eigen ../include
 ```
 
 
@@ -91,7 +91,7 @@ The library has minimal dependencies and was tested on Linux. It has not been te
 -   [CMake](http://cmake.org/): 3.1.0 to build tests, command line executable, and the documentation
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
--   [Boost](http://boost.org) for compiling and running unit tests
+-   [Boost](http://boost.org) for compiling and running unit tests (`boost-devel` package)
 
 ### Documentation
 
