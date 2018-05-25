@@ -53,8 +53,8 @@ public:
 
     pair<numvec, prec_t> operator() (long stateid,long actionid,
                 const numvec& nominalprob,const numvec& zfunction) const{
-        assert(stateid > 0 && stateid < thresholds.size());
-        assert(actionid > 0 && actionid < thresholds[stateid].size());
+        assert(stateid > 0 && stateid < budgets.size());
+        assert(actionid > 0 && actionid < budgets[stateid].size());
 
         return worstcase_l1(zfunction,nominalprob,budgets[stateid][actionid]);
     }
@@ -71,12 +71,86 @@ protected:
 public:
     robust_l1u(prec_t budget) : budget(move(budget)) {};
 
-    pair<numvec, prec_t> operator() (long stateid,long actionid,
+    pair<numvec, prec_t> operator() (long,long,
                 const numvec& nominalprob,const numvec& zfunction) const{
 
         return worstcase_l1(zfunction,nominalprob,budget);
     }
 };
+
+/**
+ * L1 robust response
+ *
+ * @see rsolve_mpi, rsolve_vi
+ */
+class optimistic_l1{
+protected:
+    vector<numvec> budgets;
+public:
+    optimistic_l1(vector<numvec> budgets) : budgets(move(budgets)) {};
+
+    pair<numvec, prec_t> operator() (long stateid,long actionid,
+                const numvec& nominalprob,const numvec& zfunction) const{
+        assert(stateid > 0 && stateid < budgets.size());
+        assert(actionid > 0 && actionid < budgets[stateid].size());
+        assert(nominalprob.size() == zfunction.size());
+
+        numvec minusv(zfunction.size());
+        transform(begin(zfunction), end(zfunction), begin(minusv), negate<prec_t>());
+        auto&& result = worstcase_l1(minusv,nominalprob,budgets[stateid][actionid]);
+        return make_pair(result.first, -result.second);
+    }
+};
+
+/**
+ * L1 robust response with a untiform budget/threshold
+ *
+ * @see rsolve_mpi, rsolve_vi
+ */
+class optimistic_l1u{
+protected:
+    prec_t budget;
+public:
+    optimistic_l1u(prec_t budget) : budget(move(budget)) {};
+
+    pair<numvec, prec_t> operator() (long,long,
+                const numvec& nominalprob,const numvec& zfunction) const{
+
+        assert(nominalprob.size() == zfunction.size());
+
+        numvec minusv(zfunction.size());
+        transform(begin(zfunction), end(zfunction), begin(minusv), negate<prec_t>());
+        auto&& result = worstcase_l1(minusv,nominalprob,budget);
+        return make_pair(result.first, -result.second);
+    }
+};
+
+/// Absolutely worst outcome
+struct robust_unbounded{
+    pair<numvec, prec_t> operator() (long,long,
+                const numvec&, const numvec& zfunction)const{
+
+        //assert(v.size() == p.size());
+        numvec dist(zfunction.size(),0.0);
+        size_t index = size_t(min_element(begin(zfunction), end(zfunction)) - begin(zfunction));
+        dist[index] = 1;
+        return make_pair(dist,zfunction[index]);
+    }
+};
+
+/// Absolutely best outcome
+struct optimistic_unbounded{
+    pair<numvec, prec_t> operator() (long,long,
+                const numvec&, const numvec& zfunction)const{
+
+        //assert(v.size() == p.size());
+        numvec dist(zfunction.size(),0.0);
+        size_t index = size_t(max_element(begin(zfunction), end(zfunction)) - begin(zfunction));
+        dist[index] = 1;
+        return make_pair(dist,zfunction[index]);
+    }
+};
+
 
 #ifdef GUROBI_USE
 /// L1 robust response using gurobi (slower!)
@@ -114,35 +188,6 @@ inline vec_scal_t robust_l1_w_gurobi(const numvec& v, const numvec& p, tuple<GRB
     return worstcase_l1_w_gurobi(grb,v,p,weights,budget);
 }
 #endif
-
-/// L1 optimistic response
-inline vec_scal_t optimistic_l1(const numvec& v, const numvec& p, prec_t threshold){
-    assert(v.size() == p.size());
-    numvec minusv(v.size());
-    transform(begin(v), end(v), begin(minusv), negate<prec_t>());
-    auto&& result = worstcase_l1(minusv,p,threshold);
-    return make_pair(result.first, -result.second);
-}
-
-/// Absolutely worst outcome, the threshold is ignored
-template<class T>
-inline vec_scal_t robust_unbounded(const numvec& v, const numvec&, T){
-    //assert(v.size() == p.size());
-    numvec dist(v.size(),0.0);
-    size_t index = size_t(min_element(begin(v), end(v)) - begin(v));
-    dist[index] = 1;
-    return make_pair(dist,v[index]);
-}
-
-/// Absolutely best outcome, the threshold is ignored
-template<class T>
-inline vec_scal_t optimistic_unbounded(const numvec& v, const numvec&, T){
-    //assert(v.size() == p.size());
-    numvec dist(v.size(),0.0);
-    size_t index = size_t(max_element(begin(v), end(v)) - begin(v));
-    dist[index] = 1;
-    return make_pair(dist,v[index]);
-}
 
 
 }

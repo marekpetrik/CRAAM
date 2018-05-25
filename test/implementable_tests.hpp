@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-    auto&& so = mpi_jac(rmdp, 0.9, iv, uniform_nature(rmdp, optimistic_unbounded, 0.0), 100, 0.0, 10, 0.0);
+    auto&& so = mpi_jac(rmdp, 0.9, iv, SARobustBellman<WeightedRobustState>(nats::optimistic_unbounded()), 100, 0.0, 10, 0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
-    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0), 100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::robust_unbounded()), 100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }
 
@@ -154,10 +154,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     vector<prec_t> target_v_rob{12.0,12.0};
 
     BOOST_TEST_CHECKPOINT("Solving RMDP");
-    auto&& so = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,optimistic_unbounded, 0.0),100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::optimistic_unbounded()),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 
-    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0),100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::robust_unbounded()),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(sr.valuefunction, target_v_rob, 1e-3);
 }
 

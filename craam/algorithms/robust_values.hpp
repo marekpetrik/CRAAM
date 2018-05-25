@@ -85,7 +85,7 @@ Does not work when the number of outcomes is zero.
 
 \return Outcome distribution and the mean value for the choice of the nature
  */
-inline vec_scal_t value_action(const WeightedOutcomeAction& action, numvec const& valuefunction,
+inline vec_scal_t value_action(const WeightedOutcomeAction& action, const numvec& valuefunction,
                                 prec_t discount, long stateid, long actionid, const SANature& nature) {
 
     assert(action.get_distribution().size() == action.get_outcomes().size());
@@ -161,7 +161,6 @@ value_max_state(const SType& state, const numvec& valuefunction,
         return make_tuple(-1,numvec(),0);
 
     // make sure that the number of natures is the same as the number of actions
-    assert(natures.size() == state.size());
 
     prec_t maxvalue = -numeric_limits<prec_t>::infinity();
 
@@ -210,8 +209,9 @@ protected:
     SANature nature;
 
 public:
-    // action of the decision maker, distribution of nature
+    /// action of the decision maker, distribution of nature
     using policy_type = pair<long,numvec>;
+    using state_type = SType;
 
     /**
     Constructs the object from a policy and a specification of nature. Action are optimized

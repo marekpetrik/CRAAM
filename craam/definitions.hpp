@@ -61,6 +61,9 @@ using ind_vec_scal_t = tuple<prec_t, numvec, prec_t> ;
 /** Default solution precision */
 constexpr prec_t SOLPREC = 0.0001;
 
+/** Default solution precision */
+constexpr prec_t EPSILON = 1e-6;
+
 /** Default number of iterations */
 constexpr unsigned long MAXITER = 100000;
 

@@ -26,6 +26,9 @@ namespace internal{
     }
 
     /// Helper function to deal with variable indexing
+    /// \param state
+    /// \param index
+    /// \param policies
     template<class SType>
     inline prec_t mean_reward_state(const SType& state, long index, const pair<indvec,vector<numvec>>& policies){
         return state.mean_reward(policies.first[index], policies.second[index]);
@@ -82,9 +85,10 @@ Constructs the rewards vector for each state for the RMDP.
 \tparam Policy Type of the policy. Either a single policy for
                 the standard MDP evaluation, or a pair of a deterministic 
                 policy and a randomized policy of the nature
+
 \param rmdp Regular or robust MDP
 \param policies The policy (indvec) or the pair of the policy and the policy
-        of nature (pair<indvec,vector<numvec> >). The nature is typically 
+        of nature (pair<indvec,vector<numvec> >). The nature is typically
         a randomized policy
  */
 template<typename SType, typename Policy>

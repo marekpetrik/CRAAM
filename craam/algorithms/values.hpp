@@ -28,6 +28,7 @@ Provides abstractions that allow generalization to both robust and regular MDPs.
 
 #include "craam/RMDP.hpp"
 
+
 #include <rm/range.hpp>
 #include <functional>
 #include <type_traits>
@@ -280,11 +281,12 @@ Many of the methods are parametrized by the type of the state.
 The class also allows to use an initial policy specification. See the constructor for the
 definition.
 */
+template<class SType = RegularState>
 class PlainBellman{
-
 public:
     /// Provides the type of policy for each state (int represents a deterministic policy)
     using policy_type = long;
+    using state_type = SType;
 
     /// Constructs the update with no constraints on the initial policy
     PlainBellman() : initial_policy(0) {}
@@ -300,10 +302,8 @@ public:
      *  Computes the Bellman update and returns the optimal action.
      *  \returns New value for the state and the policy
      */
-    template<class SType>
     pair<prec_t,policy_type> policy_update(const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
-        assert(stateid < long(solution.policy.size()));
 
         // check whether this state should only be evaluated
         if(initial_policy.empty() || initial_policy[stateid] < 0){    // optimizing
@@ -321,7 +321,6 @@ public:
      *  Computes value function update using the current policy
      * \returns New value for the state
      */
-    template<class SType>
     prec_t compute_value(const policy_type& action, const SType& state, const numvec& valuefunction,
                             prec_t discount) const{
 
@@ -362,17 +361,22 @@ in the temporal order.
 
 \returns Solution that can be used to compute the total return, or the optimal policy.
  */
-template<class SType, class ResponseType = PlainBellman>
+template<class SType, class ResponseType = PlainBellman<SType>>
 inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
-                        numvec valuefunction=numvec(0), const ResponseType& response = PlainBellman(),
+                        numvec valuefunction=numvec(0), const ResponseType& response = PlainBellman<SType>(),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
+
+    static_assert(std::is_same<SType,typename ResponseType::state_type>::value, "SType in vi_gs and the ResponseType passed to it must be the same");
 
     using policy_type = typename ResponseType::policy_type;
 
     const auto& states = mdp.get_states();
     // just quit if there are no states
     if( mdp.state_count() == 0) return Solution<policy_type>(0);
+    if(valuefunction.empty()){
+        valuefunction.resize(mdp.state_count(), 0.0);
+    }
 
     vector<policy_type> policy(mdp.state_count());
 
@@ -385,7 +389,7 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
 
         for(size_t s = 0l; s < states.size(); s++){
             prec_t newvalue;
-            tie(newvalue, policy[s]) = response.policy_update(states[s], s, valuefunction, discount);
+            tie(newvalue, policy[s]) = response.policy_update(states[s], long(s), valuefunction, discount);
 
             residual = max(residual, abs(valuefunction[s] - newvalue));
             valuefunction[s] = newvalue;
@@ -423,12 +427,14 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 
 \return Computed (approximate) solution
  */
-template<class SType, class ResponseType = PlainBellman>
+template<class SType, class ResponseType = PlainBellman<SType>>
 inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
-                const numvec& valuefunction=numvec(0), const ResponseType& response = PlainBellman(),
+                const numvec& valuefunction=numvec(0), const ResponseType& response = PlainBellman<SType>(),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
+
+    static_assert(std::is_same<SType,typename ResponseType::state_type>::value, "SType in mpi_jac and the ResponseType passed to it must be the same");
 
     using policy_type = typename ResponseType::policy_type;
 
@@ -441,6 +447,8 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
     vector<policy_type> policy(mdp.state_count());
 
     numvec sourcevalue = valuefunction;         // value function to compute the update
+    // resize if the the value function is empty and initialize to 0
+    if(sourcevalue.empty()) sourcevalue.resize(mdp.state_count(),0.0);
     numvec targetvalue = sourcevalue;           // value function to hold the updated values
 
     numvec residuals(states.size());
@@ -558,7 +566,7 @@ solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
 
-    return mpi_jac<SType, PlainBellman>(mdp, discount, valuefunction, PlainBellman(policy),
+    return mpi_jac<SType, PlainBellman<SType>>(mdp, discount, valuefunction, PlainBellman<SType>(policy),
                     iterations_pi, maxresidual_pi,
                      iterations_vi, maxresidual_vi, 
                      print_progress);

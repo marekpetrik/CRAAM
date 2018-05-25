@@ -193,7 +193,7 @@ public:
     \return Discounted return of the policy
     */
     prec_t total_return(prec_t discount, prec_t precision=SOLPREC) const{
-        auto&& sol = mpi_jac(*mdp, discount, numvec(0), PlainBellman(), MAXITER, precision);
+        auto&& sol = mpi_jac(*mdp, discount, numvec(0), PlainBellman<RegularState>(), MAXITER, precision);
         return sol.total_return(initial);
     }
 

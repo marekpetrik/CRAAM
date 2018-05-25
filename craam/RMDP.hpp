@@ -209,6 +209,9 @@ protected:
 
 public:
 
+    /// Type of the state
+    using state_type = SType;
+
     /** Decision-maker's policy: Which action to take in which state.  */
     typedef indvec policy_det;
     /** Nature's policy: Which outcome to take in which state.  */
