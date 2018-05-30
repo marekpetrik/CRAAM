@@ -49,6 +49,9 @@ cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
     ctypedef vector[double] numvec
     ctypedef vector[long] indvec
     ctypedef unsigned long size_t
+    ctypedef vector[prec_t] prob_list_t
+    ctypedef vector[prob_list_t] prob_matrix_t
+
                                             
     cdef cppclass CTransition "craam::Transition":
         CTransition() 
@@ -925,6 +928,9 @@ cdef extern from "craam/Simulation.hpp" namespace 'craam::msen' nogil:
     cdef cppclass ModelDeterministicPolicy(Policy):
         ModelDeterministicPolicy(const ModelSimulator& sim, const indvec& actions);
 
+    cdef cppclass ModelStochasticPolicy(Policy):
+        ModelStochasticPolicy(const ModelSimulator& sim, const prob_matrix_t& actions_matrix);
+
     CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term, long seed);
     CDiscreteSamples simulate[Model](Model& sim, Policy pol, long horizon, long runs, long tran_limit, double prob_term);
 
@@ -1083,6 +1089,49 @@ cdef class SimulatorMDP:
         finally:
             del rp
 
+    def simulate_stochastic_policy(self, np.ndarray[double, ndim=2] policy, horizon, runs, tran_limit=0, prob_term=0.0):
+        """
+        Simulates a policy
+
+        Parameters
+        ----------
+        policy : np.ndarray[double, ndim=2]
+            Policy used for the simulation. Must be as long as
+            the number of states and as wide as the number of actions.
+            Each entry marks the probability to take the action given a state.
+            All probabilities for a given state should add up to zero or one (zero for terminal state)
+            policy[1,0] is the probability to select action 0 given state 1
+        horizon : int 
+            Simulation horizon
+        runs : int
+            Number of simulation runs
+        tran_limit : int, optional 
+            Limit on the total number of transitions generated
+            across all the runs. The simulation stops once 
+            this number is reached.
+        prob_term : double, optional
+            Probability of terminating after each transitions. Used
+            to simulate the discount factor.
+
+        Returns
+        -------
+        out : DiscreteSamples
+        """
+
+        if policy.shape[0] != self._state_count:
+            raise ValueError("Policy length must match the number of states " + str(self._state_count))
+
+        cdef ModelStochasticPolicy * rp = \
+                new ModelStochasticPolicy(dereference(self._thisptr), policy)
+        
+        try:
+            newsamples = DiscreteSamples()
+            newsamples._thisptr[0] = simulate[ModelSimulator](dereference(self._thisptr), dereference(rp), horizon, runs, tran_limit, prob_term);
+            return newsamples
+        finally:
+            del rp
+        pass
+        
 cdef extern from "craam/simulators/inventory_simulation.hpp" namespace 'craam::msen' nogil:
 
     cdef cppclass CInventorySimulator "craam::msen::InventorySimulator":

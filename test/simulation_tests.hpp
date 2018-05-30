@@ -132,7 +132,7 @@ public:
         return actions_list[index];
     }
     
-    vector<int> get_valid_actions(State state) const{
+    virtual vector<int> get_valid_actions(State state) const{
         return actions_list;
     }
 
@@ -152,6 +152,30 @@ public:
         return (abs(state) >= endstate);
     }
 };
+
+
+/** A counter that has bound states */
+class CounterBound : public Counter {
+private:
+    int min_state;
+    int max_state;
+    vector<int> min_state_actions;
+    vector<int> max_state_actions;
+
+public:
+    CounterBound(double success, int init_state, int min_state, int max_state, random_device::result_type seed = random_device{}())
+        : Counter(success, init_state, seed), min_state(min_state), max_state(max_state), min_state_actions({1}), max_state_actions({-1}) {};
+
+    virtual vector<int> get_valid_actions(State state) const{
+        if ( state == min_state )
+            return min_state_actions;
+        else if ( state == max_state )
+            return max_state_actions;
+        else
+            return Counter::get_valid_actions(state);
+    }
+};
+
 // Hash function for the Counter / CounterTerminal EState above
 namespace std{
     template<> struct hash<pair<int,int>>{
@@ -203,6 +227,26 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si_return ) {
     v = samples_returns.second;
     meanreturn = accumulate(v.begin(), v.end(), 0.0) / prec_t(v.size());
     BOOST_CHECK_CLOSE(meanreturn, 4.73684, 10.0);
+
+    // test stochastic policies
+    CounterBound stochastic_sim(0.9,0,0,2,1);
+    prob_matrix_t prob_matrix;
+    prob_list_t prob_list1;
+    prob_list_t prob_list2;
+    prob_list_t prob_list3;
+    prob_list1.push_back(1);
+    prob_list1.push_back(0);
+    prob_list2.push_back(0.6);
+    prob_list2.push_back(0.4);
+    prob_list3.push_back(0);
+    prob_list3.push_back(1);
+    prob_matrix.push_back(prob_list1);
+    prob_matrix.push_back(prob_list2);
+    prob_matrix.push_back(prob_list3);
+    samples_returns = simulate_return(stochastic_sim,1.0,StochasticPolicy<Counter>(sim,prob_matrix,1),1000,4,0.1,1);
+    v = samples_returns.second;
+    meanreturn = accumulate(v.begin(), v.end(), 0.0) / prec_t(v.size());
+    BOOST_CHECK_EQUAL(meanreturn, 3);
 
 }
 BOOST_AUTO_TEST_CASE(sampled_mdp_reward){

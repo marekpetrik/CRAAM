@@ -52,6 +52,12 @@ using numvec = vector<prec_t>;
 /** Default index vector */
 using indvec = vector<long>;
 
+/** Probability list */
+using prob_list_t = vector<prec_t>;
+
+/** Probability matrix */
+using prob_matrix_t = vector<prob_list_t>;
+
 /** Pair of a vector and a scalar */
 using vec_scal_t = pair<numvec, prec_t> ;
 

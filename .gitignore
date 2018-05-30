@@ -16,3 +16,5 @@ build
 /python/craam.egg-info
 /python/craam/crobust.cpp
 dist
+/python/craam/__pycache__
+*.so
