@@ -26,7 +26,7 @@
 
 #ifdef GUROBI_USE
 
-#include "gurobi_c++.h"
+#include "gurobi/gurobi_c++.h"
 #include <memory>
 
 namespace craam {

@@ -193,6 +193,9 @@ value_max_state(const SType& state, const numvec& valuefunction,
 // Helper classes to handle computing of the best response
 // **************************************************************************
 
+// Solution to an S,A rectangular robust problem
+using SARobustSolution = Solution<pair<long,numvec>>;
+
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
 various types of robust MDPs. It can be used in place of response in mpi_jac or vi_gs to 

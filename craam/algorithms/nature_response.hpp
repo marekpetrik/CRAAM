@@ -135,8 +135,8 @@ public:
      */
     pair<numvec, prec_t> operator() (long stateid,long actionid,
                 const numvec& nominalprob,const numvec& zfunction) const{
-        assert(stateid > 0 && stateid < budgets.size());
-        assert(actionid > 0 && actionid < budgets[stateid].size());
+        assert(stateid > 0 && stateid < long(budgets.size()));
+        assert(actionid > 0 && actionid < long(budgets[stateid].size()));
         assert(nominalprob.size() == zfunction.size());
 
         numvec minusv(zfunction.size());

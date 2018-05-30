@@ -266,6 +266,8 @@ struct Solution {
     };
 };
 
+/// A solution with a deterministic policy
+using DeterministicSolution = Solution<long>;
 
 // **************************************************************************
 // Helper classes to handle computing of the best response
@@ -530,12 +532,12 @@ in the temporal order.
 \returns Solution that can be used to compute the total return, or the optimal policy.
 */
 template<class SType>
-inline Solution<long>
+inline DeterministicSolution
 solve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
-   return vi_gs<SType, PlainBellman>(mdp, discount, move(valuefunction),
+   return vi_gs<SType, PlainBellman<SType>>(mdp, discount, move(valuefunction),
             PlainBellman(policy), iterations, maxresidual);
 }
 
@@ -559,7 +561,7 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType>
-inline Solution<long>
+inline DeterministicSolution
 solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,

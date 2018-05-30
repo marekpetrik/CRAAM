@@ -26,7 +26,7 @@
 #include <tuple>
 // if available, use gurobi
 #ifdef GUROBI_USE
-#include "gurobi_c++.h"
+#include "gurobi/gurobi_c++.h"
 #include <memory>   // unique_pointer for gurobi
 #include <cmath>    // pow in gurobi
 #endif

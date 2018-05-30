@@ -11,7 +11,6 @@ project (CRAAM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
-set (GUROBI_HOME "/home/marek/Software/gurobi")
 set (GUROBI_USE TRUE)
 
 # enable colors in the output
@@ -41,9 +40,9 @@ if(${Boost_FOUND} LESS 1)
 endif()
 
 
-find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "${GUROBI_HOME}/lib")
-find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi75.so PATHS "${GUROBI_HOME}/lib")
-find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "${GUROBI_HOME}/include")
+find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "lib/gurobi")
+find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi75.so PATHS "lib/gurobi")
+find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "include/gurobi")
 
 # DEBUG
 # Prints all variables (for debugging)

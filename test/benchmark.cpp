@@ -74,7 +74,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
     int iters; prec_t residual; indvec policy; numvec valuefunction;
 
     if(ambiguity.empty()) {
-        algorithms::Solution sol;
+        algorithms::DeterministicSolution sol;
         if(solver == Solver::MPI) {
             sol = algorithms::solve_mpi(mdp,discount,numvec(0),indvec(0),
                                         iterations,precision,iterations,precision);
@@ -91,48 +91,48 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
 
     }
     else if(ambiguity == "L1") {
-        algorithms::SolutionRobust sol;
+        algorithms::SARobustSolution sol;
 
         prec_t budget = options["budget"].as<prec_t>();
         numvecvec budgets = map_sa<prec_t>(mdp,
             [budget](const RegularState&,const RegularAction&){return budget;});
 
         if(solver == Solver::MPI) {
-            sol = algorithms::rsolve_mpi(mdp, discount, &algorithms::robust_l1, budgets, numvec(0), indvec(0),
+            sol = algorithms::rsolve_mpi(mdp, discount, algorithms::nats::robust_l1(budgets), numvec(0), indvec(0),
                                         iterations, precision, iterations, precision);
         } else if(solver == Solver::VI) {
-            sol = algorithms::rsolve_vi(mdp, discount, &algorithms::robust_l1, budgets, numvec(0), indvec(0),
+            sol = algorithms::rsolve_vi(mdp, discount, algorithms::nats::robust_l1(budgets), numvec(0), indvec(0),
                                        iterations, precision);
         } else {
             throw invalid_argument("Unknown solver type.");
         }
         iters = sol.iterations;
         residual = sol.residual;
-        policy = move(sol.policy);
+        policy = craam::internal::unzip(sol.policy).first;
         valuefunction = move(sol.valuefunction);
     }
     #ifdef GUROBI_USE
     else if(ambiguity == "L1g") {
-        algorithms::SolutionRobust sol;
+        algorithms::SARobustSolution sol;
 
         prec_t budget = options["budget"].as<prec_t>();
         numvecvec budgets = map_sa<prec_t>(mdp,
             [budget](const RegularState&,const RegularAction&){return  budget;});
 
         if(solver == Solver::MPI) {
-            sol = algorithms::rsolve_mpi(mdp, discount, &algorithms::robust_l1_g,
-                                        budgets, numvec(0), indvec(0),
+            sol = algorithms::rsolve_mpi(mdp, discount, algorithms::nats::robust_l1w_gurobi(budgets),
+                                        numvec(0), indvec(0),
                                         iterations, precision, iterations, precision);
         } else if(solver == Solver::VI) {
-            sol = algorithms::rsolve_vi(mdp, discount, &algorithms::robust_l1_g,
-                                        budgets, numvec(0), indvec(0),
+            sol = algorithms::rsolve_vi(mdp, discount, algorithms::nats::robust_l1w_gurobi(budgets),
+                                        numvec(0), indvec(0),
                                         iterations, precision);
         } else {
             throw invalid_argument("Unknown solver type.");
         }
         iters = sol.iterations;
         residual = sol.residual;
-        policy = move(sol.policy);
+        policy = craam::internal::unzip(sol.policy).first;
         valuefunction = move(sol.valuefunction);
     }
     #endif

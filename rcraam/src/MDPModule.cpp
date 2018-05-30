@@ -1,4 +1,4 @@
-#include <Rcpp.h>
+/*#include <Rcpp.h>
 #include "craam/RMDP.hpp"
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
@@ -61,3 +61,4 @@ RCPP_MODULE(class_MDP) {
 }
 
 
+*/
