@@ -1074,7 +1074,7 @@ BOOST_AUTO_TEST_CASE(test_knots_deviation){
             BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
         }
     }
-};
+}
 
 BOOST_AUTO_TEST_CASE(test_knots){
     // the nominal probability distribution
@@ -1099,7 +1099,7 @@ BOOST_AUTO_TEST_CASE(test_knots){
             BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
         }
     }
-};
+}
 
 BOOST_AUTO_TEST_CASE(test_knots_w){
     // the nominal probability distribution
@@ -1125,7 +1125,7 @@ BOOST_AUTO_TEST_CASE(test_knots_w){
             BOOST_CHECK_CLOSE((alpha*val1 + (1-alpha)*val2), val, 1e-3);
         }
     }
-};
+}
 
 /// tests weighted knots
 BOOST_AUTO_TEST_CASE(test_knots_wu){

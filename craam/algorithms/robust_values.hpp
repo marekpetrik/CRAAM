@@ -193,7 +193,6 @@ value_max_state(const SType& state, const numvec& valuefunction,
 // Helper classes to handle computing of the best response
 // **************************************************************************
 
-
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
 various types of robust MDPs. It can be used in place of response in mpi_jac or vi_gs to 
@@ -284,6 +283,96 @@ protected:
     const indvec initial_policy;
 };
 
+
+/**
+The class abstracts some operations of value / policy iteration in order to generalize to
+various types of robust MDPs. It can be used in place of response in mpi_jac or vi_gs to
+solve robust MDP objectives for s-rectangular ambiguity.
+
+@see PlainBellman for a plain implementation
+*/
+template<class SType = RegularState>
+class SRobustBellman  {
+protected:
+
+    /// Reference to the function that is used to call the nature
+    SNature nature;
+
+public:
+    /// action of the decision maker, distribution of nature
+    using policy_type = pair<long,numvec>;
+    using state_type = SType;
+
+    /**
+    Constructs the object from a policy and a specification of nature. Action are optimized
+    only in states in which policy is -1 (or < 0)
+    @param policy Index of the action to take for each state
+    @param nature Function that describes nature's response
+    */
+    SRobustBellman(SNature nature, indvec policy): nature(move(nature)),
+                    initial_policy(move(policy)) {};
+
+    /**
+    Constructs the object from a specification of nature. No decision maker's
+    policy is provided.
+    @param nature Function that describes nature's response
+    */
+    SRobustBellman(SNature nature) : nature(move(nature)),
+                    initial_policy(0) {};
+
+    /**
+    Computes the Bellman update and updates the action in the solution to the best response
+    It does not update the value function in the solution.
+    @param solution Solution to update
+    @param state State for which to compute the Bellman update
+    @param stateid  Index of the state
+    @param valuefunction Value function
+    @param discount Discount factor
+    @returns New value for the state
+     */
+    pair<prec_t, policy_type> policy_update(const SType& state, long stateid,
+                            const numvec& valuefunction, prec_t discount) const{
+        prec_t newvalue = 0;
+        policy_type action;
+        numvec transition;
+
+        // check whether this state should only be evaluated or also optimized
+        // optimizing action
+        if(initial_policy.empty() || initial_policy[stateid] < 0){
+            long actionid;
+            tie(actionid, transition, newvalue) =
+                    value_max_state(state, valuefunction, discount, stateid, nature);
+            action = make_pair(actionid,transition);
+        }
+        // fixed-action, do not copy
+        else{
+            prec_t newvalue;
+            const long actionid = initial_policy[stateid];
+            tie(transition, newvalue) = value_fix_state(state, valuefunction, discount, actionid, stateid, nature);
+            action = make_pair(actionid,transition);
+        }
+        return {newvalue, action};
+    }
+
+    /**
+    Computes value function using the provided policy. Used in policy evaluation.
+    @param solution Solution used to infer the current policy
+    @param state State for which to compute the Bellman update
+    @param stateid Index of the state
+    @param valuefunction Value function
+    @param discount Discount factor
+    @returns New value for the state
+    */
+    prec_t compute_value(const policy_type& action, const SType& state, const numvec& valuefunction,
+                            prec_t discount) const{
+        return value_fix_state(state, valuefunction, discount, action.first,
+                action.second);
+    }
+
+protected:
+    /// Partial policy specification (action -1 is ignored and optimized)
+    const indvec initial_policy;
+};
 
 // **************************************************************************
 // Wrapper methods
