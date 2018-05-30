@@ -5,7 +5,7 @@ worstcase_l1 <- function(z, q, t) {
     .Call(`_rcraam_worstcase_l1`, z, q, t)
 }
 
-solve <- function(mdp, algorithm) {
-    .Call(`_rcraam_solve`, mdp, algorithm)
+solve_mdp <- function(mdp, discount, algorithm) {
+    .Call(`_rcraam_solve_mdp`, mdp, discount, algorithm)
 }
 

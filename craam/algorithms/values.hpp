@@ -398,7 +398,7 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
         }
     }
 
-    return Solution(move(valuefunction), move(policy),residual,iterations);
+    return Solution(move(valuefunction), move(policy),residual,i);
 }
 
 
