@@ -77,7 +77,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         algorithms::DeterministicSolution sol;
         if(solver == Solver::MPI) {
             sol = algorithms::solve_mpi(mdp,discount,numvec(0),indvec(0),
-                                        iterations,precision,iterations,precision);
+                                        iterations,precision,iterations,0.5);
         } else if(solver == Solver::VI) {
             sol = algorithms::solve_vi(mdp,discount,numvec(0),indvec(0),
                                        iterations,precision);
@@ -99,7 +99,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
 
         if(solver == Solver::MPI) {
             sol = algorithms::rsolve_mpi(mdp, discount, algorithms::nats::robust_l1(budgets), numvec(0), indvec(0),
-                                        iterations, precision, iterations, precision);
+                                        iterations, precision, 0.5, precision);
         } else if(solver == Solver::VI) {
             sol = algorithms::rsolve_vi(mdp, discount, algorithms::nats::robust_l1(budgets), numvec(0), indvec(0),
                                        iterations, precision);
@@ -108,7 +108,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         }
         iters = sol.iterations;
         residual = sol.residual;
-        policy = craam::internal::unzip(sol.policy).first;
+        policy = unzip(sol.policy).first;
         valuefunction = move(sol.valuefunction);
     }
     #ifdef GUROBI_USE
@@ -122,7 +122,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         if(solver == Solver::MPI) {
             sol = algorithms::rsolve_mpi(mdp, discount, algorithms::nats::robust_l1w_gurobi(budgets),
                                         numvec(0), indvec(0),
-                                        iterations, precision, iterations, precision);
+                                        iterations, precision, 0.5, precision);
         } else if(solver == Solver::VI) {
             sol = algorithms::rsolve_vi(mdp, discount, algorithms::nats::robust_l1w_gurobi(budgets),
                                         numvec(0), indvec(0),
@@ -132,7 +132,7 @@ void solve_mdp(const cxxopts::Options& options, Solver solver){
         }
         iters = sol.iterations;
         residual = sol.residual;
-        policy = craam::internal::unzip(sol.policy).first;
+        policy = unzip(sol.policy).first;
         valuefunction = move(sol.valuefunction);
     }
     #endif
@@ -226,7 +226,7 @@ int main(int argc, char * argv []){
 
     try {
         options.parse(argc,argv);
-    } catch (cxxopts::OptionException oe) {
+    } catch (const cxxopts::OptionException& oe) {
         cout << oe.what() << endl << endl << " *** usage *** " << endl;
         cout << options.help() << endl;
         terminate();

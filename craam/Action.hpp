@@ -99,6 +99,8 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;}
 
+    /** Returns the number of states with positive transition probabilities */
+    size_t size() const{return outcome.size();}
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{

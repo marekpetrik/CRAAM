@@ -150,8 +150,6 @@ std::vector<T> linspace(T a, T b, size_t N) {
 }
 
 
-namespace internal{
-
 /// Zips two vectors
 template <class T1, class T2>
 inline
@@ -214,9 +212,5 @@ pair<vector<T1>,vector<T2>> unzip(const vector<pair<T1,T2>>& values){
     }
     return {first, second};
 }
-
-}
-
-
 
 }

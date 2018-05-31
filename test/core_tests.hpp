@@ -186,24 +186,24 @@ void test_simple_vi(const Model& rmdp){
     // robust
     auto&& re3 = vi_gs(rmdp,0.9,initial, SARobustBellman<typename Model::state_type>(nats::robust_l1u(0.0)));
     CHECK_CLOSE_COLLECTION(val_rob3,re3.valuefunction,1e-2);
-    auto re3_pol = craam::internal::unzip(re3.policy).first;
+    auto re3_pol = unzip(re3.policy).first;
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re3_pol.begin(),re3_pol.end());
 
     auto&& re4 = mpi_jac(rmdp,0.9, initial, SARobustBellman<typename Model::state_type>(nats::robust_l1u(0.0)),
                             1000, 0.0, 1000, 0.0);
     CHECK_CLOSE_COLLECTION(val_rob3,re4.valuefunction,1e-2);
-    auto re4_pol = craam::internal::unzip(re4.policy).first;
+    auto re4_pol = unzip(re4.policy).first;
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re4_pol.begin(),re4_pol.end());
 
     // optimistic
     auto&& re5 = vi_gs(rmdp,0.9, initial, SARobustBellman<typename Model::state_type>(nats::optimistic_l1u(0.0)));
     CHECK_CLOSE_COLLECTION(val_rob3,re5.valuefunction,1e-2);
-    auto re5_pol = craam::internal::unzip(re5.policy).first;
+    auto re5_pol = unzip(re5.policy).first;
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re5_pol.begin(),re5_pol.end());
 
     auto&& re6 = mpi_jac(rmdp,0.9, initial, SARobustBellman<typename Model::state_type>(nats::optimistic_l1u(0.0)));
     CHECK_CLOSE_COLLECTION(val_rob3,re6.valuefunction,1e-2);
-    auto re6_pol = craam::internal::unzip(re6.policy).first;
+    auto re6_pol = unzip(re6.policy).first;
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re6_pol.begin(),re6_pol.end());
 
     // plain
@@ -385,7 +385,7 @@ void test_simple_mdp_save_load(){
     indvec pol_rob{1,1,1};
 
     CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
-    auto re_policy = craam::internal::unzip(re.policy).first;
+    auto re_policy = unzip(re.policy).first;
     BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob.begin(),pol_rob.end(),re_policy.begin(),re_policy.end());
 }
 

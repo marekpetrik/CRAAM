@@ -524,7 +524,7 @@ public:
             auto&& s = mpi_jac(robust_mdp, discount, numvec(0), bu);
 
             // update the policy for the underlying states
-            obspol = craam::internal::unzip(s.policy).first;
+            obspol = unzip(s.policy).first;
 
             // map the observation policy to the individual states
             obspol2statepol(obspol, statepol);
