@@ -31,6 +31,65 @@ Rcpp::List worstcase_l1(Rcpp::NumericVector z, Rcpp::NumericVector q, double t){
 }
 
 /**
+ * A very simple test MDP.
+ */
+MDP create_test_mdp(){
+    MDP rmdp(3);
+
+    // nonrobust and deterministic
+    // action 1 is optimal, with transition matrix [[0,1,0],[0,0,1],[0,0,1]] and rewards [0,0,1.1]
+    // action 0 has a transition matrix [[1,0,0],[1,0,0], [0,1,0]] and rewards [0,1.0,1.0]
+    add_transition(rmdp,0,1,1,1.0,0.0);
+    add_transition(rmdp,1,1,2,1.0,0.0);
+    add_transition(rmdp,2,1,2,1.0,1.1);
+
+    add_transition(rmdp,0,0,0,1.0,0.0);
+    add_transition(rmdp,1,0,0,1.0,1.0);
+    add_transition(rmdp,2,0,1,1.0,1.0);
+
+    return rmdp;
+}
+
+/**
+ * Constructs a data frame from the MDP definition
+ */
+Rcpp::DataFrame mdp_to_dataframe(const MDP& mdp){
+    indvec idstatefrom, idaction, idstateto;
+    numvec probability, reward;
+
+    for(size_t i = 0l; i < mdp.get_states().size(); i++){
+        const auto& actions = mdp.get_state(i).get_actions();
+        //idaction
+        for(size_t j = 0; j < actions.size(); j++){
+            const auto& tran = actions[j].get_outcome();
+
+            auto& indices = tran.get_indices();
+            const auto& rewards = tran.get_rewards();
+            const auto& probabilities = tran.get_probabilities();
+            //idstateto
+            for (size_t l = 0; l < tran.size(); l++){
+                idstatefrom.push_back(i);
+                idaction.push_back(j);
+                idstateto.push_back(indices[l]);
+                probability.push_back(probabilities[l]);
+                reward.push_back(rewards[l]);
+
+            }
+        }
+    }
+
+    return Rcpp::DataFrame::create(
+        Rcpp::_["idstatefrom"]=idstatefrom, Rcpp::_["idaction"]=idaction,
+        Rcpp::_["idstateto"]=idstateto,
+        Rcpp::_["probability"]=probability, Rcpp::_["reward"]=reward);
+}
+
+//[[Rcpp::export]]
+Rcpp::DataFrame example_mdp(Rcpp::String name){
+    return mdp_to_dataframe(create_test_mdp());
+}
+
+/**
  * Parses a data frame  to an mdp
  *
  * Also checks whether the values passed are consistent with the MDP definition.
@@ -190,7 +249,22 @@ algorithms::SANature parse_nature_sa(const MDP& mdp, const string& nature, SEXP 
         auto budgets = parse_sa_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["budgets"]),0.0);
         auto weights = parse_sas_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["weights"]), 1.0);
         return algorithms::nats::robust_l1w(budgets, weights);
-    }else{
+    }
+    // ----- gurobi only -----
+    #ifdef GUROBI_USE
+    if(nature == "l1_g"){
+        vector<numvec> values = parse_sa_values(mdp, Rcpp::as<Rcpp::DataFrame>(nature_par), 0.0);
+        return algorithms::nats::robust_l1w_gurobi(values);
+    }
+    if(nature == "l1w_g"){
+        Rcpp::List par = Rcpp::as<Rcpp::List>(nature_par);
+        auto budgets = parse_sa_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["budgets"]),0.0);
+        auto weights = parse_sas_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["weights"]), 1.0);
+        return algorithms::nats::robust_l1w_gurobi(budgets, weights);
+    }
+    #endif
+    // ---- end gurobi -----
+    else{
         Rcpp::stop("unknown nature");
     }
 }

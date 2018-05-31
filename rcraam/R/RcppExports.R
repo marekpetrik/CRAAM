@@ -5,6 +5,10 @@ worstcase_l1 <- function(z, q, t) {
     .Call(`_rcraam_worstcase_l1`, z, q, t)
 }
 
+example_mdp <- function(name) {
+    .Call(`_rcraam_example_mdp`, name)
+}
+
 solve_mdp <- function(mdp, discount, algorithm) {
     .Call(`_rcraam_solve_mdp`, mdp, discount, algorithm)
 }

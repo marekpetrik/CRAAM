@@ -223,10 +223,9 @@ protected:
     vector<vector<numvec>> weights;
     shared_ptr<GRBEnv> env;
 public:
-
     /**
-     * Automatically constructs a gurobi environment object. Weights are considered
-     * to be uniform.
+     * Automatically constructs a gurobi environment object. Weights are uniform
+     * when not provided
      * @param budgets Budgets, with a single value for each MDP state and action
      */
     robust_l1w_gurobi(vector<numvec> budgets) : budgets(move(budgets)), weights(0) {
