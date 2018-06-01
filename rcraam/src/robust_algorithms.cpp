@@ -1,5 +1,4 @@
-#include <Rcpp.h>
-#include <tuple>
+
 #include "craam/RMDP.hpp"
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
@@ -8,9 +7,13 @@
 #include "craam/algorithms/nature_response.hpp"
 #include "craam/algorithms/nature_declarations.hpp"
 
+#include <Rcpp.h>
+#include <tuple>
 #include <stdexcept>
+#include <iostream>
 
 using namespace craam;
+using namespace std;
 
 /** Computes the maximum distribution subject to L1 constraints */
 // [[Rcpp::export]]
@@ -282,10 +285,10 @@ Rcpp::List rsolve_mdp_sa(Rcpp::DataFrame mdp, double discount,
     algorithms::SARobustSolution sol;
     algorithms::SANature natparsed = parse_nature_sa(m, nature, nature_par);
     if(algorithm == "mpi") {
-        sol = algorithms::rsolve_mpi(m,discount,natparsed,numvec(0),indvec(0),
-                                    iterations,precision,iterations,precision);
+        sol = algorithms::rsolve_mpi(m,discount,std::move(natparsed),numvec(0),indvec(0),
+                                    iterations,precision,iterations,0.5);
     } else if(algorithm == "vi") {
-        sol = algorithms::rsolve_vi(m,discount,natparsed,numvec(0),indvec(0),
+        sol = algorithms::rsolve_vi(m,discount,std::move(natparsed),numvec(0),indvec(0),
                                    iterations,precision);
     } else {
         Rcpp::stop("Unknown solver type.");

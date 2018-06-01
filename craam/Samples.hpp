@@ -602,16 +602,6 @@ public:
                             s.reward());
         }
 
-        // make sure to set action validity based on whether there have been
-        // samples observed for the action
-        for(size_t si : indices(*mdp)){
-            auto& state = mdp->get_state(si);
-
-            // valid only if there are some samples for the action
-            for(size_t ai : indices(state)){
-                state.set_valid(ai, state_action_weights[si][ai] > 0);
-            }
-        }
 
         //  Normalize the transition probabilities and rewards
         mdp->normalize();

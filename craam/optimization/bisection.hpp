@@ -48,9 +48,9 @@ using namespace std;
                 between knots[index-1] and knots[index]. If the parameter is past the
                 largest knot, then index points beyond the end of the array
  */
-std::pair<double, size_t> piecewise_linear(const numvec& knots, const numvec& values, double x){
+std::pair<prec_t, size_t> piecewise_linear(const numvec& knots, const numvec& values, prec_t x){
 
-    const double epsilon = 1e-10;
+    const prec_t epsilon = 1e-10;
 
     assert(knots.size() == values.size());
     assert(is_sorted(knots.cbegin(), knots.cend()));
@@ -71,14 +71,14 @@ std::pair<double, size_t> piecewise_linear(const numvec& knots, const numvec& va
     }
 
     // the linear segment is between (index - 1) and the (index), so we need to average them
-    double x0 = knots[index-1];
-    double x1 = knots[index];
+    prec_t x0 = knots[index-1];
+    prec_t x1 = knots[index];
     // x = alpha * x0 + (1 - alpha) * x1
     // alpha = (x - x1) / (x0 - x1)
-    double alpha  = (x1 - x) / (x1 - x0);
+    prec_t alpha  = (x1 - x) / (x1 - x0);
     assert(alpha >= 0 && alpha <= 1);
 
-    double value = alpha * values[index-1] + (1-alpha) * values[index];
+    prec_t value = alpha * values[index-1] + (1-alpha) * values[index];
     return {value, size_t(index)};
 }
 
@@ -118,8 +118,9 @@ The function q_a^{-1} is represented by a piecewise linear function.
 @return Objective value, policy (d),
         nature's deviation from nominal probability distribution (xi)
 */
-tuple<double,numvec,numvec>
-solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const prec_t psi, const numvec& wa = numvec(0), const vector<numvec> ws = vector<numvec>(0)){
+tuple<prec_t,numvec,numvec>
+solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const prec_t psi,
+                        const numvec& wa = numvec(0), const vector<numvec> ws = vector<numvec>(0)){
 
     // make sure that the inputs make sense
     if(z.size() != pbar.size()) throw invalid_argument("pbar and z must have the same size.");
@@ -140,8 +141,8 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
                     values(nactions);       // corresponding values of xi_a for the corresponsing value of g_a
 
     // minimal and maximal possible values of u
-    double min_u = -numeric_limits<double>::infinity(),
-           max_u = -numeric_limits<double>::infinity();
+    prec_t min_u = -numeric_limits<prec_t>::infinity(),
+           max_u = -numeric_limits<prec_t>::infinity();
 
     for(size_t a = 0; a < nactions; a++){
         // compute the piecewise linear approximation
@@ -179,7 +180,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     //  => u_lower: largest known value for which the problem is infeasible
     //  => u_upper: smallest known value for which the problem is feasible
     //  => u_pivot: the next value of u that should be examined
-    double u_lower = min_u, // feasible for this value of u, but that why we set the pivot there
+    prec_t u_lower = min_u, // feasible for this value of u, but that why we set the pivot there
            u_upper = max_u,
            u_pivot = (max_u + min_u) / 2;
 
@@ -196,7 +197,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     numvec xi(nactions);
 
     // sum of xi, to compute the final optimal value which is a linear combination of both
-    double xisum_lower = 0,
+    prec_t xisum_lower = 0,
            xisum_upper = 0;
 
     // compute xisum_upper and indices,
@@ -237,7 +238,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         assert(u_pivot >= u_lower && u_pivot <= u_upper);
 
         // add up the values of xi and indices
-        double xisum = 0;
+        prec_t xisum = 0;
         sizvec indices_pivot(nactions);
         for(size_t a = 0; a < nactions; a++){
             auto [xia, index] = piecewise_linear(knots[a], values[a], u_pivot);
@@ -275,12 +276,12 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     // compute the value as the linear combination of the individual values
     // alpha xisum_lower + (1-alpha) xisum_upper = psi
     // alpha = (psi - xisum_upper) / (xisum_lower - xisum_upper)
-    double alpha = (psi - xisum_upper) / (xisum_lower - xisum_upper);
+    prec_t alpha = (psi - xisum_upper) / (xisum_lower - xisum_upper);
 
     assert(alpha >= 0 && alpha <= 1);
 
     // the result is then: alpha * u_lower + (1-alpha) * u_upper
-    double u_result = alpha * u_lower + (1-alpha) * u_upper;
+    prec_t u_result = alpha * u_lower + (1-alpha) * u_upper;
 
     // compute the primal solution (pi)
     // this is based on computing pi such that the subderivative of
@@ -302,7 +303,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
             // we are not outside of the largest knot or the smallest knot
 
             // compute the derivative of f (1/derivative of g)
-            // double derivative = (knots[a][index] - knots[a][index-1]) / (values[a][index] - values[a][index-1]);
+            // prec_t derivative = (knots[a][index] - knots[a][index-1]) / (values[a][index] - values[a][index-1]);
             // pi[a] = 1/derivative;
             pi[a] = - (values[a][index] - values[a][index-1]) / (knots[a][index] - knots[a][index-1]);
         }
@@ -311,11 +312,11 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         assert(pi[a] >= 0);
     }
     // normalize the probabilities
-    double pisum = accumulate(pi.cbegin(), pi.cend(), 0.0);
+    prec_t pisum = accumulate(pi.cbegin(), pi.cend(), 0.0);
     // u_upper is chosen to be the upper bound, and thus at least one index should be within the range
     assert(pisum > 1e-5);
     // divide by the sum to normalize
-    transform(pi.cbegin(), pi.cend(), pi.begin(), [pisum](double t){return t/pisum;});
+    transform(pi.cbegin(), pi.cend(), pi.begin(), [pisum](prec_t t){return t/pisum;});
 
     return make_tuple(u_result, move(pi), move(xi));
 }

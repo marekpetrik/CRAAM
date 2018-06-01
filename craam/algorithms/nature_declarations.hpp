@@ -54,13 +54,13 @@ using SANature = function<pair<numvec,prec_t>
  *  2) the optimal transition probability (usually the worst-case probabilities), and
  *  3) the value of the update.
  *
- * The z-function is rewards + discount * valuefunction. It is defined only for the same states that have non-zero
+ * The zvalues is rewards + discount * valuefunction. It is defined only for the same states that have non-zero
  * transition probabilites.
  */
 using SNature = function<tuple<numvec,numvec,prec_t>
                    (long stateid,
-                    const vector<reference_wrapper<numvec>>& nominalprobs,
-                    const vector<reference_wrapper<numvec>>& zfunctions)>;
+                    const vector<numvec>& nominalprobs,
+                    const vector<numvec>& zvalues)>;
 
 
 }

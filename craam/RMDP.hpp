@@ -366,6 +366,36 @@ public:
         return result;
 
     }
+
+    /**
+     * Datermines which states and actions are invalid (have no transitions)
+     * @return List of (state, action) pairs. An empty vector when all states and
+     *          actions are valid
+     */
+    vector<pair<long,long>> invalid_state_actions() const{
+        vector<pair<long,long>> invalid(0);
+        for(size_t s = 0; s < states.size(); s++){
+            indvec invalid_a = states[s].invalid_actions();
+            for(size_t ia = 0; ia < invalid_a.size(); ia++){
+                invalid.push_back(make_pair(s,ia));
+            }
+        }
+        return invalid;
+    }
+
+    /**
+     * Removes invalid actions, and reindexes the remaining ones accordingly.
+     * @returns List of original action ids for each state
+     */
+    vector<indvec> pack_actions(){
+        vector<indvec> result; result.reserve(size());
+
+        for(SType& state : states){
+            result.push_back(state.pack_actions());
+        }
+        return result;
+    }
+
 };
 
 // **********************************************************************

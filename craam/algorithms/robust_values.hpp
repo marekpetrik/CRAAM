@@ -45,16 +45,16 @@ using namespace util::lang;
 // *******************************************************
 
 /**
-Computes an ambiguous value (e.g. robust) of the action, depending on the type
-of nature that is provided.
-
-\param action Action for which to compute the value
-\param valuefunction State value function to use
-\param discount Discount factor
-\param nature Method used to compute the response of nature.
-*/
-inline vec_scal_t value_action(const RegularAction& action, const numvec& valuefunction,
-                        prec_t discount, long stateid, long actionid, const SANature& nature){
+ * The function computes the value of each transition by adding the
+ * reward function to the discounted value function
+ * @param action Action for which to compute the z-values
+ * @param valuefunction Value function over ALL states
+ * @param discount Discount facto
+ * @return The length of the zvalues is the same as the number of
+ *          transitions with positive probabilities.
+ */
+inline numvec compute_zvalues(const RegularAction& action, const numvec& valuefunction,
+                        prec_t discount){
 
     const numvec& rewards = action.get_outcome().get_rewards();
     const indvec& nonzero_indices = action.get_outcome().get_indices();
@@ -66,6 +66,22 @@ inline vec_scal_t value_action(const RegularAction& action, const numvec& valuef
         zvalues[i] = rewards[i] + discount * valuefunction[nonzero_indices[i]];
     }
 
+    return zvalues;
+}
+
+/**
+Computes an ambiguous value (e.g. robust) of the action, depending on the type
+of nature that is provided.
+
+\param action Action for which to compute the value
+\param valuefunction State value function to use
+\param discount Discount factor
+\param nature Method used to compute the response of nature.
+*/
+inline vec_scal_t value_action(const RegularAction& action, const numvec& valuefunction,
+                        prec_t discount, long stateid, long actionid, const SANature& nature){
+
+    numvec zvalues = compute_zvalues(action, valuefunction, discount);
     return nature(stateid, actionid, action.get_outcome().get_probabilities(), zvalues);
 }
 
@@ -170,8 +186,8 @@ value_max_state(const SType& state, const numvec& valuefunction,
     for(size_t i = 0; i < state.get_actions().size(); i++){
         const auto& action = state[i];
 
-        // skip invalid state.get_actions()
-        if(!state.is_valid(i)) continue;
+        if(!state.is_valid(i))
+            throw invalid_argument("Cannot have an invalid action.");
 
         auto value = value_action(action, valuefunction, discount, stateid, long(i), nature);
         if(value.second > maxvalue){
@@ -188,6 +204,39 @@ value_max_state(const SType& state, const numvec& valuefunction,
     return make_tuple(result,result_outcome,maxvalue);
 }
 
+/**
+ * Constructs and returns a vector of nominal probabilities for each
+ * state and positive transition probabilities.
+ * @param state The state for which to compute the nominal probabilities
+ * @return The length of the outer vector is the number of actions, the length
+ *          of the inner vector is the number of non-zero transition probabilities
+ */
+inline vector<numvec> compute_probabilities(const RegularState& state){
+    vector<numvec> result; result.reserve(state.size());
+
+    for(const auto& action: state.get_actions()){
+        result.push_back(action.get_outcome().get_probabilities());
+    }
+    return result;
+}
+
+/**
+ * Constructs and returns a vector of z-values for each action in the state
+ * @param state The state for which to compute the nominal probabilities
+ * @param value function over the entire state space
+ * @param discount The discount factor
+ * @return The length of the outer vector is the number of actions, the length
+ *          of the inner vector is the number of non-zero transition probabilities
+ */
+inline vector<numvec> compute_zvalues(const RegularState& state, const numvec& valuefunction, prec_t discount){
+    vector<numvec> result; result.reserve(state.size());
+
+    for(const auto& action: state.get_actions()){
+        if(!action.is_valid()) throw invalid_argument("an action is invalid");
+        result.push_back(compute_zvalues(action, valuefunction, discount));
+    }
+    return result;
+}
 
 // **************************************************************************
 // Helper classes to handle computing of the best response
@@ -209,6 +258,8 @@ protected:
 
     /// Reference to the function that is used to call the nature
     SANature nature;
+    /// Partial policy specification (action -1 is ignored and optimized)
+    const indvec initial_policy;
 
 public:
     /// action of the decision maker, distribution of nature
@@ -254,16 +305,16 @@ public:
             long actionid;
             tie(actionid, transition, newvalue) =
                     value_max_state(state, valuefunction, discount, stateid, nature);
-            action = make_pair(actionid,transition);
+            action = make_pair(actionid,move(transition));
         }
         // fixed-action, do not copy
         else{
             prec_t newvalue;
             const long actionid = initial_policy[stateid];
             tie(transition, newvalue) = value_fix_state(state, valuefunction, discount, actionid, stateid, nature);
-            action = make_pair(actionid,transition);
+            action = make_pair(actionid,move(transition));
         }
-        return {newvalue, action};
+        return make_pair(newvalue, move(action));
     }
 
     /**
@@ -281,9 +332,6 @@ public:
                 action.second);
     }
 
-protected:
-    /// Partial policy specification (action -1 is ignored and optimized)
-    const indvec initial_policy;
 };
 
 
@@ -300,10 +348,12 @@ protected:
 
     /// Reference to the function that is used to call the nature
     SNature nature;
+    /// Partial policy specification (action -1 is ignored and optimized)
+    const indvec initial_policy;
 
 public:
-    /// action of the decision maker, distribution of nature
-    using policy_type = pair<long,numvec>;
+    /// distribution the decision maker, distribution of nature
+    using policy_type = pair<numvec,numvec>;
     using state_type = SType;
 
     /**
@@ -329,32 +379,34 @@ public:
     @param solution Solution to update
     @param state State for which to compute the Bellman update
     @param stateid  Index of the state
-    @param valuefunction Value function
+    @param valuefunction The full value function
     @param discount Discount factor
     @returns New value for the state
      */
     pair<prec_t, policy_type> policy_update(const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
         prec_t newvalue = 0;
-        policy_type action;
+        policy_type action_response;
+        numvec action;
         numvec transition;
 
         // check whether this state should only be evaluated or also optimized
         // optimizing action
         if(initial_policy.empty() || initial_policy[stateid] < 0){
-            long actionid;
-            tie(actionid, transition, newvalue) =
-                    value_max_state(state, valuefunction, discount, stateid, nature);
-            action = make_pair(actionid,transition);
+
+            tie(action, transition, newvalue) =
+                    nature(stateid, compute_probabilities(state), compute_zvalues(state, valuefunction, discount));
+
         }
         // fixed-action, do not copy
         else{
             prec_t newvalue;
             const long actionid = initial_policy[stateid];
             tie(transition, newvalue) = value_fix_state(state, valuefunction, discount, actionid, stateid, nature);
-            action = make_pair(actionid,transition);
+
         }
-        return {newvalue, action};
+        action_response = make_pair(move(action),move(transition));
+        return make_pair(newvalue, action_response);
     }
 
     /**
@@ -372,9 +424,6 @@ public:
                 action.second);
     }
 
-protected:
-    /// Partial policy specification (action -1 is ignored and optimized)
-    const indvec initial_policy;
 };
 
 // **************************************************************************

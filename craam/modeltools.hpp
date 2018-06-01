@@ -433,10 +433,6 @@ RMDP robustify(const MDP& mdp, bool allowzeros = false){
         auto& newstate = rmdp.create_state(si);
         for(size_t ai : indices(s)){
             // make sure that the invalid actions are marked as such in the rmdp
-            if(!s.is_valid(ai)){
-                newstate.set_valid(ai,false);
-                continue;
-            }
             auto& newaction = newstate.create_action(ai);
             const Transition& t = s[ai].get_outcome();
             // iterate over transitions next states (at t+1) and add samples

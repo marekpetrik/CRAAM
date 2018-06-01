@@ -24,21 +24,16 @@
 
 #include "craam/definitions.hpp"
 #include "craam/optimization/optimization.hpp"
+#include "craam/optimization/bisection.hpp"
 
 #include <functional>
 
 namespace craam::algorithms::nats{
 
 // *******************************************************
-// Nature definitions
+// SA Nature definitions
 // *******************************************************
 
-
-/// L1 robust response
-/*inline vec_scal_t robust_l1(const numvec& v, const numvec& p, prec_t threshold){
-    assert(v.size() == p.size());
-    return worstcase_l1(v,p,threshold);
-}*/
 
 /**
  * L1 robust response
@@ -204,7 +199,6 @@ struct optimistic_unbounded{
     }
 };
 
-
 // --------------- GUROBI START --------------------------------------------------------
 #ifdef GUROBI_USE
 
@@ -261,15 +255,23 @@ public:
             budgets(move(budgets)), weights(move(weights)), env(grbenv) {};
 
     /**
-     * @brief Implements SANature interface
+     * Implements the SANature interface
      */
     pair<numvec, prec_t> operator() (long stateid, long actionid,
                 const numvec& nominalprob, const numvec& zfunction) const{
         assert(stateid > 0 && stateid < long(budgets.size()));
         assert(actionid > 0 && actionid < long(budgets[stateid].size()));
 
-        return worstcase_l1_w_gurobi(*env, zfunction, nominalprob, weights[stateid][actionid],
+        // check for whether weights are being used
+        if(weights.empty()){
+            return worstcase_l1_w_gurobi(*env, zfunction, nominalprob, numvec(0),
                                      budgets[stateid][actionid]);
+        }
+        else{
+            return worstcase_l1_w_gurobi(*env, zfunction, nominalprob, weights[stateid][actionid],
+                                     budgets[stateid][actionid]);
+        }
+
     }
 };
 
@@ -277,5 +279,51 @@ public:
 // --------------- GUROBI END --------------------------------------------------------
 
 
+// *******************************************************
+// S Nature definitions
+// *******************************************************
+
+
+/**
+ * S-rectangular L1 constraint with a single budget for every state
+ * and optional weights for each action for each state.
+ *
+ * The state-action weights are used as follows:
+ *
+ */
+class robust_s_l1{
+
+protected:
+    numvec budgets;
+    vector<numvec> weights_a;
+public:
+    robust_s_l1(numvec budgets) : budgets(move(budgets)), weights_a(0) {};
+
+    robust_s_l1(numvec budgets, vector<numvec> weights_a) :
+                budgets(move(budgets)), weights_a(move(weights_a)) {};
+
+    /**
+     * Implements SNature interface
+     */
+    tuple<numvec,numvec,prec_t> operator() (long stateid,
+                    const vector<numvec>& nominalprobs,
+                    const vector<numvec>& zvalues) const{
+
+        assert(stateid > 0 && stateid < long(budgets.size()));
+
+        prec_t outcome; numvec actiondist, trans;
+
+        if(!weights_a.empty()){
+            tie(outcome, actiondist, trans) = solve_srect_bisection(zvalues, nominalprobs,
+                                                        budgets[stateid], weights_a[stateid]);
+        }
+        else{
+            tie(outcome, actiondist, trans) = solve_srect_bisection(zvalues, nominalprobs,
+                                                        budgets[stateid]);
+        }
+
+        return make_tuple(move(actiondist), move(trans), outcome);
+    }
+};
 
 }
