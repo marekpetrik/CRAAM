@@ -110,7 +110,7 @@ Notes
 This implementation works in O(n log n) time because of the sort. Using
 quickselect to choose the right quantile would work in O(n) time.
 
-This function does not check whether the provide probability distribution sums to 1.
+This function does not check whether the provided probability distribution sums to 1.
 
 @see worstcase_l1
 @param z Reward values
@@ -242,9 +242,14 @@ protected:
 
 public:
     /**
+     * Constructs an empty structure
+     */
+    GradientsL1_w(){};
+
+    /**
      * Computes the possible gradients and sorts them increasingly
      * @param z Objective function
-     * @param w Weights in the norm
+     * @param w Weights in the definition of the L1 norm
      */
     GradientsL1_w(const numvec& z, const numvec& w){
         const double epsilon = 1e-10;

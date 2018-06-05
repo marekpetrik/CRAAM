@@ -334,11 +334,13 @@ public:
 
 };
 
-
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
 various types of robust MDPs. It can be used in place of response in mpi_jac or vi_gs to
 solve robust MDP objectives for s-rectangular ambiguity.
+
+When a policy is specified for a given state then it evolves simply according to the
+nominal transition probabilities.
 
 @see PlainBellman for a plain implementation
 */
@@ -353,7 +355,7 @@ protected:
 
 public:
     /// distribution the decision maker, distribution of nature
-    using policy_type = pair<numvec,numvec>;
+    using policy_type = pair<numvec,vector<numvec>>;
     using state_type = SType;
 
     /**
@@ -388,24 +390,33 @@ public:
         prec_t newvalue = 0;
         policy_type action_response;
         numvec action;
-        numvec transition;
+        vector<numvec> transitions;
+
+        if(state.is_terminal())
+            return make_pair(-1, make_pair(numvec(0), vector<numvec>(0)));
 
         // check whether this state should only be evaluated or also optimized
         // optimizing action
         if(initial_policy.empty() || initial_policy[stateid] < 0){
-
-            tie(action, transition, newvalue) =
-                    nature(stateid, compute_probabilities(state), compute_zvalues(state, valuefunction, discount));
+            tie(action, transitions, newvalue) =
+                    nature(stateid, compute_probabilities(state),
+                                    compute_zvalues(state, valuefunction, discount));
 
         }
         // fixed-action, do not copy
         else{
-            prec_t newvalue;
-            const long actionid = initial_policy[stateid];
-            tie(transition, newvalue) = value_fix_state(state, valuefunction, discount, actionid, stateid, nature);
-
+            long actionid = initial_policy[stateid];
+            newvalue = value_fix_state(state, valuefunction, discount, actionid);
+            transitions = vector<numvec>(state.size()); // create an entry for each state
+            // but set only the one that is relevant
+            transitions[actionid] = state[actionid].get_outcome().get_probabilities();
+            // set the actual action value
+            action = numvec(state.size(), 0.0);
+            action[actionid] = 1.0;
         }
-        action_response = make_pair(move(action),move(transition));
+
+        assert(action.size() == state.size());
+        action_response = make_pair(move(action), move(transitions));
         return make_pair(newvalue, action_response);
     }
 
@@ -502,27 +513,78 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                     print_progress);
 }
 
-// ******************************************************************
-// Helper functions for a Python or R interface
-// ******************************************************************
+
 
 /**
-Converts a string representation of nature response to the appropriate nature response call.
-This function is useful when the code is used within a python or R libraries. The values values
-correspond to the function definitions, and ones that are currently supported are:
+Gauss-Seidel variant of value iteration (not parallelized).
 
-- robust_unbounded
-- optimistic_unbounded
-- robust_l1
-- optimistic_l1
+This function is suitable for computing the value function of a finite state MDP. If
+the states are ordered correctly, one iteration is enough to compute the optimal value function.
+Since the value function is updated from the last state to the first one, the states should be ordered
+in the temporal order.
+
+This is a simplified method interface. Use vi_gs with PolicyNature for full functionality.
+
+\param mdp      The MDP to solve
+\param discount Discount factor.
+\param nature   Response of nature, the function is the same for all states and actions.
+\param thresholds Parameters passed to nature response functions.
+                    One value per state and then one value per action.
+\param valuefunction Initial value function. Passed by value, because it is modified. Optional, use
+                    all zeros when not provided. Ignored when size is 0.
+\param policy    Partial policy specification. Optimize only actions that are  policy[state] = -1. Use
+                 policy length 0 to optimize all actions.
+\param iterations Maximal number of iterations to run
+\param maxresidual Stop when the maximal residual falls below this value.
+
+
+\returns Solution that can be used to compute the total return, or the optimal policy.
 */
-/*inline NatureResponse<prec_t> string_to_nature(string nature){
-    if(nature == "robust_unbounded") return robust_unbounded;
-    if(nature == "optimistic_unbounded") return optimistic_unbounded;
-    if(nature == "robust_l1") return robust_l1;
-    if(nature == "optimistic_l1") return optimistic_l1;
-    throw invalid_argument("Unknown nature.");
-}*/
+template<class SType>
+inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
+                        const SNature& nature,
+                        numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
+                        unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC){
 
+    return vi_gs<SType, SRobustBellman<SType>>(mdp, discount, move(valuefunction),
+            SRobustBellman<SType>(nature,policy), iterations, maxresidual);
+}
+
+
+/**
+Modified policy iteration using Jacobi value iteration in the inner loop.
+This method generalizes modified policy iteration to robust MDPs.
+In the value iteration step, both the action *and* the outcome are fixed.
+
+This is a simplified method interface. Use mpi_jac with PolicyNature for full functionality.
+
+Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
+\param type Type of realization of the uncertainty
+\param discount Discount factor
+\param nature Response of nature; the same value is used for all states and actions.
+\param valuefunction Initial value function
+\param policy Partial policy specification. Optimize only actions that are  policy[state] = -1
+\param iterations_pi Maximal number of policy iteration steps
+\param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
+\param iterations_vi Maximal number of inner loop value iterations
+\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
+            This value should be smaller than maxresidual_pi
+\param print_progress Whether to report on progress during the computation
+\return Computed (approximate) solution
+ */
+template<class SType>
+inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+                const SNature& nature,
+                const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC,
+                bool print_progress=false) {
+
+    return mpi_jac<SType, SRobustBellman<SType>>(mdp, discount, valuefunction,
+                    SRobustBellman<SType>(nature,policy),
+                    iterations_pi, maxresidual_pi,
+                    iterations_vi, maxresidual_vi,
+                    print_progress);
+}
 
 }

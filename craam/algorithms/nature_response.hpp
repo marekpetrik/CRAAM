@@ -25,6 +25,8 @@
 #include "craam/definitions.hpp"
 #include "craam/optimization/optimization.hpp"
 #include "craam/optimization/bisection.hpp"
+#include "craam/Transition.hpp"
+#include "craam/optimization/srect_gurobi.hpp"
 
 #include <functional>
 
@@ -305,25 +307,104 @@ public:
     /**
      * Implements SNature interface
      */
-    tuple<numvec,numvec,prec_t> operator() (long stateid,
+    tuple<numvec,vector<numvec>,prec_t> operator() (long stateid,
                     const vector<numvec>& nominalprobs,
                     const vector<numvec>& zvalues) const{
 
-        assert(stateid > 0 && stateid < long(budgets.size()));
+        assert(stateid >= 0 && stateid < long(budgets.size()));
+        assert(nominalprobs.size() == zvalues.size());
 
-        prec_t outcome; numvec actiondist, trans;
+        prec_t outcome; numvec actiondist;
+        numvec sa_budgets;
 
+        // compute the distribution of actions and the optimal budgets
         if(!weights_a.empty()){
-            tie(outcome, actiondist, trans) = solve_srect_bisection(zvalues, nominalprobs,
+            tie(outcome, actiondist, sa_budgets) = solve_srect_bisection(zvalues, nominalprobs,
                                                         budgets[stateid], weights_a[stateid]);
-        }
-        else{
-            tie(outcome, actiondist, trans) = solve_srect_bisection(zvalues, nominalprobs,
+        } else {
+            tie(outcome, actiondist, sa_budgets) = solve_srect_bisection(zvalues, nominalprobs,
                                                         budgets[stateid]);
         }
+        assert(actiondist.size() == zvalues.size());
+        assert(sa_budgets.size() == actiondist.size());
 
-        return make_tuple(move(actiondist), move(trans), outcome);
+        // compute actual worst-case responses for all actions
+        // and aggregate them in a sparse transition probability
+        vector<numvec> new_probability; new_probability.reserve(actiondist.size());
+        for(size_t a = 0; a < nominalprobs.size(); a++){
+            // skip the ones that have not transition probability
+            if(actiondist[a] > EPSILON)
+                new_probability.push_back(worstcase_l1(zvalues[a], nominalprobs[a], sa_budgets[a]).first);
+            else
+                new_probability.push_back(numvec(0));
+        }
+
+
+        return make_tuple(move(actiondist), move(new_probability), outcome);
     }
 };
+
+#ifdef GUROBI_USE
+
+/**
+ * S-rectangular L1 constraint with a single budget for every state
+ * and optional weights for each action for each state.
+ *
+ * The state-action weights are used as follows:
+ *
+ * WARNING: does not compute the probaility distributions of policies and will therefore
+ * fail when used in modified policy iteration
+ */
+class robust_s_l1_gurobi{
+
+protected:
+    // a budget for every state
+    numvec budgets;
+    shared_ptr<GRBEnv> env;
+public:
+    /**
+     * Automatically constructs a gurobi environment object. Weights are uniform
+     * when not provided
+     * @param budgets Budgets, with a single value for each MDP state
+     */
+    robust_s_l1_gurobi(numvec budgets) : budgets(move(budgets)) {
+        env = make_shared<GRBEnv>();
+        // make sure it is run in a single thread so it can be parallelized
+        env->set(GRB_IntParam_OutputFlag, 0);
+        env->set(GRB_IntParam_Threads, 1);
+    };
+
+    /**
+     * @param env Gurobi environment to use
+     * @param budgets Budgets, with a single value for each MDP state
+     */
+    robust_s_l1_gurobi(const shared_ptr<GRBEnv>& env, numvec budgets) :
+        budgets(move(budgets)), env(env) {};
+
+    /**
+     * Implements SNature interface
+     */
+    tuple<numvec,vector<numvec>,prec_t> operator() (long stateid,
+                    const vector<numvec>& nominalprobs,
+                    const vector<numvec>& zvalues) const{
+
+        assert(stateid >= 0 && stateid < long(budgets.size()));
+        assert(nominalprobs.size() == zvalues.size());
+
+        prec_t outcome; numvec actiondist;
+
+        // compute the distribution of actions and the optimal budgets
+
+        tie(actiondist, outcome) = srect_solve_gurobi(*env,zvalues, nominalprobs,
+                                                        budgets[stateid]);
+
+        assert(actiondist.size() == zvalues.size());
+
+        vector<numvec> new_probability(actiondist.size());
+        return make_tuple(move(actiondist), move(new_probability), outcome);
+    }
+};
+
+#endif
 
 }

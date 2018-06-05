@@ -23,6 +23,7 @@
 #pragma once
 
 #include "craam/definitions.hpp"
+#include "craam/Transition.hpp"
 #include <functional>
 
 
@@ -45,19 +46,21 @@ using namespace craam;
  * transition probabilites.
  */
 using SANature = function<pair<numvec,prec_t>
-                   (long stateid,long actionid,const numvec& nominalprob,const numvec& zfunction)>;
+                   (long stateid,long actionid,const numvec& nominalprob,const numvec& zvalues)>;
 
 /**
  * Defines s-rectangular nature to be a function that is given a state index,
- * the transition probability, and a z-function. It returns
+ * the transition probability, a z-function
+ * for each state and action. It returns
  *  1) the optimal action distribution,
- *  2) the optimal transition probability (usually the worst-case probabilities), and
+ *  2) the optimal transition probability (usually the worst-case probabilities) for each action.
+ *      the vector could have length one when the action has 0 probability,
  *  3) the value of the update.
  *
  * The zvalues is rewards + discount * valuefunction. It is defined only for the same states that have non-zero
  * transition probabilites.
  */
-using SNature = function<tuple<numvec,numvec,prec_t>
+using SNature = function<tuple<numvec,vector<numvec>,prec_t>
                    (long stateid,
                     const vector<numvec>& nominalprobs,
                     const vector<numvec>& zvalues)>;

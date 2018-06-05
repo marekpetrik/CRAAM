@@ -881,6 +881,54 @@ BOOST_AUTO_TEST_CASE(test_robustification){
 
 
 // ********************************************************************************
+//  Test s-rectangular MDP
+// ********************************************************************************
+
+BOOST_AUTO_TEST_CASE(s_rectangular){
+
+    MDP mdp(3);
+
+    add_transition(mdp,0,1,1,0.4,1.0);
+    add_transition(mdp,0,1,2,0.3,2.0);
+    add_transition(mdp,0,1,3,0.3,3.0);
+
+    add_transition(mdp,0,0,1,0.2,3.0);
+    add_transition(mdp,0,0,2,0.4,2.0);
+    add_transition(mdp,0,0,3,0.4,1.0);
+
+    add_transition(mdp,0,2,1,0.6,3.0);
+    add_transition(mdp,0,2,2,0.4,2.0);
+
+    add_transition(mdp,0,3,2,1.0,1.0);
+
+    rsolve_vi(mdp, 1.0, nats::robust_s_l1(numvec{0.1,0,0,0}));
+}
+
+#ifdef GUROBI_USE
+
+BOOST_AUTO_TEST_CASE(s_rectangular_gurobi){
+
+    MDP mdp(3);
+
+    add_transition(mdp,0,1,1,0.4,1.0);
+    add_transition(mdp,0,1,2,0.3,2.0);
+    add_transition(mdp,0,1,3,0.3,3.0);
+
+    add_transition(mdp,0,0,1,0.2,3.0);
+    add_transition(mdp,0,0,2,0.4,2.0);
+    add_transition(mdp,0,0,3,0.4,1.0);
+
+    add_transition(mdp,0,2,1,0.6,3.0);
+    add_transition(mdp,0,2,2,0.4,2.0);
+
+    add_transition(mdp,0,3,2,1.0,1.0);
+
+    rsolve_vi(mdp, 1.0, nats::robust_s_l1_gurobi(numvec{0.1,0,0,0}));
+}
+
+#endif
+
+// ********************************************************************************
 //  Test optimization methods
 // ********************************************************************************
 
@@ -960,8 +1008,6 @@ BOOST_AUTO_TEST_CASE(test_solve_srect){
         BOOST_CHECK_CLOSE(obj, expected_result, 1e-3);
         CHECK_CLOSE_COLLECTION(d, gd, 1e-3);
     }
-
-
 }
 #endif
 
@@ -1139,7 +1185,6 @@ BOOST_AUTO_TEST_CASE(test_knots_wu){
 
     CHECK_CLOSE_COLLECTION(knots, knots_w, 1e-5);
     CHECK_CLOSE_COLLECTION(values, values_w, 1e-5);
-
 }
 
 

@@ -96,7 +96,7 @@ s.t.    1^T pi = 1, pi >= 0
 The algorithm works by reformulating the problem to:
 
 min_u {u : sum_a xi(a) wa(a) <= psi, q_a^{-1}(xi_a) <= u}, where
-
+d l
 q_a^{-1}(u_a) = min_{p,t} || p - pbar ||_{1,ws_a}
 s.t.    z^T e <= b
         1^T e = 1
@@ -114,22 +114,29 @@ The function q_a^{-1} is represented by a piecewise linear function.
 @param psi Bound on the sum of L1 deviations
 @param wa Optional set of weights on action errors
 @param ws Optional set of weights on staet errors (using these values can significantly slow the computation)
+@param gradients Optional structure that holds pre-computed gradients to speed up the computation
+                     of the weighted L1 response. Only used with weighted L1 computation; the
+                     unweighted L1 is too fast to make this useful.
 
 @return Objective value, policy (d),
         nature's deviation from nominal probability distribution (xi)
 */
 tuple<prec_t,numvec,numvec>
 solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const prec_t psi,
-                        const numvec& wa = numvec(0), const vector<numvec> ws = vector<numvec>(0)){
+                        const numvec& wa = numvec(0), const vector<numvec> ws = vector<numvec>(0),
+                        const vector<GradientsL1_w> gradients = vector<GradientsL1_w>(0)){
 
     // make sure that the inputs make sense
     if(z.size() != pbar.size()) throw invalid_argument("pbar and z must have the same size.");
     if(psi < 0.0) throw invalid_argument("psi must be non-negative");
     if(!wa.empty() && wa.size() != z.size()) throw invalid_argument("wa must be the same size as pbar and z.");
     if(!ws.empty() && ws.size() != z.size()) throw invalid_argument("ws must be the same size as pbar and z.");
+    if(!gradients.empty() && gradients.size() != z.size()) throw invalid_argument("gradients must be the same length as pbar and z.");
 
     // define the number of actions
     const size_t nactions = z.size();
+
+    if(nactions == 0) throw invalid_argument("cannot be called with 0 actions");
 
     for(size_t a = 0; a < nactions; a++){
         assert(abs(1.0 - accumulate(pbar[a].cbegin(), pbar[a].cend(), 0.0) ) < EPSILON);
@@ -154,7 +161,10 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
             tie(knots[a], values[a]) = worstcase_l1_knots(z[a], pbar[a]);
         }
         else{
-            tie(knots[a], values[a]) = worstcase_l1_w_knots(z[a], pbar[a], ws[a]);
+            if(gradients.empty())
+                tie(knots[a], values[a]) = worstcase_l1_w_knots(z[a], pbar[a], ws[a]);
+            else
+                tie(knots[a], values[a]) = worstcase_l1_w_knots(gradients[a], z[a], pbar[a], ws[a]);
         }
 
         // knots are in the reverse order than what we want here
