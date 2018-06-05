@@ -299,6 +299,7 @@ protected:
     numvec budgets;
     vector<numvec> weights_a;
 public:
+
     robust_s_l1(numvec budgets) : budgets(move(budgets)), weights_a(0) {};
 
     robust_s_l1(numvec budgets, vector<numvec> weights_a) :
@@ -338,8 +339,6 @@ public:
             else
                 new_probability.push_back(numvec(0));
         }
-
-
         return make_tuple(move(actiondist), move(new_probability), outcome);
     }
 };

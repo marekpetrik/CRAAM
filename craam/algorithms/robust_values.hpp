@@ -242,7 +242,7 @@ inline vector<numvec> compute_zvalues(const RegularState& state, const numvec& v
 // Helper classes to handle computing of the best response
 // **************************************************************************
 
-// Solution to an S,A rectangular robust problem
+/// Solution to an S,A rectangular robust problem
 using SARobustSolution = Solution<pair<long,numvec>>;
 
 /**
@@ -333,6 +333,9 @@ public:
     }
 
 };
+
+/// Solution to an S-rectangular robust problem
+using SRobustSolution = Solution<pair<numvec,vector<numvec>>>;
 
 /**
 The class abstracts some operations of value / policy iteration in order to generalize to
@@ -503,7 +506,7 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const SANature& nature,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=0.9,
                 bool print_progress=false) {
 
     return mpi_jac<SType, SARobustBellman<SType>>(mdp, discount, valuefunction,
@@ -567,8 +570,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \param iterations_pi Maximal number of policy iteration steps
 \param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
 \param iterations_vi Maximal number of inner loop value iterations
-\param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-            This value should be smaller than maxresidual_pi
+\param maxresidual_vi Stop policy evaluation when the policy residual drops below
+                            maxresidual_vi * last_policy_residual
 \param print_progress Whether to report on progress during the computation
 \return Computed (approximate) solution
  */
@@ -577,7 +580,7 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const SNature& nature,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=0.9,
                 bool print_progress=false) {
 
     return mpi_jac<SType, SRobustBellman<SType>>(mdp, discount, valuefunction,

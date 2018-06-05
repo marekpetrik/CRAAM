@@ -17,3 +17,7 @@ rsolve_mdp_sa <- function(mdp, discount, nature, nature_par, algorithm) {
     .Call(`_rcraam_rsolve_mdp_sa`, mdp, discount, nature, nature_par, algorithm)
 }
 
+rsolve_mdp_s <- function(mdp, discount, nature, nature_par, algorithm) {
+    .Call(`_rcraam_rsolve_mdp_s`, mdp, discount, nature, nature_par, algorithm)
+}
+

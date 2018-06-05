@@ -58,12 +58,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rsolve_mdp_s
+Rcpp::List rsolve_mdp_s(Rcpp::DataFrame mdp, double discount, Rcpp::String nature, SEXP nature_par, Rcpp::String algorithm);
+RcppExport SEXP _rcraam_rsolve_mdp_s(SEXP mdpSEXP, SEXP discountSEXP, SEXP natureSEXP, SEXP nature_parSEXP, SEXP algorithmSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type mdp(mdpSEXP);
+    Rcpp::traits::input_parameter< double >::type discount(discountSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type nature(natureSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type nature_par(nature_parSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type algorithm(algorithmSEXP);
+    rcpp_result_gen = Rcpp::wrap(rsolve_mdp_s(mdp, discount, nature, nature_par, algorithm));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rcraam_worstcase_l1", (DL_FUNC) &_rcraam_worstcase_l1, 3},
     {"_rcraam_example_mdp", (DL_FUNC) &_rcraam_example_mdp, 1},
     {"_rcraam_solve_mdp", (DL_FUNC) &_rcraam_solve_mdp, 3},
     {"_rcraam_rsolve_mdp_sa", (DL_FUNC) &_rcraam_rsolve_mdp_sa, 5},
+    {"_rcraam_rsolve_mdp_s", (DL_FUNC) &_rcraam_rsolve_mdp_s, 5},
     {NULL, NULL, 0}
 };
 

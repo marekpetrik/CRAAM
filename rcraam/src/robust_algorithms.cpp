@@ -149,6 +149,39 @@ Rcpp::List solve_mdp(Rcpp::DataFrame mdp, double discount, Rcpp::String algorith
 }
 
 /**
+ * Parses a data frame definition of values that correspond to states.
+ *
+ * Also checks whether the values passed are consistent with the MDP definition.
+ *
+ * @param mdp The definition of the MDP to know how many states and actions there are.
+ * @param frame Dataframe with 2 comlumns, idstate, value. Here, idstate
+ *              determines which value should be set.
+ *              Only the last value is used if multiple rows are present.
+ * @param def_value The default value for when frame does not specify anything for the state action pair
+ *
+ * @returns A vector over states with the included values
+ */
+numvec parse_s_values(const MDP& mdp, const Rcpp::DataFrame& frame, double def_value = 0){
+
+    numvec result(mdp.size());
+
+    Rcpp::IntegerVector idstates = frame["idstate"];
+    Rcpp::NumericVector values = frame["value"];
+
+    for(long i = 0; i < idstates.size(); i++){
+        long idstate = idstates[i];
+
+        if(idstate < 0) Rcpp::stop("idstate must be non-negative");
+        if(idstate > mdp.size()) Rcpp::stop("idstate must be smaller than the number of MDP states");
+
+        double value = values[i];
+        result[idstate] = value;
+    }
+
+    return result;
+}
+
+/**
  * Parses a data frame definition of values that correspond to states and
  * actions.
  *
@@ -305,4 +338,76 @@ Rcpp::List rsolve_mdp_sa(Rcpp::DataFrame mdp, double discount,
     result["valuefunction"] = move(sol.valuefunction);
     return result;
 }
+
+
+/**
+ * Parses the name and the parameter of the provided nature
+ */
+algorithms::SNature parse_nature_s(const MDP& mdp, const string& nature, SEXP nature_par){
+    /*if(nature == "l1u"){
+        return algorithms::nats::robust_l1u(Rcpp::as<double>(nature_par));
+    }*/
+    if(nature == "l1"){
+        numvec values = parse_s_values(mdp, Rcpp::as<Rcpp::DataFrame>(nature_par), 0.0);
+        return algorithms::nats::robust_s_l1(values);
+    }
+    /*if(nature == "l1w"){
+        Rcpp::List par = Rcpp::as<Rcpp::List>(nature_par);
+        auto budgets = parse_sa_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["budgets"]),0.0);
+        auto weights = parse_sas_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["weights"]), 1.0);
+        return algorithms::nats::robust_l1w(budgets, weights);
+    }*/
+    // ----- gurobi only -----
+#ifdef GUROBI_USE
+    if(nature == "l1_g"){
+        numvec values = parse_s_values(mdp, Rcpp::as<Rcpp::DataFrame>(nature_par), 0.0);
+        return algorithms::nats::robust_s_l1_gurobi(values);
+    }
+    /*if(nature == "l1w_g"){
+        Rcpp::List par = Rcpp::as<Rcpp::List>(nature_par);
+        auto budgets = parse_sa_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["budgets"]),0.0);
+        auto weights = parse_sas_values(mdp, Rcpp::as<Rcpp::DataFrame>(par["weights"]), 1.0);
+        return algorithms::nats::robust_l1w_gurobi(budgets, weights);
+    }*/
+#endif
+    // ---- end gurobi -----
+    else{
+        Rcpp::stop("unknown nature");
+    }
+}
+
+// [[Rcpp::export]]
+Rcpp::List rsolve_mdp_s( Rcpp::DataFrame mdp, double discount,
+                         Rcpp::String nature, SEXP nature_par,
+                         Rcpp::String algorithm){
+
+    MDP m = mdp_from_dataframe(mdp);
+
+    int iterations = 1000;
+    double precision = 0.01;
+
+    algorithms::SRobustSolution sol;
+    algorithms::SNature natparsed = parse_nature_s(m, nature, nature_par);
+    if(algorithm == "mpi") {
+        sol = algorithms::rsolve_mpi(m,discount,std::move(natparsed),numvec(0),indvec(0),
+                                     iterations,precision,iterations,0.5);
+    } else if(algorithm == "vi") {
+        sol = algorithms::rsolve_vi(m,discount,std::move(natparsed),numvec(0),indvec(0),
+                                    iterations,precision);
+    } else {
+        Rcpp::stop("Unknown solver type.");
+    }
+
+    Rcpp::List result;
+    result["iters"] = sol.iterations;
+    result["residual"] = sol.residual;
+    result["time"] = sol.time;
+
+    auto [dec_pol, nat_pol] = unzip(sol.policy);
+    result["policy"] = move(dec_pol);
+    result["policy.nature"] = move(nat_pol);
+    result["valuefunction"] = move(sol.valuefunction);
+    return result;
+}
+
 

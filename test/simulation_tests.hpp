@@ -321,10 +321,10 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     auto solution1 = mpi_jac(*m, 0.9);
     auto solution2 = mpi_jac(*newmdp, 0.9);
 
-    BOOST_CHECK_CLOSE(solution1.total_return(initial),8.90971,1e-3);
+    BOOST_CHECK_CLOSE(solution1.total_return(initial),8.90971,1.0);
     //cout << "Return in original MDP " << solution1.total_return(initial) << endl;
 
-    BOOST_CHECK_CLOSE(solution2.total_return(initial),8.90971,1e-3);
+    BOOST_CHECK_CLOSE(solution2.total_return(initial),8.90971,1.0);
     //cout << "Return in sampled MDP " << solution2.total_return(initial) << endl;
 
     // need to remove the terminal state from the samples

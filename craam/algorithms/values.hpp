@@ -514,7 +514,7 @@ template<class SType, class ResponseType = PlainBellman<SType>>
 inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const ResponseType& response = PlainBellman<SType>(),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi_rel=SOLPREC/2,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi_rel=0.9,
                 bool print_progress=false) {
 
     static_assert(std::is_same<SType,typename ResponseType::state_type>::value, "SType in mpi_jac and the ResponseType passed to it must be the same");
@@ -643,8 +643,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 @param iterations_pi Maximal number of policy iteration steps
 @param maxresidual_pi Stop the outer policy iteration when the residual drops below this threshold.
 @param iterations_vi Maximal number of inner loop value iterations
-@param maxresidual_vi Stop the inner policy iteration when the residual drops below this threshold.
-            This value should be smaller than maxresidual_pi
+@param maxresidual_vi Stop policy evaluation when the policy residual drops below
+                            maxresidual_vi * last_policy_residual
 @param print_progress Whether to report on progress during the computation
 @return Computed (approximate) solution
  */
@@ -653,7 +653,7 @@ inline DeterministicSolution
 solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
-                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=0.9,
                 bool print_progress=false) {
 
     return mpi_jac<SType, PlainBellman<SType>>(mdp, discount, valuefunction, PlainBellman<SType>(policy),
