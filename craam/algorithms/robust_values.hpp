@@ -517,7 +517,6 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
 }
 
 
-
 /**
 Gauss-Seidel variant of value iteration (not parallelized).
 

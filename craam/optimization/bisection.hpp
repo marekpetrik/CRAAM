@@ -283,7 +283,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     //cout << "xisum lower " << xisum_lower << "  xisum_upper " << xisum_upper << endl;
     //cout << "u_lower " << u_lower << "  u upper " << u_upper << endl;
 
-    // compute the value as the linear combination of the individual values
+    // compute the value as a linear combination of the individual values
     // alpha xisum_lower + (1-alpha) xisum_upper = psi
     // alpha = (psi - xisum_upper) / (xisum_lower - xisum_upper)
     prec_t alpha = (psi - xisum_upper) / (xisum_lower - xisum_upper);
@@ -293,7 +293,7 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     // the result is then: alpha * u_lower + (1-alpha) * u_upper
     prec_t u_result = alpha * u_lower + (1-alpha) * u_upper;
 
-    // compute the primal solution (pi)
+    // ***** NOW compute the primal solution (pi) ***************
     // this is based on computing pi such that the subderivative of
     // d/dxi ( sum_a pi_a f_a(xi_a) - lambda (sum_a xi_a f(a) ) ) = 0 for xi^*
     // and ignore the inactive actions (for which u is higher than the last segment)
@@ -304,7 +304,16 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         //cout << " index " << index << "/" << knots[a].size() << endl;
         assert(knots[a].size() == values[a].size());
 
-        if(index == 0) throw runtime_error("This should not happen; index = 0 should be handled the special case with u_lower feasible.");
+        if(index == 0){
+            cout << "z[a] = " << z[a] << endl;
+            cout << "pbar[a] = " << pbar[a] << endl;
+            cout << "knots = " << knots[a] << endl;
+            cout << "values = " << values[a] << endl;
+
+            throw runtime_error("This should not happen (can happen when z's are all the same); index = 0 should be handled by the special case with u_lower feasible. u_lower = " +
+                                                to_string(u_lower) + ", u_upper" + to_string(u_upper) + ", xisum_lower =" + to_string(xisum_lower) +
+                                                ", psi = " + to_string(psi) + ", knots = " + to_string(knots[a].size()));
+        }
 
         // the value u lies between index - 1 and index
         // when it is outside of the largest knot, the derivative is 0 and policy will be 0 (this is when f_a(xi_a^*) < u^*)

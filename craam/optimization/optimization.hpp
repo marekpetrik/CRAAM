@@ -412,7 +412,8 @@ s.t.    z^T p <= u
         1^T p = 1
         p >= 0
 
-The function returns the points of nonlinearity of q^{-1}(u).
+The function returns the points of nonlinearity of q^{-1}(u). It probably works even when
+p sums to less than 1.
 
 The function is convex and non-increasing. It is infty as u -> -infty and constant as u -> infty.
 
@@ -482,14 +483,14 @@ pair<numvec, numvec> worstcase_l1_w_knots(const numvec& z, const numvec& pbar, c
  * Uses gurobi to solve for the worst case response subject to a weighted L1 constraint
  *
  * min_p  p^T z
- * s.t.   1^T p = 1
+ * s.t.   1^T p = 1^T pbar
  *        p >= 0
  *        ||p - pbar||_{1,w} <= xi
  *
  * The linear program formulation is as follows:
  *
  * min_{p,l} p^T z
- * s.t.   1^T p = 1
+ * s.t.   1^T p = 1^T pbar
  *        p >= 0
  *        p - pbar <= l
  *        pbar - p <= l
@@ -508,6 +509,7 @@ std::pair<numvec, double> worstcase_l1_w_gurobi(const GRBEnv& env, const numvec&
     if(wi.empty()) ws = numvec(nstates, 1.0);
     const numvec& w = wi.empty() ? ws : wi;
 
+    prec_t pbar_sum = accumulate(pbar.cbegin(), pbar.cend(), 0.0);
 
     GRBModel model = GRBModel(env);
 
@@ -525,7 +527,7 @@ std::pair<numvec, double> worstcase_l1_w_gurobi(const GRBEnv& env, const numvec&
     // constraint: 1^T p = 1
     GRBLinExpr ones;
     ones.addTerms(numvec(nstates,1.0).data(),p.get(), nstates);
-    model.addConstr(ones, GRB_EQUAL, 1.0);
+    model.addConstr(ones, GRB_EQUAL, pbar_sum);
 
     // constraint: w^T l <= xi
     GRBLinExpr weights;

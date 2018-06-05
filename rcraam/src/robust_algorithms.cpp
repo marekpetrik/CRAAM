@@ -121,32 +121,6 @@ craam::MDP mdp_from_dataframe(const Rcpp::DataFrame& data){
 
 }
 
-// [[Rcpp::export]]
-Rcpp::List solve_mdp(Rcpp::DataFrame mdp, double discount, Rcpp::String algorithm){
-    MDP m = mdp_from_dataframe(mdp);
-
-    int iterations = 1000;
-    double precision = 0.01;
-
-    algorithms::DeterministicSolution sol;
-    if(algorithm == "mpi") {
-        sol = algorithms::solve_mpi(m,discount,numvec(0),indvec(0),
-                                    iterations,precision,iterations,precision);
-    } else if(algorithm == "vi") {
-        sol = algorithms::solve_vi(m,discount,numvec(0),indvec(0),
-                                   iterations,precision);
-    } else {
-        Rcpp::stop("Unknown solver type.");
-    }
-
-    Rcpp::List result;
-    result["iters"] = sol.iterations;
-    result["residual"] = sol.residual;
-    result["time"] = sol.time;
-    result["policy"] = move(sol.policy);
-    result["valuefunction"] = move(sol.valuefunction);
-    return result;
-}
 
 /**
  * Parses a data frame definition of values that correspond to states.
@@ -182,19 +156,19 @@ numvec parse_s_values(const MDP& mdp, const Rcpp::DataFrame& frame, double def_v
 }
 
 /**
- * Parses a data frame definition of values that correspond to states and
- * actions.
- *
- * Also checks whether the values passed are consistent with the MDP definition.
- *
- * @param mdp The definition of the MDP to know how many states and actions there are.
- * @param frame Dataframe with 3 comlumns, idstate, idaction, value. Here, idstate and idaction
- *              determine which value should be set.
- *              Only the last value is used if multiple rows are present.
- * @param def_value The default value for when frame does not specify anything for the state action pair
- *
- * @returns A vector over states with an inner vector of actions
- */
+* Parses a data frame definition of values that correspond to states and
+* actions.
+*
+* Also checks whether the values passed are consistent with the MDP definition.
+*
+* @param mdp The definition of the MDP to know how many states and actions there are.
+* @param frame Dataframe with 3 comlumns, idstate, idaction, value. Here, idstate and idaction
+*              determine which value should be set.
+*              Only the last value is used if multiple rows are present.
+* @param def_value The default value for when frame does not specify anything for the state action pair
+*
+* @returns A vector over states with an inner vector of actions
+*/
 vector<numvec> parse_sa_values(const MDP& mdp, const Rcpp::DataFrame& frame, double def_value = 0){
 
     vector<numvec> result(mdp.size());
@@ -207,8 +181,8 @@ vector<numvec> parse_sa_values(const MDP& mdp, const Rcpp::DataFrame& frame, dou
     Rcpp::NumericVector values = frame["value"];
 
     for(long i = 0; i < idstates.size(); i++){
-        long idstate = idstates[i],
-             idaction = idactions[i];
+        long idstate =  idstates[i],
+                        idaction = idactions[i];
 
         if(idstate < 0) Rcpp::stop("idstate must be non-negative");
         if(idstate > mdp.size()) Rcpp::stop("idstate must be smaller than the number of MDP states");
@@ -251,9 +225,9 @@ vector<vector<numvec>> parse_sas_values(const MDP& mdp, const Rcpp::DataFrame& f
     Rcpp::NumericVector values = frame["value"];
 
     for(long i = 0; i < idstatesfrom.size(); i++){
-        long idstatefrom = idstatesfrom[i],
-             idstateto = idstatesto[i],
-             idaction = idactions[i];
+        long idstatefrom =  idstatesfrom[i],
+                            idstateto = idstatesto[i],
+                            idaction = idactions[i];
 
         if(idstatefrom < 0) Rcpp::stop("idstatefrom must be non-negative");
         if(idstatefrom > mdp.size()) Rcpp::stop("idstatefrom must be smaller than the number of MDP states");
@@ -268,6 +242,58 @@ vector<vector<numvec>> parse_sas_values(const MDP& mdp, const Rcpp::DataFrame& f
 
     return result;
 }
+
+/** Packs MDP actions to be consequitive */
+//[[Rcpp::export]]
+Rcpp::List pack_actions(Rcpp::DataFrame mdp){
+    Rcpp::List result;
+
+    MDP m = mdp_from_dataframe(mdp);
+    result["action_mapping"] = m.pack_actions();
+
+    result["mdp"] = mdp_to_dataframe(m);
+    return result;
+}
+
+/**
+ * @param options
+ *          algorithm: "mpi", "vi"
+ *          pack_actions: bool
+ *          iterations: int
+ *          precision: double
+ */
+// [[Rcpp::export]]
+Rcpp::List solve_mdp(Rcpp::DataFrame mdp, double discount, Rcpp::List options){
+    MDP m = mdp_from_dataframe(mdp);
+    Rcpp::List result;
+
+    if(options.containsElementNamed("pack_actions") && Rcpp::as<bool>(options["pack_actions"])){
+        result["action_map"] = m.pack_actions();
+    }
+
+    long iterations = options.containsElementNamed("iterations") ? Rcpp::as<long>(options["iterations"]) : 1000000;
+    double precision = options.containsElementNamed("precision") ? Rcpp::as<long>(options["precision"]) : 0.0001;
+
+    algorithms::DeterministicSolution sol;
+
+    if(!options.containsElementNamed("algorithm") || Rcpp::as<string>(options["algorithm"]) == "mpi") {
+        sol = algorithms::solve_mpi(m,discount,numvec(0),indvec(0),
+                                    sqrt(iterations),precision,sqrt(iterations),0.9);
+    } else if(Rcpp::as<string>(options["algorithm"]) == "vi") {
+        sol = algorithms::solve_vi(m,discount,numvec(0),indvec(0),
+                                   iterations,precision);
+    } else {
+        Rcpp::stop("Unknown algorithm type.");
+    }
+
+    result["iters"] = sol.iterations;
+    result["residual"] = sol.residual;
+    result["time"] = sol.time;
+    result["policy"] = move(sol.policy);
+    result["valuefunction"] = move(sol.valuefunction);
+    return result;
+}
+
 
 /**
  * Parses the name and the parameter of the provided nature
@@ -308,26 +334,30 @@ algorithms::SANature parse_nature_sa(const MDP& mdp, const string& nature, SEXP 
 // [[Rcpp::export]]
 Rcpp::List rsolve_mdp_sa(Rcpp::DataFrame mdp, double discount,
                          Rcpp::String nature, SEXP nature_par,
-                         Rcpp::String algorithm){
+                         Rcpp::List options){
 
     MDP m = mdp_from_dataframe(mdp);
+    Rcpp::List result;
 
-    int iterations = 1000;
-    double precision = 0.01;
+    if(options.containsElementNamed("pack_actions") && Rcpp::as<bool>(options["pack_actions"])){
+        result["action_map"] = m.pack_actions();
+    }
+
+    long iterations = options.containsElementNamed("iterations") ? Rcpp::as<long>(options["iterations"]) : 1000000;
+    double precision = options.containsElementNamed("precision") ? Rcpp::as<long>(options["precision"]) : 0.0001;
 
     algorithms::SARobustSolution sol;
     algorithms::SANature natparsed = parse_nature_sa(m, nature, nature_par);
-    if(algorithm == "mpi") {
+    if(!options.containsElementNamed("algorithm") || Rcpp::as<string>(options["algorithm"]) == "mpi") {
         sol = algorithms::rsolve_mpi(m,discount,std::move(natparsed),numvec(0),indvec(0),
-                                    iterations,precision,iterations,0.5);
-    } else if(algorithm == "vi") {
+                                    sqrt(iterations),precision,sqrt(iterations),0.5);
+    } else if(Rcpp::as<string>(options["algorithm"]) == "vi") {
         sol = algorithms::rsolve_vi(m,discount,std::move(natparsed),numvec(0),indvec(0),
                                    iterations,precision);
     } else {
         Rcpp::stop("Unknown solver type.");
     }
 
-    Rcpp::List result;
     result["iters"] = sol.iterations;
     result["residual"] = sol.residual;
     result["time"] = sol.time;
@@ -379,26 +409,30 @@ algorithms::SNature parse_nature_s(const MDP& mdp, const string& nature, SEXP na
 // [[Rcpp::export]]
 Rcpp::List rsolve_mdp_s( Rcpp::DataFrame mdp, double discount,
                          Rcpp::String nature, SEXP nature_par,
-                         Rcpp::String algorithm){
+                         Rcpp::List options){
 
     MDP m = mdp_from_dataframe(mdp);
+    Rcpp::List result;
 
-    int iterations = 1000;
-    double precision = 0.01;
+    if(options.containsElementNamed("pack_actions") && Rcpp::as<bool>(options["pack_actions"])){
+        result["action_map"] = m.pack_actions();
+    }
+
+    long iterations = options.containsElementNamed("iterations") ? Rcpp::as<long>(options["iterations"]) : 1000000;
+    double precision = options.containsElementNamed("precision") ? Rcpp::as<long>(options["precision"]) : 0.0001;
 
     algorithms::SRobustSolution sol;
     algorithms::SNature natparsed = parse_nature_s(m, nature, nature_par);
-    if(algorithm == "mpi") {
+    if(!options.containsElementNamed("algorithm") || Rcpp::as<string>(options["algorithm"]) == "mpi") {
         sol = algorithms::rsolve_mpi(m,discount,std::move(natparsed),numvec(0),indvec(0),
-                                     iterations,precision,iterations,0.5);
-    } else if(algorithm == "vi") {
+                                     sqrt(iterations),precision,sqrt(iterations),0.5);
+    } else if(Rcpp::as<string>(options["algorithm"]) == "vi") {
         sol = algorithms::rsolve_vi(m,discount,std::move(natparsed),numvec(0),indvec(0),
                                     iterations,precision);
     } else {
         Rcpp::stop("Unknown solver type.");
     }
 
-    Rcpp::List result;
     result["iters"] = sol.iterations;
     result["residual"] = sol.residual;
     result["time"] = sol.time;

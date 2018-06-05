@@ -9,15 +9,19 @@ example_mdp <- function(name) {
     .Call(`_rcraam_example_mdp`, name)
 }
 
-solve_mdp <- function(mdp, discount, algorithm) {
-    .Call(`_rcraam_solve_mdp`, mdp, discount, algorithm)
+pack_actions <- function(mdp) {
+    .Call(`_rcraam_pack_actions`, mdp)
 }
 
-rsolve_mdp_sa <- function(mdp, discount, nature, nature_par, algorithm) {
-    .Call(`_rcraam_rsolve_mdp_sa`, mdp, discount, nature, nature_par, algorithm)
+solve_mdp <- function(mdp, discount, options) {
+    .Call(`_rcraam_solve_mdp`, mdp, discount, options)
 }
 
-rsolve_mdp_s <- function(mdp, discount, nature, nature_par, algorithm) {
-    .Call(`_rcraam_rsolve_mdp_s`, mdp, discount, nature, nature_par, algorithm)
+rsolve_mdp_sa <- function(mdp, discount, nature, nature_par, options) {
+    .Call(`_rcraam_rsolve_mdp_sa`, mdp, discount, nature, nature_par, options)
+}
+
+rsolve_mdp_s <- function(mdp, discount, nature, nature_par, options) {
+    .Call(`_rcraam_rsolve_mdp_s`, mdp, discount, nature, nature_par, options)
 }
 

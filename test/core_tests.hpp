@@ -1097,6 +1097,93 @@ BOOST_AUTO_TEST_CASE(test_responses){
     }
 }
 
+BOOST_AUTO_TEST_CASE(test_responses_ties){
+    // set parameters
+    const vector<numvec> p{{0.3, 0.2, 0.1, 0.4},
+                           {0.3, 0.6, 0.1},
+                           {0.1, 0.3, 0.6}};
+    const vector<numvec> z{{1.0, 1.0, 4.0, 1.0},
+                           {1.0, 1.0, 1.0},
+                           {1.0, 1.0, 1.0}};
+    const vector<numvec> w{{0.3,0.3,0.3,0.1},
+                           {0.2,0.5,0.3},
+                           {0.7,0.1,0.2}};
+
+    // uniform weights
+    const vector<numvec> wu{{1.0,1.0,1.0,1.0},
+                            {1.0,1.0,1.0},
+                            {1.0,1.0,1.0}};
+
+    #ifdef GUROBI_USE
+    GRBEnv env = get_gurobi();
+    #endif
+
+    for(size_t i = 0; i < p.size(); i++){
+        const auto& pi = p[i];
+        const auto& zi = z[i];
+        const auto& wi = w[i];
+        const auto& wui = wu[i];
+
+        auto expected = inner_product(pi.cbegin(), pi.cend(), zi.cbegin(), 0.0);
+        auto min = *min_element(zi.cbegin(), zi.cend());
+
+        // psi = 0
+        {
+        double psi = 0;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        //CHECK_CLOSE_COLLECTION(pol, pol_w, 1e-3);
+        //CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_w, 1e-4);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+        BOOST_CHECK_CLOSE(obj, expected, 1e-4);
+        }
+
+        // psi = 1
+        {
+        double psi = 1;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        //CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+
+        #ifdef GUROBI_USE
+        auto [pol_g,obj_g] = worstcase_l1_w_gurobi(env,zi,pi,wui,psi);
+        auto [pol_w_g,obj_w_g] = worstcase_l1_w_gurobi(env,zi,pi,wi,psi);
+
+        //CHECK_CLOSE_COLLECTION(pol, pol_g, 1e-3);
+        //CHECK_CLOSE_COLLECTION(pol_w, pol_w_g, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_g, 1e-4);
+        BOOST_CHECK_CLOSE(obj_w, obj_w, 1e-4);
+        #endif
+        }
+        // psi = 2
+        {
+        double psi = 2;
+        auto [pol,obj] = worstcase_l1(zi,pi,psi);
+        auto [pol_w,obj_w] = worstcase_l1_w(zi,pi,wi,psi);
+        auto [pol_wu,obj_wu] = worstcase_l1_w(zi,pi,wui,psi);
+        //CHECK_CLOSE_COLLECTION(pol, pol_wu, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_wu, 1e-4);
+        BOOST_CHECK_CLOSE(obj, min, 1e-4);
+
+        #ifdef GUROBI_USE
+        auto [pol_g,obj_g] = worstcase_l1_w_gurobi(env,zi,pi,wui,psi);
+        auto [pol_w_g,obj_w_g] = worstcase_l1_w_gurobi(env,zi,pi,wi,psi);
+
+        //CHECK_CLOSE_COLLECTION(pol, pol_g, 1e-3);
+        //CHECK_CLOSE_COLLECTION(pol_w, pol_w_g, 1e-3);
+        BOOST_CHECK_CLOSE(obj, obj_g, 1e-4);
+        BOOST_CHECK_CLOSE(obj_w, obj_w, 1e-4);
+        #endif
+
+        }
+    }
+}
+
+
 BOOST_AUTO_TEST_CASE(test_knots_deviation){
     // the nominal probability distribution
     const numvec p{0.3, 0.2, 0.1, 0.4};
