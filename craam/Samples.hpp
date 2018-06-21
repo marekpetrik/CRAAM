@@ -118,7 +118,7 @@ template <class State, class Action>
 class Samples {
 public:
 
-   Samples(): states_from(), actions(), states_to(), rewards(), weights(), runs(), steps(), initial() {};
+   Samples(): states_from(), actions(), states_to(), rewards(), cumulative_rewards(), weights(), runs(), steps(), initial() {};
     
 
     /** Adds an initial state */
@@ -137,6 +137,10 @@ public:
         actions.push_back(sample.action());
         states_to.push_back(sample.state_to());
         rewards.push_back(sample.reward());
+        prec_t cumulative_reward_value = sample.reward();
+        if (runs.size() > 0 && *runs.rbegin() == sample.run())
+            cumulative_reward_value += *cumulative_rewards.rbegin();
+        cumulative_rewards.push_back(cumulative_reward_value);
         weights.push_back(sample.weight());
         steps.push_back(sample.step());
         runs.push_back(sample.run());
@@ -151,6 +155,10 @@ public:
         actions.push_back(move(action));
         states_to.push_back(move(state_to));
         rewards.push_back(reward);
+        prec_t cumulative_reward_value = reward;
+        if (runs.size() > 0 && *runs.rbegin() == run)
+            cumulative_reward_value += *cumulative_rewards.rbegin();
+        cumulative_rewards.push_back(cumulative_reward_value);
         weights.push_back(weight);
         steps.push_back(step);
         runs.push_back(run);
@@ -195,6 +203,7 @@ public:
     const vector<Action>& get_actions() const{return actions;};
     const vector<State>& get_states_to() const{return states_to;};
     const vector<prec_t>& get_rewards() const{return rewards;};
+    const vector<prec_t>& get_cumulative_rewards() const{return cumulative_rewards;};
     const vector<prec_t>& get_weights() const{return weights;};
     const vector<long>& get_runs() const{return runs;};
     const vector<long>& get_steps() const{return steps;};
@@ -205,6 +214,7 @@ protected:
     vector<Action> actions;
     vector<State> states_to;
     vector<prec_t> rewards;
+    vector<prec_t> cumulative_rewards;
     vector<prec_t> weights;
     vector<long> runs;
     vector<long> steps;

@@ -809,6 +809,7 @@ cdef extern from "craam/Samples.hpp" namespace 'craam::msen':
         const vector[long]& get_actions() const;
         const vector[long]& get_states_to() const;
         const vector[double]& get_rewards() const;
+        const vector[double]& get_cumulative_rewards() const;
         const vector[double]& get_weights() const;
         const vector[long]& get_runs() const;
         const vector[long]& get_steps() const;
@@ -897,6 +898,10 @@ cdef class DiscreteSamples:
     def get_rewards(self):
         """ Returns a list of all rewards (one for every sample)"""
         return dereference(self._thisptr).get_rewards()
+
+    def get_cumulative_rewards(self):
+        """ Returns a list of cumulative rewards for the corresponding run """
+        return dereference(self._thisptr).get_cumulative_rewards()
 
     def get_weights(self):
         """ Returns a list of all sample weights (one for every sample)"""

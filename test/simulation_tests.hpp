@@ -249,6 +249,27 @@ BOOST_AUTO_TEST_CASE(simulation_multiple_counter_si_return ) {
     BOOST_CHECK_EQUAL(meanreturn, 3);
 
 }
+
+BOOST_AUTO_TEST_CASE(cumulative_rewards){
+    // check that the reward is constructed correctly from samples
+    DiscreteSamples samples;
+
+    samples.add_sample(0,0,1,1.0,3.0,0,0);
+    samples.add_sample(0,0,1,2.0,2.0,0,0);
+    samples.add_sample(0,0,1,3.0,1.0,0,0);
+
+    samples.add_sample(0,0,2,7.0,1.0,0,1);
+    samples.add_sample(0,0,3,2.0,1.0,0,1);
+    samples.add_sample(0,0,0,0.0,1.0,0,1);
+
+    samples.add_sample(DiscreteSample(0,0,1,1,1,0,2));
+    samples.add_sample(DiscreteSample(0,0,1,11,1,0,2));
+
+    BOOST_CHECK_EQUAL(samples.get_cumulative_rewards()[2], 6);
+    BOOST_CHECK_EQUAL(samples.get_cumulative_rewards()[5], 9);
+    BOOST_CHECK_EQUAL(samples.get_cumulative_rewards()[7], 12);
+}
+
 BOOST_AUTO_TEST_CASE(sampled_mdp_reward){
     // check that the reward is constructed correctly from samples
     DiscreteSamples samples;
