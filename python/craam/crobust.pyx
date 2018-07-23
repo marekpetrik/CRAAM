@@ -98,6 +98,13 @@ cdef extern from "craam/algorithms/values.hpp" namespace "craam::algorithms" nog
         prec_t residual
         long iterations
 
+    cdef cppclass StochasticSolution:
+        numvec valuefunction
+        prob_matrix_t policy
+        indvec outcomes
+        prec_t residual
+        long iterations
+
     Solution csolve_vi_mdp "craam::algorithms::solve_vi"(const CMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
@@ -107,6 +114,15 @@ cdef extern from "craam/algorithms/values.hpp" namespace "craam::algorithms" nog
     Solution csolve_mpi_mdp "craam::algorithms::solve_mpi"(const CMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
+                    unsigned long iterations_pi,
+                    prec_t maxresidual_pi,
+                    unsigned long iterations_vi,
+                    prec_t maxresidual_vi,
+                    bool show_progress) except +;
+    
+    StochasticSolution csolve_mpi_stochastic_mdp "craam::algorithms::solve_mpi_stochastic"(const CMDP& mdp, prec_t discount,
+                    const numvec& valuefunction,
+                    const prob_matrix_t& policy,
                     unsigned long iterations_pi,
                     prec_t maxresidual_pi,
                     unsigned long iterations_vi,
@@ -177,6 +193,7 @@ DEFAULT_ITERS = 500
 import collections
 
 SolutionTuple = namedtuple("Solution", ("valuefunction", "policy", "residual", "iterations")) 
+StochasticSolutionTuple = namedtuple("StochasticSolution", ("valuefunction", "policy", "residual", "iterations")) 
 
 cdef class MDP:
     """
@@ -666,6 +683,62 @@ cdef class MDP:
 
         return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
                 sol.iterations)
+
+
+    cpdef solve_mpi_stochastic(self, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
+                                    policy = np.empty(0),
+                                    double maxresidual = 0, long valiterations = -1, 
+                                    double valresidual=-1, bool show_progress = False):
+        """
+        Same as solve_mpi except capable of handling a stochastic policy.
+        
+        Returns a namedtuple StochasticSolutionTuple.
+
+        Parameters
+        ----------
+        iterations : int, optional
+            Maximal number of iterations
+        valuefunction : np.ndarray, optional
+            The initial value function. Created automatically if not provided.            
+        policy : np.ndarray, optional
+            If supplied, policy[x][y] is the probability of executing action y at state x.  
+            If a state has no array or all action probabilities are zero, the policy will be optimized for this state.
+        maxresidual : double, optional
+            Maximal residual at which the iterations stop. A negative value
+            will ensure the necessary number of iterations.
+        valiterations : int, optional
+            Maximal number of iterations for value function computation. The same as iterations if omitted.
+        valresidual : double, optional 
+            Maximal residual at which iterations of computing the value function 
+            stop. Default is maxresidual / 2.
+        show_progress : bool
+            Whether to report on the progress of the computation
+            
+        Returns
+        -------
+        valuefunction : np.ndarray
+            Optimized value function
+        policy : np.ndarray
+            Policy greedy for value function
+        residual : double
+            Residual for the value function
+        iterations : int
+            Number of iterations taken
+        """
+
+        self._check_value(valuefunction)
+        self._check_policy(policy)
+
+        if valiterations <= 0: valiterations = iterations
+        if valresidual < 0: valresidual = maxresidual / 2
+        
+        cdef StochasticSolution sol = csolve_mpi_stochastic_mdp(dereference(self.thisptr),self.discount,\
+                        valuefunction,policy,iterations,maxresidual,valiterations,\
+                        valresidual,show_progress)
+        
+        return StochasticSolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
+                sol.iterations)
+        
 
     cpdef rsolve_vi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
                             policy = np.empty(0), double maxresidual=0):

@@ -225,6 +225,29 @@ value_fix_state(const SAState<AType>& state, numvec const& valuefunction, prec_t
     return value_action(action, valuefunction, discount, distribution);
 }
 
+/**
+Computes the value of a fixed (and valid) action. Performs validity checks.
+
+\param state State to compute the value for
+\param valuefunction Value function to use for the following states
+\param discount Discount factor
+\param action_probabilities A vector of probabilities whose indecies correspond to the action id
+
+\return Value of state, 0 if it's terminal regardless of the action index
+*/
+template<class AType>
+inline prec_t value_stochastic_state(const SAState<AType>& state, numvec const& valuefunction,
+                              prec_t discount, prob_list_t action_probabilities) {
+    prec_t return_value = 0;
+    for ( int i = 0; i < action_probabilities.size(); i++ ) {
+        if ( state.action_count() > i )
+            return_value += action_probabilities[i] * value_fix_state(state, valuefunction, discount, i);
+        else
+            break;
+    }
+    return return_value;
+}
+
 // *******************************************************
 // RMDP computation methods
 // *******************************************************
@@ -247,6 +270,38 @@ struct Solution {
 
     /// Empty solution for a problem with a given value function and policy
     Solution(numvec valuefunction, indvec policy, prec_t residual = -1, long iterations = -1) :
+        valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {}
+
+    /**
+    Computes the total return of the solution given the initial
+    distribution.
+    \param initial The initial distribution
+     */
+    prec_t total_return(const Transition& initial) const{
+        if(initial.max_index() >= (long) valuefunction.size()) throw invalid_argument("Too many indexes in the initial distribution.");
+        return initial.value(valuefunction);
+    };
+};
+
+
+/** A set of values that represent a stochastic solution to a plain MDP.  */
+struct StochasticSolution {
+    /// Value function
+    numvec valuefunction;
+    /// index of the action to take for each states
+    prob_matrix_t policy;
+    /// Bellman residual of the computation
+    prec_t residual;
+    /// Number of iterations taken
+    long iterations;
+
+    StochasticSolution(): valuefunction(0), policy(0), residual(-1),iterations(-1) {}
+
+    /// Empty solution for a problem with statecount states
+    StochasticSolution(size_t statecount): valuefunction(statecount, 0.0), policy(statecount, prob_list_t(0,0)), residual(-1),iterations(-1) {}
+
+    /// Empty solution for a problem with a given value function and policy
+    StochasticSolution(numvec valuefunction, prob_matrix_t policy, prec_t residual = -1, long iterations = -1) :
         valuefunction(move(valuefunction)), policy(move(policy)), residual(residual), iterations(iterations) {}
 
     /**
@@ -308,7 +363,7 @@ public:
      *  \returns New value for the state
      */
     template<class SType>
-    prec_t policy_update(Solution& solution, const SType& state, long stateid,
+    prec_t policy_update(solution_type& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
         assert(stateid < long(solution.policy.size()));
 
@@ -327,7 +382,7 @@ public:
      * \returns New value for the state
      */
     template<class SType>
-    prec_t compute_value(const Solution& solution, const SType& state, long stateid,
+    prec_t compute_value(const solution_type& solution, const SType& state, long stateid,
                             const numvec& valuefunction, prec_t discount) const{
 
         return value_fix_state(state, valuefunction, discount, solution.policy[stateid]);
@@ -371,6 +426,126 @@ protected:
 };
 
 
+/**
+A Bellman update class for solving regular Markov decision processes. This class abstracts
+away from particular model properties and the goal is to be able to plug it in into value or
+policy iteration methods for MDPs.
+
+Many of the methods are parametrized by the type of the state.
+*/
+class StochasticBellman {
+protected:
+    /// Partial policy specification (action -1 is ignored and optimized)
+    prob_matrix_t initial_policy;
+    int action_count;
+
+public:
+    /// Provides the type of the solution for the consumption of methods that call this value
+    using solution_type = StochasticSolution;
+
+    /// Constructs the update with no constraints on the initial policy
+    StochasticBellman(int action_count) : action_count(action_count), initial_policy(0) {}
+
+    /** A partial policy that can be used to fix some actions
+     *  @param policy policy[s] = -1 means that the action should be optimized in the state
+     *                policy of length 0 means that all actions will be optimized
+     */
+    StochasticBellman(int action_count, prob_matrix_t policy) : action_count(action_count), initial_policy(move(policy)) {}
+
+    /**
+     * @brief Constructs a solution for the
+     * @param statecount
+     * @param valuefunction
+     * @return
+     */
+    StochasticSolution new_solution(size_t statecount, numvec valuefunction) const {
+        process_valuefunction(statecount, valuefunction);
+        StochasticSolution solution =  StochasticSolution(move(valuefunction), process_policy(statecount, action_count));
+        return solution;
+    }
+
+    /**
+     *  Computes the Bellman update and updates the internal policy to the best response.
+     *  This function does *not* update the value function.
+     *  \returns New value for the state
+     */
+    template<class SType>
+    prec_t policy_update(solution_type& solution, const SType& state, long stateid,
+                            const numvec& valuefunction, prec_t discount) const {
+        assert(stateid < long(solution.policy.size()));
+
+        prec_t newvalue;
+        // check whether this state should only be evaluated
+        if(initial_policy.empty() || initial_policy[stateid].empty() || sum_vector(initial_policy[stateid]) < 0){    // optimizing
+            pair<long,prec_t> results = value_max_state(state, valuefunction, discount);
+            newvalue = results.second;
+            for ( int i = 0; i < solution.policy[stateid].size(); i++ )
+                solution.policy[stateid][i] = 0;
+            solution.policy[stateid][results.first] = 1;
+        }else{// fixed-action, do not copy
+            return value_stochastic_state(state, valuefunction, discount, initial_policy[stateid]);
+        }
+        return newvalue;
+    }
+
+    /**
+     *  Computes value function update using the current policy
+     * \returns New value for the state
+     */
+    template<class SType>
+    prec_t compute_value(const solution_type& solution, const SType& state, long stateid,
+                            const numvec& valuefunction, prec_t discount) const{
+
+        return value_stochastic_state(state, valuefunction, discount, solution.policy[stateid]);
+    }
+
+protected:
+
+    /**
+     * Resizes value function to the proper length when it is empty (size == 0)
+     * @param statecount Number of states in the MDP
+     * @param valuefunction Value function
+     */
+    void process_valuefunction(size_t statecount, numvec& valuefunction) const{
+        // check if the value function is a correct size, and if it is length 0
+        // then creates an appropriate size
+        if(!valuefunction.empty()){
+            if(valuefunction.size() != statecount) throw invalid_argument("Incorrect dimensions of value function.");
+        }else{
+            valuefunction.assign(statecount, 0.0);
+        }
+        assert(valuefunction.size() == statecount);
+    }
+
+    /**
+     * @brief process_policy Initializes policy to match the number of states.
+     *
+     * Does not modify internal policy object, but returns the new policy.
+     *
+     * @param statecount Number of states in the MDP
+     * @return Policy of the appropriate size.
+     */
+    prob_matrix_t process_policy(size_t state_count, size_t action_count) const {
+       // check the dimensions of the policy
+        if(!initial_policy.empty()){
+            if(initial_policy.size() != state_count) throw invalid_argument("Incorrect dimensions of policy function.");
+            return initial_policy;
+        }else{
+            prob_matrix_t new_policy(state_count, prob_list_t(action_count,0));
+            return new_policy;
+        }
+    }
+
+private:
+    double sum_vector(const prob_list_t &list) const {
+        double total = 0;
+        for (int i = 0; i < list.size(); i++)
+            total += list[i];
+        return total;
+    }
+};
+
+
 // **************************************************************************
 // Main solution methods
 // **************************************************************************
@@ -406,7 +581,6 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
     const auto& states = mdp.get_states();
     typename ResponseType::solution_type solution =
             response.new_solution(states.size(), move(valuefunction));
-
     // just quit if there are no states
     if( mdp.state_count() == 0) return solution;
 
@@ -475,7 +649,6 @@ inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
     prec_t residual_pi = numeric_limits<prec_t>::infinity();
 
     size_t i; // defined here to be able to report the number of iterations
-
 
     for(i = 0; i < iterations_pi; i++){
 
@@ -588,6 +761,26 @@ inline auto solve_mpi(const GRMDP<SType>& mdp, prec_t discount,
     return mpi_jac<SType, PlainBellman>(mdp, discount, valuefunction, PlainBellman(policy),
                     iterations_pi, maxresidual_pi,
                      iterations_vi, maxresidual_vi, 
+                     print_progress);
+}
+
+template<class SType>
+inline auto solve_mpi_stochastic(const GRMDP<SType>& mdp, prec_t discount,
+                const numvec& valuefunction=numvec(0), const prob_matrix_t& policy = prob_matrix_t(0),
+                unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
+                unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
+                bool print_progress=false) {
+    int action_count = 0;
+    for ( int i = 0; i < mdp.state_count(); i++ ){
+        const SType &currentState = mdp.get_state(i);
+        int state_action_count = currentState.action_count();
+        if ( state_action_count > action_count )
+            action_count = state_action_count;
+    }
+
+    return mpi_jac<SType, StochasticBellman>(mdp, discount, valuefunction, StochasticBellman(action_count, policy),
+                    iterations_pi, maxresidual_pi,
+                     iterations_vi, maxresidual_vi,
                      print_progress);
 }
 
