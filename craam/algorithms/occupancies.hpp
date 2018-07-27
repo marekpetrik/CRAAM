@@ -139,4 +139,28 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     return result;
 }
 
+/**
+Computes occupancy with a given horizon.  Guaranteed to not scale well.
+*/
+template<typename SType, typename Policies>
+inline numvec
+occfreq_horizon
+(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
+                 const Policies& policies, int horizon) {
+    const auto n = rmdp.state_count();
+
+    // initial distribution
+    const numvec& ivec = init.probabilities_vector(n);
+    const VectorXd initial_vec = Map<const VectorXd,Unaligned>(ivec.data(),ivec.size());
+
+    // get transition matrix and construct (I - gamma * P^T)
+    MatrixXd t_mat = MatrixXd::Identity(n,n)  - discount * transition_mat(rmdp, policies, true);
+
+    // solve set of linear equations
+    numvec result(n,0);
+    Map<VectorXd,Unaligned>(result.data(),result.size()) = HouseholderQR<MatrixXd>(t_mat).solve(initial_vec);
+
+    return result;
+}
+
 }}
