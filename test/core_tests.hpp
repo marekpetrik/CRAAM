@@ -276,6 +276,13 @@ void test_stochastic_vi(const Model& rmdp){
 
     // check the computed returns
     BOOST_CHECK_CLOSE (re9.total_return(init_d), ret_true, 1e-2);
+
+    // check if we get the same return from the solution as from the
+    // occupancy frequencies
+    auto&& occupancy_freq_horizon = occfreq_action_horizon_stochcastic(rmdp, init_d, 0.9, re9.policy, 10);
+    const prob_matrix_t occ_freq3{{0, 0.333333333},{0, 2.1710718663333335},{0, 67.866415512777365}};
+    for ( int i = 0; i < occ_freq3.size(); i++ )
+        CHECK_CLOSE_COLLECTION(occupancy_freq_horizon[i], occ_freq3[i], 1e-3);
 }
 
 BOOST_AUTO_TEST_CASE(stochastic_mdp_vi_of_nonrobust) {
@@ -346,6 +353,7 @@ BOOST_AUTO_TEST_CASE(test_check_add_transition_m){
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
     tp = vector<double>{0.1,0.2,0.5};
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
 }
 
 

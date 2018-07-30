@@ -770,13 +770,7 @@ inline auto solve_mpi_stochastic(const GRMDP<SType>& mdp, prec_t discount,
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi=SOLPREC/2,
                 bool print_progress=false) {
-    int action_count = 0;
-    for ( int i = 0; i < mdp.state_count(); i++ ){
-        const SType &currentState = mdp.get_state(i);
-        int state_action_count = currentState.action_count();
-        if ( state_action_count > action_count )
-            action_count = state_action_count;
-    }
+    int action_count = mdp.action_count();
 
     return mpi_jac<SType, StochasticBellman>(mdp, discount, valuefunction, StochasticBellman(action_count, policy),
                     iterations_pi, maxresidual_pi,

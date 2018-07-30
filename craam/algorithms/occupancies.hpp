@@ -142,25 +142,57 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
 /**
 Computes occupancy with a given horizon.  Guaranteed to not scale well.
 */
-template<typename SType, typename Policies>
-inline numvec
-occfreq_horizon
+template<typename SType>
+inline prob_matrix_t
+occfreq_action_horizon_stochcastic
 (const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
-                 const Policies& policies, int horizon) {
-    const auto n = rmdp.state_count();
+                 const prob_matrix_t& policy, int horizon) {
+    const auto state_count = rmdp.state_count();
+    const auto action_count = rmdp.action_count();
 
-    // initial distribution
-    const numvec& ivec = init.probabilities_vector(n);
-    const VectorXd initial_vec = Map<const VectorXd,Unaligned>(ivec.data(),ivec.size());
+    //Create the inital occupancy matrix given the initial state distribution
+    prob_matrix_t occupancy_matrix(state_count, prob_list_t(action_count,0));
+    const numvec& ivec = init.probabilities_vector(state_count);
+    for ( int current_state = 0; current_state < state_count; current_state++ ){
+        const prob_list_t &policy_current_state = policy[current_state];
+        for ( int current_action = 0; current_action < action_count; current_action++ )
+            occupancy_matrix[current_state][current_action] = ivec[current_state] * policy_current_state[current_action];
+    }
 
-    // get transition matrix and construct (I - gamma * P^T)
-    MatrixXd t_mat = MatrixXd::Identity(n,n)  - discount * transition_mat(rmdp, policies, true);
+    for ( int t = 1; t < horizon; t++ ) {
+        prob_matrix_t new_occupancy_additions(state_count, prob_list_t(action_count,0));
+        for ( int current_state = 0; current_state < state_count; current_state++ ){
+            prec_t occupancy_of_current_state = 0;
+            for ( int current_action = 0; current_action < action_count; current_action++ )
+                occupancy_of_current_state += occupancy_matrix[current_state][current_action];
+            const SType &state_obj = rmdp.get_state(current_state);
+            for ( int current_action = 0; current_action < action_count; current_action++ ){
+                const auto &action_obj = state_obj.get_action(current_action);
+                size_t num_outcomes = action_obj.outcome_count();
+                for ( int current_outcome = 0; current_outcome < num_outcomes; current_outcome++ ) {
+                    const Transition &outcome_obj = action_obj.get_outcome(current_outcome);
+                    prec_t current_outcome_weight = action_obj.get_weight(current_outcome);
+                    for ( int current_transition = 0; current_transition < outcome_obj.size(); current_transition++){
+                        const long target_state = outcome_obj.get_indices()[current_transition];
+                        const prob_list_t &policy_target_state = policy[target_state];
+                        const double transition_weight = outcome_obj.get_probabilities()[current_transition];
+                        new_occupancy_additions[target_state][current_action] += occupancy_of_current_state *
+                                                                          policy_target_state[current_action] *
+                                                                          current_outcome_weight *
+                                                                          transition_weight *
+                                                                          pow( discount, t );
+                    }
+                }
+            }
+        }
 
-    // solve set of linear equations
-    numvec result(n,0);
-    Map<VectorXd,Unaligned>(result.data(),result.size()) = HouseholderQR<MatrixXd>(t_mat).solve(initial_vec);
+        for ( int current_state = 0; current_state < state_count; current_state++ ) {
+            for ( int current_action = 0; current_action < action_count; current_action++ )
+                occupancy_matrix[current_state][current_action] += new_occupancy_additions[current_state][current_action];
+        }
+    }
 
-    return result;
+    return occupancy_matrix;
 }
 
 }}

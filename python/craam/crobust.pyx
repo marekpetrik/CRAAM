@@ -174,6 +174,12 @@ cdef extern from "craam/algorithms/occupancies.hpp" namespace 'craam::algorithms
                     const CTransition& init, 
                     prec_t discount, 
                     const indvec& policies) except +
+
+    prob_matrix_t csolve_occfreq_action_horizon_stochcastic "craam::algorithms::occfreq_action_horizon_stochcastic"(CMDP& mdp, 
+                    const CTransition& init, 
+                    prec_t discount, 
+                    const prob_matrix_t& policies,
+                    int horizon) except +
                     
     vector[double] csolve_rewards_vec "craam::algorithms::rewards_vec"(CMDP& mdp, 
                     const indvec& policies) except +
@@ -254,6 +260,19 @@ cdef class MDP:
         policies: policy to evaluate
         """
         return csolve_occfreq_mat(dereference(self.thisptr), CTransition(init), discount, policies)
+
+    cpdef occfreq_action_horizon_stochcastic(self, np.ndarray[double] init, prec_t discount, np.ndarray[double, ndim=2] policies, int horizon):
+        """
+        Computes the return for a policy
+        
+        Parameters
+        ----------
+        init: distribution over the initial states
+        discount: discount factor
+        policies: policy to evaluate
+        horizon: the horizon to calculate out to
+        """
+        return csolve_occfreq_action_horizon_stochcastic(dereference(self.thisptr), CTransition(init), discount, policies, horizon)
         
     cpdef rewards_vec(self, indvec policies):
         """

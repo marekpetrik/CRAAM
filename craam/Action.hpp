@@ -99,6 +99,8 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;}
 
+    /** Returns the weight of the outcome requested */
+    prec_t get_weight(int outcomeid) const {return 1;}
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
@@ -380,6 +382,13 @@ public:
         assert(outcomeid >= 0 && (size_t) outcomeid < outcomes.size());
         distribution[outcomeid] = weight;
     }
+
+    /**
+     * @brief get_weight Returns the weight for the specified outcome
+     * @param outcomeid The outcome you want the weight for
+     * @return The weight
+     */
+    prec_t get_weight(int outcomeid) const {return distribution[outcomeid];}
 
     /** Returns the baseline distribution over outcomes. */
     const numvec& get_distribution() const {return distribution;};
