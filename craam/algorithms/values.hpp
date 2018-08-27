@@ -478,7 +478,7 @@ inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
 
     auto finish = chrono::steady_clock::now();
     chrono::duration<double> duration = finish-start;
-    return Solution(move(valuefunction), move(policy),residual,i, duration.count());
+    return Solution<policy_type>(move(valuefunction), move(policy),residual,i, duration.count());
 }
 
 
@@ -626,7 +626,7 @@ solve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
    return vi_gs<SType, PlainBellman<SType>>(mdp, discount, move(valuefunction),
-            PlainBellman(policy), iterations, maxresidual);
+            PlainBellman<SType>(policy), iterations, maxresidual);
 }
 
 

@@ -257,7 +257,6 @@ a distribution over outcomes. This action can be used by both regular and robust
 
 The distribution d over outcomes is uniform by default:
 see WeightedOutcomeAction::create_outcome.
-
 */
 class WeightedOutcomeAction : public OutcomeManagement{
 

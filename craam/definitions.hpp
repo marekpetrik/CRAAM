@@ -213,4 +213,20 @@ pair<vector<T1>,vector<T2>> unzip(const vector<pair<T1,T2>>& values){
     return {first, second};
 }
 
+// implement clamp when not provided by the library
+#ifndef __cpp_lib_clamp
+template<class T, class Compare>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi, Compare comp )
+{
+    return assert( !comp(hi, lo) ),
+        comp(v, lo) ? lo : comp(hi, v) ? hi : v;
+}
+
+template<class T>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi )
+{
+    return clamp( v, lo, hi, std::less<>() );
+}
+#endif
+
 }

@@ -367,7 +367,11 @@ pair<numvec, double> worstcase_l1_w(const GradientsL1_w& gradients, const numvec
 
     for(size_t k = 0; k < gradients.size(); k++){
         // edge index
+        #ifdef __cpp_structured_bindings
         auto [ignore, donor, receiver, donor_greater] = gradients.steepest_solution(k);
+        #else
+        size_t donor, receiver; bool donor_greater; tie(std::ignore, donor, receiver, donor_greater) = gradients.steepest_solution(k);
+        #endif
 
         // this basic solution is not applicable here, just skip it
         if(donor_greater && p[donor] <= pbar[donor]) continue;
@@ -446,7 +450,11 @@ worstcase_l1_w_knots(const GradientsL1_w& gradients, const numvec& z, const numv
     // trace the value of the norm and update the norm difference as well as the value of the return (u)
     for(size_t k = 0; k < gradients.size(); k++){
 
+        #ifdef __cpp_structured_bindings
         auto [ignore, donor, receiver, donor_greater] = gradients.steepest_solution(k);
+        #else
+        size_t donor, receiver; bool donor_greater; tie(std::ignore, donor, receiver, donor_greater) = gradients.steepest_solution(k);
+        #endif
 
         // this basic solution is not applicable here, just skip it
         if(donor_greater && p[donor] <= pbar[donor]) continue;

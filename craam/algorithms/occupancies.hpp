@@ -119,7 +119,7 @@ probabilities. This method may not scale well
                 policy and a randomized policy of the nature
 \param init Initial distribution (alpha)
 \param discount Discount factor (gamma)
-\param policies The policy (indvec) or the pair of the policy and the policy
+\param policies The policy (indvec) or a pair of the policy and the policy
         of nature (pair<indvec,vector<numvec> >). The nature is typically 
         a randomized policy
 */

@@ -176,7 +176,13 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         assert(abs(values[a].back()) <= 1e-6);
 
         // update the lower and upper limits on u
+
+        #ifdef __cpp_structured_bindings
         auto [minval, maxval] = minmax_element(knots[a].cbegin(), knots[a].cend());
+        #else
+        prec_t *minval, *maxval;
+        tie(minval, maxval) = minmax_element(knots[a].cbegin(), knots[a].cend());
+        #endif
         //cout << "minval " << *minval << "  maxval " << *maxval << endl;
         // the function is infinite for values smaller than the minumum for any action
         min_u = max(*minval, min_u);
@@ -211,15 +217,25 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
            xisum_upper = 0;
 
     // compute xisum_upper and indices,
-    for(size_t a = 0; a < nactions; a++){
+    for(size_t a = 0; a < nactions; a++){    
+        #ifdef __cpp_structured_bindings
         auto [xia, index] = piecewise_linear(knots[a], values[a], u_upper);
+        #else
+        double xia; size_t index;
+        tie(xia, index) = piecewise_linear(knots[a], values[a], u_upper);
+        #endif
         xisum_upper += xia * (wa.empty() ? 1.0 : wa[a]);
         indices_upper[a] = index;
     }
 
     // compute xisum_lower
     for(size_t a = 0; a < nactions; a++){
+        #ifdef __cpp_structured_bindings
         auto [xia, index] = piecewise_linear(knots[a], values[a], u_lower);
+        #else
+        double xia; size_t index;
+        tie(xia, index) = piecewise_linear(knots[a], values[a], u_lower);
+        #endif
         assert((wa.empty() ? 1.0 : wa[a]) > 0.0);
         xisum_lower += xia * (wa.empty() ? 1.0 : wa[a]);
         indices_lower[a] = index;
@@ -251,7 +267,12 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         prec_t xisum = 0;
         sizvec indices_pivot(nactions);
         for(size_t a = 0; a < nactions; a++){
+            #ifdef __cpp_structured_bindings
             auto [xia, index] = piecewise_linear(knots[a], values[a], u_pivot);
+            #else
+            double xia; size_t index;
+            tie(xia, index) = piecewise_linear(knots[a], values[a], u_pivot);
+            #endif
             xisum += xia * (wa.empty() ? 1.0 : wa[a]);
             indices_pivot[a] = index;
         }
@@ -298,7 +319,12 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
     // d/dxi ( sum_a pi_a f_a(xi_a) - lambda (sum_a xi_a f(a) ) ) = 0 for xi^*
     // and ignore the inactive actions (for which u is higher than the last segment)
     for(size_t a = 0; a < nactions; a++){
+        #ifdef __cpp_structured_bindings
         auto [xia, index] = piecewise_linear(knots[a], values[a], u_result);
+        #else
+        double xia; size_t index;
+        tie(xia, index) = piecewise_linear(knots[a], values[a], u_result);
+        #endif
         xi[a] = xia;
 
         //cout << " index " << index << "/" << knots[a].size() << endl;
@@ -310,8 +336,11 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
             cout << "knots = " << knots[a] << endl;
             cout << "values = " << values[a] << endl;
 
+            // TODO: Can this ever happen?
+
             throw runtime_error("This should not happen (can happen when z's are all the same); index = 0 should be handled by the special case with u_lower feasible. u_lower = " +
                                                 to_string(u_lower) + ", u_upper" + to_string(u_upper) + ", xisum_lower =" + to_string(xisum_lower) +
+                                                ", xisum_upper = " + to_string(xisum_upper) +
                                                 ", psi = " + to_string(psi) + ", knots = " + to_string(knots[a].size()));
         }
 
