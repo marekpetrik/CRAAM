@@ -275,6 +275,8 @@ void print_vector(vector<T> vec){
     }
 }*/
 
+#if __cplusplus >= 201703L
+
 BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
 
@@ -349,6 +351,9 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
     BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 0.1);
     BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 0.1);
 }
+
+#endif //  __cplusplus >= 201703L
+
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){
     // test return with different initial states

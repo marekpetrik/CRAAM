@@ -70,9 +70,8 @@ constexpr unsigned long MAXITER = 100000;
 /// Numerical threshold for reporting errors
 constexpr prec_t THRESHOLD = 1e-6;
 
-
 #ifdef IS_DEBUG
-/** This is a useful functionality for debugging.  */
+/** This is a useful print functionality for debugging.  */
 template<class T>
 std::ostream & operator<<(std::ostream &os, const std::vector<T>& vec)
 {
@@ -117,7 +116,6 @@ vector<size_t> sort_indexes_desc(vector<T> const& v){
 
     return idx;
 }
-
 
 /**
  * @brief Computes the l1 norm between two vectors of equal length
@@ -213,7 +211,7 @@ pair<vector<T1>,vector<T2>> unzip(const vector<pair<T1,T2>>& values){
     return {first, second};
 }
 
-// implement clamp when not provided by the library
+// implement clamp when not provided by the library (in pre c++17 code)
 #ifndef __cpp_lib_clamp
 template<class T, class Compare>
 constexpr const T& clamp( const T& v, const T& lo, const T& hi, Compare comp )

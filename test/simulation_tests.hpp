@@ -298,6 +298,8 @@ Model create_test_mdp_sim(){
     return rmdp;
 }
 
+#if __cplusplus >= 201703L
+
 BOOST_AUTO_TEST_CASE(simulate_mdp){
 
     shared_ptr<MDP> m = make_shared<MDP>();
@@ -352,6 +354,7 @@ BOOST_AUTO_TEST_CASE(simulate_mdp){
     BOOST_CHECK_CLOSE(randomized_samples.mean_return(0.9), 4.01147, 1e-3);
     //cout << "Return of randomized samples " << randomized_samples.mean_return(0.9) << endl;
 }
+#endif // _cplusplus >= 201703L
 
 BOOST_AUTO_TEST_CASE(inventory_simulator){
     long   horizon = 10, num_runs = 5, initial=0,

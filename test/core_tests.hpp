@@ -22,14 +22,15 @@
 
 #pragma once
 
+#include "craam/definitions.hpp"
 #include "craam/RMDP.hpp"
 #include "craam/modeltools.hpp"
 #include "craam/algorithms/values.hpp"
 #include "craam/algorithms/robust_values.hpp"
 #include "craam/algorithms/occupancies.hpp"
 #include "craam/optimization/bisection.hpp"
-#include "craam/optimization/srect_gurobi.hpp"
 #include "craam/algorithms/nature_response.hpp"
+#include "craam/optimization/srect_gurobi.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -852,6 +853,8 @@ MDP create_test_mdp_robustify(){
     return mdp;
 }
 
+#if __cplusplus >= 201703L
+
 BOOST_AUTO_TEST_CASE(test_robustification){
     MDP mdp = create_test_mdp_robustify();
     
@@ -879,6 +882,7 @@ BOOST_AUTO_TEST_CASE(test_robustification){
                     (1.0 * (0.5) + 2.0 * (0.5 - 0.25) + 0.0 * 0.25), 1e-4);
 }
 
+#endif
 
 // ********************************************************************************
 //  Test s-rectangular MDP
@@ -934,9 +938,19 @@ BOOST_AUTO_TEST_CASE(s_rectangular_gurobi){
 
 #ifdef GUROBI_USE
 GRBEnv& get_gurobi(){
-   static GRBEnv env = GRBEnv();
-   env.set(GRB_IntParam_OutputFlag, 0);
-   return env;
+    try{
+        static GRBEnv env = GRBEnv();
+        env.set(GRB_IntParam_OutputFlag, 0);
+        return env;
+    }catch(exception& e){
+        cerr << "Problem constructing Gurobi object: " << endl
+             << e.what() << endl;
+        throw e;
+    }catch(...){
+        cerr << "Unknown exception while creating a gurobi object. Could be a license problem." << endl;
+        throw;
+    }
+
 }
 #endif
 
@@ -967,7 +981,7 @@ BOOST_AUTO_TEST_CASE(test_piecewise_linear_f){
     }
 }
 
-
+#if __cplusplus >= 201703L
 #ifdef GUROBI_USE
 BOOST_AUTO_TEST_CASE(test_solve_srect){
     // set parameters
@@ -1274,6 +1288,7 @@ BOOST_AUTO_TEST_CASE(test_knots_wu){
     CHECK_CLOSE_COLLECTION(values, values_w, 1e-5);
 }
 
+#endif //__cplusplus >= 2017
 
 
 

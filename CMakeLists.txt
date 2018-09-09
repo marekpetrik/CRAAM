@@ -6,11 +6,13 @@
 
 cmake_minimum_required (VERSION 3.1.0 FATAL_ERROR) # Required for C++11 support
 
-set(VERSION "3x.0.0")
+set(VERSION "3.0.0")
 project (CRAAM)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD 14) # parially supported, not all tests run
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+# Whether to use gurobi or not
 set (GUROBI_USE TRUE)
 
 # enable colors in the output
@@ -39,10 +41,16 @@ if(${Boost_FOUND} LESS 1)
     message(WARNING "Unit tests (testit) require Boost unit test library and may not compile otherwise." )
 endif()
 
+if(GUROBI_USE)
+    find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "lib/gurobi")
+    find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi80.so PATHS "lib/gurobi")
+    find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "include/gurobi")
 
-find_library( GUROBI_CXX_LIBRARY_1 NAMES libgurobi_g++5.2.a PATHS "lib/gurobi")
-find_library( GUROBI_CXX_LIBRARY_2 NAMES libgurobi75.so PATHS "lib/gurobi")
-find_path(GUROBI_INCLUDE_DIR NAMES gurobi_c++.h PATHS "include/gurobi")
+    if(NOT GUROBI_CXX_LIBRARY_1 OR NOT GUROBI_CXX_LIBRARY_2 OR NOT GUROBI_INCLUDE_DIR)
+        message(WARNING, "Gurobi files not found in lib/gurobi or include/gurobi, disabling support.")
+        set (GUROBI_USE FALSE)
+    endif()
+endif()
 
 # DEBUG
 # Prints all variables (for debugging)

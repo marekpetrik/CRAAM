@@ -180,8 +180,9 @@ solve_srect_bisection(const vector<numvec>& z, const vector<numvec>& pbar, const
         #ifdef __cpp_structured_bindings
         auto [minval, maxval] = minmax_element(knots[a].cbegin(), knots[a].cend());
         #else
-        prec_t *minval, *maxval;
-        tie(minval, maxval) = minmax_element(knots[a].cbegin(), knots[a].cend());
+        auto minmaxval = minmax_element(knots[a].cbegin(), knots[a].cend());
+        auto minval = minmaxval.first;
+        auto maxval = minmaxval.second;
         #endif
         //cout << "minval " << *minval << "  maxval " << *maxval << endl;
         // the function is infinite for values smaller than the minumum for any action
