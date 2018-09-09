@@ -382,6 +382,67 @@ protected:
     const Sim& sim;
 };
 
+/**
+A stochastic policy that chooses actions according to the state and the action selection probability.
+
+State must be convertible to a long index; that is must support
+    (explicit) operator long
+
+*/
+template<typename Sim>
+class StochasticPolicy{
+
+public:
+    using State = typename Sim::State;
+    using Action = typename Sim::Action;
+
+    /**
+    Initializes the action/state probability map
+
+    \param sim Simulator used with the policy. The reference is retained,
+                the object should not be deleted
+    \param actions Index of action to take for each state
+    */
+    StochasticPolicy(const Sim& sim, prob_matrix_t actions, random_device::result_type seed = random_device{}()):
+        gen(seed), distribution(0,1), actions(actions), sim(sim) {};
+
+    /** Returns an action based on the probability of it being selected from the given state*/
+    Action operator() (State state){
+        // check that the state is valid for this policy
+        long sl = static_cast<long>(state);
+
+        assert(sl >= 0 && size_t(sl) < actions.size());
+
+        // Get the next action based on the change to select that action
+        prob_list_t &action_probabilities = actions[sl];
+        double selected_probability = distribution(gen);
+        double current_probability = 0;
+        int action_index = 0;
+        for ( prob_list_t::iterator ap_iter = action_probabilities.begin(); ap_iter != action_probabilities.end(); ap_iter++ )
+        {
+            current_probability += *ap_iter;
+            if ( current_probability >= selected_probability )
+                return sim.action(state,action_index);
+            action_index++;
+        }
+
+        //If we got here, something went wrong
+        assert(false);
+        throw 1;
+    };
+
+protected:
+    /// Random number engine
+    default_random_engine gen;
+    uniform_real_distribution<double> distribution;
+
+    /// List of which action to take in which state
+    prob_matrix_t actions;
+
+    /// simulator reference
+    const Sim& sim;
+};
+
 // ************************************************************************************
 // **** MDP simulation ****
 // ************************************************************************************
@@ -545,6 +606,9 @@ using ModelRandomizedPolicy = RandomizedPolicy<ModelSimulator>;
 
 /// Deterministic policy to be used with MDP model simulator
 using ModelDeterministicPolicy = DeterministicPolicy<ModelSimulator>;
+
+/// Stochastic policy to be used with MDP model simulator
+using ModelStochasticPolicy = StochasticPolicy<ModelSimulator>;
 
 } // end namespace msen
 } // end namespace craam
