@@ -53,7 +53,14 @@ using sizvec = std::vector<size_t>;
 /// A vector of numeric vectors
 using numvecvec = vector<numvec>;
 
-/// Pair of a vector and a scalar
+
+/** Probability list */
+using prob_list_t = vector<prec_t>;
+
+/** Probability matrix */
+using prob_matrix_t = vector<prob_list_t>;
+  
+/** Pair of a vector and a scalar */
 using vec_scal_t = pair<numvec, prec_t> ;
 /// Tuple of a index, vector and a scalar
 using ind_vec_scal_t = tuple<prec_t, numvec, prec_t> ;

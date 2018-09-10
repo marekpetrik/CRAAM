@@ -11,7 +11,7 @@ When using the *robust objective*, adversarial nature chooses the worst plausibl
 
 The library also provides tools for *basic simulation*, for constructing MDPs from *sample*s, and *value function approximation*. Objective functions supported are infinite horizon discounted MDPs, finite horizon MDPs, and stochastic shortest path \[Puterman2005\]. Some basic stochastic shortest path methods are also supported. The library assumes *maximization* over actions. The number of states and actions must be finite.
 
-The library is build around two main data structures: MDP and RMDP. **MDP** is the standard model that consists of states 𝒮 and actions 𝒜. Note that robust solutions are constrained to be **absolutely continuous** with respect to *P*(*s*, *a*, ⋅). This is a hard requirement for all choices of ambiguity (or uncertainty).
+The library is based on two main data structures: MDP and RMDP. **MDP** is the standard model that consists of states 𝒮 and actions 𝒜. Note that robust solutions are constrained to be **absolutely continuous** with respect to *P*(*s*, *a*, ⋅). This is a hard requirement for all choices of ambiguity (or uncertainty).
 
 The **RMPD** model adds a set of *outcomes* that model possible actions that can be taken by nature. Using outcomes makes it more convenient to capture correlations between the ambiguity in rewards and the uncertainty in transition probabilities. It also make it much easier to represent uncertainties that lie in small-dimensional vector spaces. Constraints for nature's distributions over outcomes are also supported.
 
@@ -43,7 +43,7 @@ Second, install Eigen in the same directory.
     $ wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.gz
     $ tar xzf 3.3.4.tar.gz
     $ rm 3.3.4.tar.gz
-    $ mv eigen-eigen-5a0156e40feb/Eigen ./include
+    $ mv eigen-eigen-5a0156e40feb/Eigen ../include
 ```
 
 Finally, download and solve a simple benchmark problem:
@@ -92,7 +92,12 @@ The library has minimal dependencies and was tested on Linux. It has not been te
 -   [Gurobi 8](http://gurobi.com) for using robust objectives that require a linear program solver. On linux, the files that need to be copied to `lib/gurobi` are `libgurobi80.so`,`libgurobi_g++5.2.a`. If you figure out what to do on other platforms, please send a pull request. Also `gurobi_c++.h` and `gurobi_c.h` must be copied to `include/gurobi`.
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
--   [Boost](http://boost.org) for compiling and running unit tests
+-   [Boost](http://boost.org) for compiling and running unit tests (`boost-devel` package, `libboost-all-dev` package on some distributions)
+
+For python libraries
+-   [SetupTools]() (`python3-pip` package)
+-   [Cython] - via pip3
+-   [Numpy] - via pip3
 
 ### Documentation
 

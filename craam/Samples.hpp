@@ -118,7 +118,7 @@ template <class State, class Action>
 class Samples {
 public:
 
-   Samples(): states_from(), actions(), states_to(), rewards(), weights(), runs(), steps(), initial() {};
+   Samples(): states_from(), actions(), states_to(), rewards(), cumulative_rewards(), weights(), runs(), steps(), initial() {};
     
 
     /** Adds an initial state */
@@ -137,6 +137,10 @@ public:
         actions.push_back(sample.action());
         states_to.push_back(sample.state_to());
         rewards.push_back(sample.reward());
+        prec_t cumulative_reward_value = sample.reward();
+        if (runs.size() > 0 && *runs.rbegin() == sample.run())
+            cumulative_reward_value += *cumulative_rewards.rbegin();
+        cumulative_rewards.push_back(cumulative_reward_value);
         weights.push_back(sample.weight());
         steps.push_back(sample.step());
         runs.push_back(sample.run());
@@ -151,6 +155,10 @@ public:
         actions.push_back(move(action));
         states_to.push_back(move(state_to));
         rewards.push_back(reward);
+        prec_t cumulative_reward_value = reward;
+        if (runs.size() > 0 && *runs.rbegin() == run)
+            cumulative_reward_value += *cumulative_rewards.rbegin();
+        cumulative_rewards.push_back(cumulative_reward_value);
         weights.push_back(weight);
         steps.push_back(step);
         runs.push_back(run);
@@ -195,6 +203,7 @@ public:
     const vector<Action>& get_actions() const{return actions;};
     const vector<State>& get_states_to() const{return states_to;};
     const vector<prec_t>& get_rewards() const{return rewards;};
+    const vector<prec_t>& get_cumulative_rewards() const{return cumulative_rewards;};
     const vector<prec_t>& get_weights() const{return weights;};
     const vector<long>& get_runs() const{return runs;};
     const vector<long>& get_steps() const{return steps;};
@@ -205,6 +214,7 @@ protected:
     vector<Action> actions;
     vector<State> states_to;
     vector<prec_t> rewards;
+    vector<prec_t> cumulative_rewards;
     vector<prec_t> weights;
     vector<long> runs;
     vector<long> steps;
@@ -446,8 +456,7 @@ protected:
 /**
 Constructs an MDP from integer samples.
 
-Integer samples: Each decision state, expectation state, and action are identified
-by an integer.
+Integer samples: All states and actions are identified by integers.
 
 
 \a Input: Sample set \f$ \Sigma = (s_i, a_i, s_i', r_i, w_i)_{i=0}^{m-1} \f$ \n
@@ -606,23 +615,24 @@ public:
         //  Normalize the transition probabilities and rewards
         mdp->normalize();
 
-        // set initial distribution
+        // set initial distribution (not normalized so it is updated correctly when adding more samples
         for(long state : samples.get_initial()){
+            if(state > state_count()) throw range_error("Initial state number larger than any transition state.");
+            if(state < 0) throw range_error("Initial state with a negative index is invalid.");
             initial.add_sample(state, 1.0, 0.0);
         }
-        initial.normalize();
     }
-
 
     /** \returns A constant pointer to the internal MDP */
     shared_ptr<const MDP> get_mdp() const {return const_pointer_cast<const MDP>(mdp);}
 
     /** \returns A modifiable pointer to the internal MDP.
-    Take care when changing. */
+    Take care when changing it. */
     shared_ptr<MDP> get_mdp_mod() {return mdp;}
 
-    /** \returns Initial distribution based on empirical sample data */
-    Transition get_initial() const {return initial;}
+    /** \returns Initial distribution based on empirical sample data. Could be
+     * somewhat expensive because it normalizes the transition. */
+    Transition get_initial() const {Transition t = initial; t.normalize(); return t;}
 
     /** \returns State-action cumulative weights \f$ z \f$.
     See class description for details. */
@@ -633,12 +643,13 @@ public:
     \returns 0 when there are no samples
     */
     long state_count(){return state_action_weights.size();}
+
 protected:
 
     /** Internal MDP representation */
     shared_ptr<MDP> mdp;
 
-    /** Initial distribution */
+    /** Initial distribution, not normalized */
     Transition initial;
 
     /** Sample counts */
