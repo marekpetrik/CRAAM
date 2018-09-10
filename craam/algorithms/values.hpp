@@ -439,7 +439,8 @@ in the temporal order.
 @returns Solution that can be used to compute the total return, or the optimal policy.
  */
 template<class SType, class ResponseType = PlainBellman<SType>>
-inline auto vi_gs(const GRMDP<SType>& mdp, prec_t discount,
+inline Solution<typename ResponseType::policy_type>
+vi_gs(const GRMDP<SType>& mdp, prec_t discount,
                         numvec valuefunction=numvec(0), const ResponseType& response = PlainBellman<SType>(),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC)
                         {
@@ -511,7 +512,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 @return Computed (approximate) solution
  */
 template<class SType, class ResponseType = PlainBellman<SType>>
-inline auto mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
+inline Solution<typename ResponseType::policy_type>
+mpi_jac(const GRMDP<SType>& mdp, prec_t discount,
                 const numvec& valuefunction=numvec(0), const ResponseType& response = PlainBellman<SType>(),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
                 unsigned long iterations_vi=MAXITER, prec_t maxresidual_vi_rel=0.9,

@@ -470,7 +470,8 @@ This is a simplified method interface. Use vi_gs with PolicyNature for full func
 \returns Solution that can be used to compute the total return, or the optimal policy.
 */
 template<class SType>
-inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
+inline SARobustSolution
+rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
                         const SANature& nature,
                         numvec valuefunction=numvec(0), const indvec& policy = indvec(0),
                         unsigned long iterations=MAXITER, prec_t maxresidual=SOLPREC){
@@ -487,6 +488,10 @@ In the value iteration step, both the action *and* the outcome are fixed.
 
 This is a simplified method interface. Use mpi_jac with PolicyNature for full functionality.
 
+WARNING: There is no proof of convergence for this method. This is not the same algorithm as in:
+Kaufman, D. L., & Schaefer, A. J. (2013). Robust modified policy iteration. INFORMS Journal on Computing, 25(3), 396–410.
+See the discussion in the paper on methods like this one (e.g. Seid, White)
+
 Note that the total number of iterations will be bounded by iterations_pi * iterations_vi
 \param type Type of realization of the uncertainty
 \param discount Discount factor
@@ -502,7 +507,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType>
-inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+inline SARobustSolution
+rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const SANature& nature,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,
@@ -518,7 +524,7 @@ inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
 
 
 /**
-Gauss-Seidel variant of value iteration (not parallelized).
+Gauss-Seidel variant of value iteration (not parallelized). S-rectangular nature.
 
 This function is suitable for computing the value function of a finite state MDP. If
 the states are ordered correctly, one iteration is enough to compute the optimal value function.
@@ -557,6 +563,11 @@ inline auto rsolve_vi(const GRMDP<SType>& mdp, prec_t discount,
 Modified policy iteration using Jacobi value iteration in the inner loop.
 This method generalizes modified policy iteration to robust MDPs.
 In the value iteration step, both the action *and* the outcome are fixed.
+S-rectangular nature.
+
+WARNING: There is no proof of convergence for this method. This is not the same algorithm as in:
+Kaufman, D. L., & Schaefer, A. J. (2013). Robust modified policy iteration. INFORMS Journal on Computing, 25(3), 396–410.
+See the discussion in the paper on methods like this one (e.g. Seid, White)
 
 This is a simplified method interface. Use mpi_jac with PolicyNature for full functionality.
 
@@ -575,7 +586,8 @@ Note that the total number of iterations will be bounded by iterations_pi * iter
 \return Computed (approximate) solution
  */
 template<class SType>
-inline auto rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
+inline SRobustSolution
+rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                 const SNature& nature,
                 const numvec& valuefunction=numvec(0), const indvec& policy = indvec(0),
                 unsigned long iterations_pi=MAXITER, prec_t maxresidual_pi=SOLPREC,

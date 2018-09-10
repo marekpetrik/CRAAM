@@ -87,20 +87,20 @@ cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
 
 cdef extern from "craam/algorithms/values.hpp" namespace "craam::algorithms" nogil:
 
-    cdef cppclass Solution:
+    cdef cppclass DeterministicSolution:
         numvec valuefunction
         indvec policy
         indvec outcomes
         prec_t residual
         long iterations
 
-    Solution csolve_vi_mdp "craam::algorithms::solve_vi"(const CMDP& mdp, prec_t discount,
+    DeterministicSolution csolve_vi_mdp "craam::algorithms::solve_vi"(const CMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
                     prec_t maxresidual) except +;
 
-    Solution csolve_mpi_mdp "craam::algorithms::solve_mpi"(const CMDP& mdp, prec_t discount,
+    DeterministicSolution csolve_mpi_mdp "craam::algorithms::solve_mpi"(const CMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,
@@ -113,10 +113,9 @@ SolutionRobustTuple = namedtuple("Solution", ("valuefunction", "policy", "residu
 
 cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
 
-    cdef cppclass SolutionRobust:
+    cdef cppclass SARobustSolution:
         numvec valuefunction
-        indvec policy
-        vector[numvec] natpolicy
+        vector[pair[long,numvec]] policy
         prec_t residual
         long iterations
 
@@ -130,7 +129,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
     vector[vector[double]] pack_thresholds(indvec states, indvec actions, numvec values) except +
 
 
-    SolutionRobust crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
+    SARobustSolution crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
                     NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
@@ -138,7 +137,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
                     prec_t maxresidual) except +
 
 
-    SolutionRobust crsolve_mpi_mdp "craam::algorithms::rsolve_mpi"(
+    SARobustSolution crsolve_mpi_mdp "craam::algorithms::rsolve_mpi"(
                     CMDP& mdp, prec_t discount,
                     NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
@@ -573,7 +572,7 @@ cdef class MDP:
         self._check_value(valuefunction)
         self._check_policy(policy)
 
-        cdef Solution sol = csolve_vi_mdp(dereference(self.thisptr), self.discount,\
+        cdef DeterministicSolution sol = csolve_vi_mdp(dereference(self.thisptr), self.discount,\
                     valuefunction,policy,iterations,maxresidual)
 
         return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -628,7 +627,7 @@ cdef class MDP:
         if valiterations <= 0: valiterations = iterations
         if valresidual < 0: valresidual = maxresidual / 2
 
-        cdef Solution sol = csolve_mpi_mdp(dereference(self.thisptr),self.discount,\
+        cdef DeterministicSolution sol = csolve_mpi_mdp(dereference(self.thisptr),self.discount,\
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
@@ -683,7 +682,7 @@ cdef class MDP:
         self._check_value(valuefunction)
         self._check_policy(policy)
 
-        cdef SolutionRobust sol = crsolve_vi_mdp(dereference(self.thisptr), self.discount,\
+        cdef SARobustSolution sol = crsolve_vi_mdp(dereference(self.thisptr), self.discount,\
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
@@ -748,7 +747,7 @@ cdef class MDP:
         if valiterations <= 0: valiterations = iterations
         if valresidual < 0: valresidual = maxresidual / 2
 
-        cdef SolutionRobust sol = crsolve_mpi_mdp(dereference(self.thisptr),self.discount,\
+        cdef SARobustSolution sol = crsolve_mpi_mdp(dereference(self.thisptr),self.discount,\
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
@@ -1298,7 +1297,7 @@ cdef class SampledMDP:
         return np.array(t.probabilities_vector(state_count))
             
   
-cdef extern from "craam/fastopt.hpp" namespace 'craam' nogil:
+cdef extern from "craam/optimization/optimization.hpp" namespace 'craam' nogil:
     pair[numvec,double] c_worstcase_l1 "craam::worstcase_l1" (const vector[double] & z, \
                         const vector[double] & q, double t)
 
@@ -1369,13 +1368,13 @@ def worstcase_l1_dst(np.ndarray[double] z, np.ndarray[double] q, double t):
 
 cdef extern from "craam/algorithms/values.hpp" namespace 'craam::algorithms' nogil:
 
-    Solution csolve_vi_rmdp "craam::algorithms::solve_vi"(CRMDP& mdp, prec_t discount,
+    DeterministicSolution csolve_vi_rmdp "craam::algorithms::solve_vi"(CRMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
                     prec_t maxresidual) except +;
 
-    Solution csolve_mpi_rmdp "craam::algorithms::solve_mpi"(CRMDP& mdp, prec_t discount,
+    DeterministicSolution csolve_mpi_rmdp "craam::algorithms::solve_mpi"(CRMDP& mdp, prec_t discount,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,
@@ -1385,7 +1384,7 @@ cdef extern from "craam/algorithms/values.hpp" namespace 'craam::algorithms' nog
                     bool show_progress) except +;
 
 cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
-    SolutionRobust crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
+    SARobustSolution crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
                     NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
                     const indvec& policy,
@@ -1393,7 +1392,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
                     prec_t maxresidual) except +
 
 
-    SolutionRobust crsolve_mpi "craam::algorithms::rsolve_mpi"(
+    SARobustSolution crsolve_mpi "craam::algorithms::rsolve_mpi"(
                     CRMDP& mdp, prec_t discount,
                     NatureResponse nature, const vector[vector[double]]& thresholds,
                     const numvec& valuefunction,
@@ -1835,7 +1834,7 @@ cdef class RMDP:
         self._check_value(valuefunction)
         self._check_policy(policy)
 
-        cdef Solution sol = csolve_vi_rmdp(dereference(self.thisptr), self.discount,\
+        cdef DeterministicSolution sol = csolve_vi_rmdp(dereference(self.thisptr), self.discount,\
                     valuefunction,policy,iterations,maxresidual)
 
         return SolutionTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
@@ -1890,7 +1889,7 @@ cdef class RMDP:
         if valiterations <= 0: valiterations = iterations
         if valresidual < 0: valresidual = maxresidual / 2
 
-        cdef Solution sol = csolve_mpi_rmdp(dereference(self.thisptr),self.discount,\
+        cdef DeterministicSolution sol = csolve_mpi_rmdp(dereference(self.thisptr),self.discount,\
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
@@ -1945,7 +1944,7 @@ cdef class RMDP:
         self._check_value(valuefunction)
         self._check_policy(policy)
 
-        cdef SolutionRobust sol = crsolve_vi(dereference(self.thisptr), self.discount,\
+        cdef SARobustSolution sol = crsolve_vi(dereference(self.thisptr), self.discount,\
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
@@ -2010,7 +2009,7 @@ cdef class RMDP:
         if valiterations <= 0: valiterations = iterations
         if valresidual < 0: valresidual = maxresidual / 2
 
-        cdef SolutionRobust sol = crsolve_mpi(dereference(self.thisptr),self.discount,\
+        cdef SARobustSolution sol = crsolve_mpi(dereference(self.thisptr),self.discount,\
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
