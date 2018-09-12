@@ -5,7 +5,7 @@
 #include <eigen3/Eigen/Dense>
 #include <rm/range.hpp>
 
-namespace craam::algorithms{
+namespace craam { namespace algorithms{
 
 using namespace std;
 using namespace Eigen;
@@ -143,4 +143,4 @@ occfreq_mat(const GRMDP<SType>& rmdp, const Transition& init, prec_t discount,
     return result;
 }
 
-}
+} }

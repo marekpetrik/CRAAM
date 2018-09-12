@@ -130,9 +130,10 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
     cdef NatureResponse string_to_nature(string s);
 
-cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
+cdef extern from "craam/algorithms/nature_response.hpp" namespace 'craam::algorithms::nats' nogil:
+    pass
 
-    vector[vector[double]] pack_thresholds(indvec states, indvec actions, numvec values) except +
+cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
 
 
     SARobustSolution crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
@@ -2076,8 +2077,9 @@ cdef class RMDP:
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
-        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations,sol.natpolicy)
+        cdef pair[indvec,vector[numvec]] policies = unzip(sol.policy)
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(policies.first), sol.residual, \
+                sol.iterations, policies.second)
 
 
     cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
@@ -2142,8 +2144,9 @@ cdef class RMDP:
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
-        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.natpolicy)
+        cdef pair[indvec,vector[numvec]] policies = unzip(sol.policy)
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(policies.first), sol.residual, \
+                sol.iterations, policies.second)
 
 
 

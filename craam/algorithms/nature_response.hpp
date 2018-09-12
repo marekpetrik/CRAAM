@@ -79,7 +79,7 @@ public:
      *                Use and empty vector to specify uniform weights.
      */
     robust_l1w(vector<numvec> budgets, vector<vector<numvec>> weights)
-        : budgets(move(budgets)), weights(weights) {};
+        : budgets(move(budgets)), weights(weights) {}
 
     /**
      * @brief Implements SANature interface
@@ -103,7 +103,7 @@ class robust_l1u{
 protected:
     prec_t budget;
 public:
-    robust_l1u(prec_t budget) : budget(move(budget)) {};
+    robust_l1u(prec_t budget) : budget(move(budget)) {}
 
     /**
      * @brief Implements SANature interface
@@ -124,7 +124,7 @@ class optimistic_l1{
 protected:
     vector<numvec> budgets;
 public:
-    optimistic_l1(vector<numvec> budgets) : budgets(move(budgets)) {};
+    optimistic_l1(vector<numvec> budgets) : budgets(move(budgets)) {}
 
     /**
      * @brief Implements SANature interface

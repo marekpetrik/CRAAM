@@ -1,6 +1,6 @@
 #pragma once 
 
-#define VERSION @VERSION@
+#define VERSION @CRAAMVERSION@
 #cmakedefine IS_DEBUG
 #cmakedefine GUROBI_USE
 
