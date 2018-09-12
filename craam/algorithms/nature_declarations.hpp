@@ -46,7 +46,9 @@ using namespace craam;
  * transition probabilites.
  */
 using SANature = function<pair<numvec,prec_t>
-                   (long stateid,long actionid,const numvec& nominalprob,const numvec& zvalues)>;
+                   (long stateid,long actionid,
+                    const numvec& nominalprob,
+                    const numvec& zvalues)>;
 
 /**
  * Defines s-rectangular nature to be a function that is given a state index,

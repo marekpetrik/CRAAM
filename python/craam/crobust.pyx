@@ -13,7 +13,8 @@ The main functionality is provided by the individual classes below:
 - Construct MDPs from samples: :py:class:`craam.SampledMDP`, :py:class:`craam.DiscreteSamples`
 - Solve interpretable MDPs: :py:class:`craam.MDPIR`
 
-This library is a thin Python wrapper around a C++ implementation.
+
+    passhis library is a thin Python wrapper around a C++ implementation.
 
 References
 ----------
@@ -137,7 +138,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
 
     SARobustSolution crsolve_vi_mdp "craam::algorithms::rsolve_vi"(CMDP& mdp, prec_t discount,
-                    NatureResponse nature, const vector[vector[double]]& thresholds,
+                    const SANature& nature, 
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
@@ -146,7 +147,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
     SARobustSolution crsolve_mpi_mdp "craam::algorithms::rsolve_mpi"(
                     CMDP& mdp, prec_t discount,
-                    NatureResponse nature, const vector[vector[double]]& thresholds,
+                    const SANature& nature,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,
@@ -1483,7 +1484,7 @@ cdef extern from "craam/algorithms/values.hpp" namespace 'craam::algorithms' nog
 
 cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorithms' nogil:
     SARobustSolution crsolve_vi "craam::algorithms::rsolve_vi"(CRMDP& mdp, prec_t discount,
-                    NatureResponse nature, const vector[vector[double]]& thresholds,
+                    const SANature& nature,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations,
@@ -1492,7 +1493,7 @@ cdef extern from "craam/algorithms/robust_values.hpp" namespace 'craam::algorith
 
     SARobustSolution crsolve_mpi "craam::algorithms::rsolve_mpi"(
                     CRMDP& mdp, prec_t discount,
-                    NatureResponse nature, const vector[vector[double]]& thresholds,
+                    const SANature& nature,
                     const numvec& valuefunction,
                     const indvec& policy,
                     unsigned long iterations_pi,

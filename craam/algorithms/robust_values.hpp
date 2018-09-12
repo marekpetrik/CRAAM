@@ -34,7 +34,7 @@ Robust MDP methods for computing value functions.
 #include <functional>
 #include <type_traits>
 
-namespace craam::algorithms{
+namespace craam{ namespace algorithms{
 
 using namespace std;
 using namespace util::lang;
@@ -601,4 +601,4 @@ rsolve_mpi(const GRMDP<SType>& mdp, prec_t discount,
                     print_progress);
 }
 
-}
+}}

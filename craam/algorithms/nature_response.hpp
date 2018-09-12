@@ -35,7 +35,6 @@ namespace craam {namespace algorithms {namespace nats{
 // SA Nature definitions
 // *******************************************************
 
-
 /**
  * L1 robust response
  * @see rsolve_mpi, rsolve_vi
@@ -44,7 +43,7 @@ class robust_l1{
 protected:
     vector<numvec> budgets;
 public:
-    robust_l1(vector<numvec> budgets) : budgets(move(budgets)) {};
+    robust_l1(vector<numvec> budgets) : budgets(move(budgets)) {}
 
     /**
      * @brief Implements SANature interface
@@ -284,7 +283,6 @@ public:
 // S Nature definitions
 // *******************************************************
 
-
 /**
  * S-rectangular L1 constraint with a single budget for every state
  * and optional weights for each action for each state.
@@ -299,10 +297,10 @@ protected:
     vector<numvec> weights_a;
 public:
 
-    robust_s_l1(numvec budgets) : budgets(move(budgets)), weights_a(0) {};
+    robust_s_l1(numvec budgets) : budgets(move(budgets)), weights_a(0) {}
 
     robust_s_l1(numvec budgets, vector<numvec> weights_a) :
-                budgets(move(budgets)), weights_a(move(weights_a)) {};
+                budgets(move(budgets)), weights_a(move(weights_a)) {}
 
     /**
      * Implements SNature interface
