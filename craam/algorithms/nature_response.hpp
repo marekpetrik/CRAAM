@@ -27,10 +27,9 @@
 #include "craam/optimization/bisection.hpp"
 #include "craam/Transition.hpp"
 #include "craam/optimization/srect_gurobi.hpp"
-
 #include <functional>
 
-namespace craam::algorithms::nats{
+namespace craam {namespace algorithms {namespace nats{
 
 // *******************************************************
 // SA Nature definitions
@@ -406,4 +405,4 @@ public:
 
 #endif
 
-}
+}}}

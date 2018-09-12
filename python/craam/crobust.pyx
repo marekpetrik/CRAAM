@@ -42,9 +42,8 @@ from libcpp.memory cimport make_shared
 #    shared_ptr[T] make_shared[T](...) except +
 #    unique_ptr[T] make_unique[T](...) # except +
 
+cdef extern from "craam/definitions.hpp" namespace 'craam' nogil:
 
-cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
-                                            
     ctypedef double prec_t
     ctypedef vector[double] numvec
     ctypedef vector[long] indvec
@@ -52,6 +51,9 @@ cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
     ctypedef vector[prec_t] prob_list_t
     ctypedef vector[prob_list_t] prob_matrix_t
 
+    pair[indvec,vector[numvec]] unzip(vector[pair[long,numvec]] zipped)
+
+cdef extern from "craam/RMDP.hpp" namespace 'craam' nogil:
                                             
     cdef cppclass CTransition "craam::Transition":
         CTransition() 
@@ -718,8 +720,10 @@ cdef class MDP:
                         string_to_nature(nature), pack_thresholds(thresholds[0], thresholds[1], thresholds[2]),
                         valuefunction,policy,iterations,maxresidual)
 
-        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations,sol.natpolicy)
+        cdef pair[indvec,vector[numvec]] policies = unzip(sol.policy)
+
+        return SolutionRobustTuple(np.array(sol.valuefunction), np.array(policies.first), sol.residual, \
+                sol.iterations, policies.second)
 
 
     cpdef rsolve_mpi(self, nature, thresholds, long iterations=DEFAULT_ITERS, valuefunction = np.empty(0),
@@ -784,8 +788,10 @@ cdef class MDP:
                         valuefunction,policy,iterations,maxresidual,valiterations,\
                         valresidual,show_progress)
 
+        cdef pair[indvec,vector[numvec]] policies = unzip(sol.policy)
+
         return SolutionRobustTuple(np.array(sol.valuefunction), np.array(sol.policy), sol.residual, \
-                sol.iterations, sol.natpolicy)
+                sol.iterations, policies.second)
 
 
     def to_csv(self,filename):
