@@ -345,13 +345,16 @@ public:
     const indvec& get_indices() const {return indices;};
 
     /** Index of the k-th state with non-zero probability */
-    long get_index(long k){assert(k>=0 && k < long(size())); return indices[k];}
+    long get_index(long k) const {assert(k>=0 && k < long(size())); return indices[k];}
 
     /**
     Returns list of positive probabilities for indexes returned by
     get_indices. See also probabilities_vector.
     */
     const numvec& get_probabilities() const {return probabilities;};
+
+    /** Get the probability of the specific transition */
+    const prec_t get_probability(int index) const {return probabilities[index];};
 
     void set_probabilities(numvec probabilities){
         this->probabilities = probabilities;

@@ -247,6 +247,20 @@ public:
     /** Number of states */
     size_t state_count() const {return states.size();};
 
+
+    /** Max number of actions for any state **/
+    size_t action_count() const {
+        int action_count = 0;
+        for ( int i = 0; i < state_count(); i++ ){
+            const SType &currentState = get_state(i);
+            int state_action_count = currentState.action_count();
+            if ( state_action_count > action_count )
+                action_count = state_action_count;
+        }
+
+        return action_count;
+    }
+
     /** Number of states */
     size_t size() const {return state_count();};
 

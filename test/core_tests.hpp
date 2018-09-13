@@ -213,7 +213,7 @@ void test_simple_vi(const Model& rmdp){
     CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
 
     // check the computed returns
-    BOOST_CHECK_CLOSE (re8.total_return(init_d), ret_true, 1e-2);
+    BOOST_CHECK_CLOSE (re9.total_return(init_d), ret_true, 1e-2);
 
     // check if we get the same return from the solution as from the
     // occupancy frequencies
@@ -233,6 +233,66 @@ BOOST_AUTO_TEST_CASE(simple_mdp_vi_of_nonrobust) {
 BOOST_AUTO_TEST_CASE(simple_rmdpd_vi_of_nonrobust) {
     auto rmdp = create_test_mdp<MDP>();
     test_simple_vi<RMDP>(robustify(rmdp));
+}
+
+// ********************************************************************************
+// ***** Stochastic MDP value iteration ****************************************************
+// ********************************************************************************
+
+template<class Model>
+void test_stochastic_vi(const Model& rmdp){
+    // Tests simple non-robust value iteration with the various models
+    Transition init_d({0,1,2},{1.0/3.0,1.0/3.0,1.0/3.0},{0,0,0});
+    int action_count = 2;
+
+    numvec initial{0,0,0};
+    prob_matrix_t pol_rob{{0, 1},{0, 1},{0, 1}};
+
+    // small number of iterations (not the true value function)
+    numvec val_rob{7.68072,8.67072,9.77072};
+    auto re = vi_gs(rmdp,0.9,initial,StochasticBellman(action_count),20,0);
+
+    CHECK_CLOSE_COLLECTION(val_rob,re.valuefunction,1e-3);
+    for ( int i = 0; i < re.policy.size(); i++ ){
+        BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob[i].begin(),pol_rob[i].end(),re.policy[i].begin(),re.policy[i].end());
+    }
+
+    // test jac value iteration with small number of iterations ( not the true value function)
+    auto re2 = mpi_jac(rmdp, 0.9, initial, StochasticBellman(action_count), 20,0,0);
+
+    numvec val_rob2{7.5726,8.56265679,9.66265679};
+    CHECK_CLOSE_COLLECTION(val_rob2,re2.valuefunction,1e-3);
+    for ( int i = 0; i < re2.policy.size(); i++ ){
+        BOOST_CHECK_EQUAL_COLLECTIONS(pol_rob[i].begin(),pol_rob[i].end(),re2.policy[i].begin(),re2.policy[i].end());
+    }
+
+    // many iterations
+    const numvec val_rob3{8.91,9.9,11.0};
+    const prec_t ret_true = inner_product(val_rob3.cbegin(), val_rob3.cend(), init_d.get_probabilities().cbegin(),0.0);
+
+    // fixed evaluation
+    auto&& re9 = mpi_jac(rmdp,0.9,initial,StochasticBellman(action_count, pol_rob), 10000,0.0, 0);
+    CHECK_CLOSE_COLLECTION(val_rob3,re9.valuefunction,1e-2);
+
+    // check the computed returns
+    BOOST_CHECK_CLOSE (re9.total_return(init_d), ret_true, 1e-2);
+
+    // check if we get the same return from the solution as from the
+    // occupancy frequencies
+    auto&& occupancy_freq_horizon = occfreq_action_horizon_stochcastic(rmdp, init_d, 0.9, re9.policy, 10);
+    const prob_matrix_t occ_freq3{{0, 0.333333333},{0, 2.1710718663333335},{0, 67.866415512777365}};
+    for ( int i = 0; i < occ_freq3.size(); i++ )
+        CHECK_CLOSE_COLLECTION(occupancy_freq_horizon[i], occ_freq3[i], 1e-3);
+}
+
+BOOST_AUTO_TEST_CASE(stochastic_mdp_vi_of_nonrobust) {
+    auto rmdp = create_test_mdp<MDP>();
+    test_stochastic_vi<MDP>(rmdp);
+}
+
+BOOST_AUTO_TEST_CASE(stochastic_rmdpd_vi_of_nonrobust) {
+    auto rmdp = create_test_mdp<MDP>();
+    test_stochastic_vi<RMDP>(robustify(rmdp));
 }
 
 // ********************************************************************************
@@ -293,6 +353,7 @@ BOOST_AUTO_TEST_CASE(test_check_add_transition_m){
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_rewards().begin(), transition.get_rewards().end(), tr.begin(), tr.end());
     tp = vector<double>{0.1,0.2,0.5};
     BOOST_CHECK_EQUAL_COLLECTIONS(transition.get_probabilities().begin(), transition.get_probabilities().end(), tp.begin(), tp.end());
+
 }
 
 
