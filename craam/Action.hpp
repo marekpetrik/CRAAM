@@ -99,11 +99,16 @@ public:
     /** Returns number of outcomes (1). */
     size_t outcome_count() const {return 1;}
 
+    /** Returns the number of states with positive transition probabilities */
+    size_t size() const{return outcome.size();}
 
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
         result.append("1(reg)");
     };
+
+    /** Whether the action has some transitions */
+    bool is_valid() const{return outcome.size() > 0;};
 
     /** Whether the provided outcome is valid. Check only size, not that the distribution
     sums to any particular number. */
@@ -230,6 +235,9 @@ public:
     bool is_nature_correct(numvec oid) const
         {return (oid.size() == outcomes.size());}
 
+    /** Whether the action has some outcomes */
+    bool is_valid() const{return outcomes.size() > 0;};
+
     /** Appends a string representation to the argument */
     void to_string(string& result) const{
         result.append(std::to_string(get_outcomes().size()));
@@ -249,7 +257,6 @@ a distribution over outcomes. This action can be used by both regular and robust
 
 The distribution d over outcomes is uniform by default:
 see WeightedOutcomeAction::create_outcome.
-
 */
 class WeightedOutcomeAction : public OutcomeManagement{
 

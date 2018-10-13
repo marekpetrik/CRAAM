@@ -32,13 +32,9 @@
 #include <limits>
 #include <string>
 
-
-
 namespace craam {
 
 using namespace std;
-
-
 
 // **************************************************************************************
 //  SA State (SA rectangular, also used for a regular MDP)
@@ -47,13 +43,15 @@ using namespace std;
 /**
 State for sa-rectangular uncertainty (or no uncertainty) in an MDP
 
+A state with no actions is considered to be terminal and its value is 0.
+
 Actions within a state are sequentially labeled. That is, adding an action with an id = 3
-will also create actions 0,1,2. These additional actions are marked as "invalid" state. This 
-means that they will not be used in computations and algorithms will simply skip over them.
-Use `create_action` to make and action valid.
+will also create actions 0,1,2.
 
+Any actions that have no transitions will be considered invalid and the MDP computation will
+fail. Use a transition to a terminal state to model the end of the execution.
 
-\tparam Type of action used in the state. This type determines the
+@tparam Type of action used in the state. This type determines the
     type of uncertainty set.
 */
 template<class AType>
@@ -61,16 +59,13 @@ class SAState{
 protected:
     /// list of actions
     vector<AType> actions;
-    /// whether actions can be used in computation. If false, that means
-    /// that they should not be used in algorithms or in computation.
-    vector<bool> valid;
     
 public:
 
-    SAState() : actions(0), valid(0) {};
+    SAState() : actions(0) {};
 
     /** Initializes state with actions and sets them all to valid */
-    SAState(const vector<AType>& actions) : actions(actions), valid(actions.size(),true) { };
+    SAState(const vector<AType>& actions) : actions(actions){ };
 
     /** Number of actions */
     size_t action_count() const { return actions.size();};
@@ -91,11 +86,9 @@ public:
         // assumes that the default constructor makes the actions invalid
         if(actionid >= (long) actions.size()){
             actions.resize(actionid+1);
-            valid.resize(actionid+1, false);
         }
 
         // set only the action that is being added as valid
-        valid[actionid] = true;
         return actions[actionid];
     }
 
@@ -120,21 +113,23 @@ public:
 
     /// Returns whether the actions is valid
     bool is_valid(long actionid) const {
-        assert(actionid < long(valid.size()) && actionid >= 0);
-        return valid[actionid];
+        assert(actionid < long(actions.size()) && actionid >= 0);
+        return actions[actionid].is_valid();
     };
 
-    /** 
-    Set action validity. A valid action can be used in computations. An 
-    invalid action is just a placeholder.
-    */
-    void set_valid(long actionid, bool value = true){
-        assert(actionid < long(valid.size()) && actionid >= 0);
-        valid[actionid] = value;
-    };
+    /** @returns List of action indices that have no transitions and are
+     *              thus considered to be invalid.
+     */
+    indvec invalid_actions() const{
+        indvec invalid(0);
+        for(size_t a = 0; a < actions.size(); a++){
+            if(!is_valid(a))
+                invalid.push_back(a);
+        }
+        return invalid;
+    }
 
-
-    /** Returns set of all actions */
+    /** Returns teh set of all actions */
     const vector<AType>& get_actions() const {return actions;};
 
     /** True if the state is considered terminal (no actions). */
@@ -209,6 +204,29 @@ public:
         result += ("]}");
         return result;
     }
+
+    /**
+    * Removes invalid actions, and reindexes the remaining ones accordingly.
+    *
+    * This function is not thread-safe and could leave the object in a very bad
+    * internal state if interrupted
+    *
+    * @returns List of original action ids
+    */
+    indvec pack_actions(){
+        indvec original;
+        vector<AType> newactions;
+        for(size_t actionid = 0; actionid < actions.size(); actionid++){
+            AType& action = actions[actionid];
+            if(action.is_valid()){
+                newactions.push_back(move(action));
+                original.push_back(actionid);
+            }
+        }
+        actions = move(newactions);
+        return original;
+    }
+
 };
 
 // **********************************************************************
@@ -219,7 +237,7 @@ public:
 typedef SAState<RegularAction> RegularState;
 /// State with uncertain outcomes with L1 constraints on the distribution
 typedef SAState<WeightedOutcomeAction> WeightedRobustState;
-}
+
 
 
 /// helper functions
@@ -237,4 +255,6 @@ namespace internal{
     bool is_action_correct(const SType& state, long stateid, const indvec& policy){
         return state.is_action_correct(policy[stateid]);
     }
+}
+
 }

@@ -19,12 +19,79 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-
-RcppExport SEXP _rcpp_module_boot_class_MDP();
+// example_mdp
+Rcpp::DataFrame example_mdp(Rcpp::String name);
+RcppExport SEXP _rcraam_example_mdp(SEXP nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::String >::type name(nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(example_mdp(name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pack_actions
+Rcpp::List pack_actions(Rcpp::DataFrame mdp);
+RcppExport SEXP _rcraam_pack_actions(SEXP mdpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type mdp(mdpSEXP);
+    rcpp_result_gen = Rcpp::wrap(pack_actions(mdp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// solve_mdp
+Rcpp::List solve_mdp(Rcpp::DataFrame mdp, double discount, Rcpp::List options);
+RcppExport SEXP _rcraam_solve_mdp(SEXP mdpSEXP, SEXP discountSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type mdp(mdpSEXP);
+    Rcpp::traits::input_parameter< double >::type discount(discountSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(solve_mdp(mdp, discount, options));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rsolve_mdp_sa
+Rcpp::List rsolve_mdp_sa(Rcpp::DataFrame mdp, double discount, Rcpp::String nature, SEXP nature_par, Rcpp::List options);
+RcppExport SEXP _rcraam_rsolve_mdp_sa(SEXP mdpSEXP, SEXP discountSEXP, SEXP natureSEXP, SEXP nature_parSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type mdp(mdpSEXP);
+    Rcpp::traits::input_parameter< double >::type discount(discountSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type nature(natureSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type nature_par(nature_parSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rsolve_mdp_sa(mdp, discount, nature, nature_par, options));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rsolve_mdp_s
+Rcpp::List rsolve_mdp_s(Rcpp::DataFrame mdp, double discount, Rcpp::String nature, SEXP nature_par, Rcpp::List options);
+RcppExport SEXP _rcraam_rsolve_mdp_s(SEXP mdpSEXP, SEXP discountSEXP, SEXP natureSEXP, SEXP nature_parSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type mdp(mdpSEXP);
+    Rcpp::traits::input_parameter< double >::type discount(discountSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type nature(natureSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type nature_par(nature_parSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rsolve_mdp_s(mdp, discount, nature, nature_par, options));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rcraam_worstcase_l1", (DL_FUNC) &_rcraam_worstcase_l1, 3},
-    {"_rcpp_module_boot_class_MDP", (DL_FUNC) &_rcpp_module_boot_class_MDP, 0},
+    {"_rcraam_example_mdp", (DL_FUNC) &_rcraam_example_mdp, 1},
+    {"_rcraam_pack_actions", (DL_FUNC) &_rcraam_pack_actions, 1},
+    {"_rcraam_solve_mdp", (DL_FUNC) &_rcraam_solve_mdp, 3},
+    {"_rcraam_rsolve_mdp_sa", (DL_FUNC) &_rcraam_rsolve_mdp_sa, 5},
+    {"_rcraam_rsolve_mdp_s", (DL_FUNC) &_rcraam_rsolve_mdp_s, 5},
     {NULL, NULL, 0}
 };
 

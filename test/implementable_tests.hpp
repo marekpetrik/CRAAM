@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE( simple_construct_mdpi_r ) {
 
     vector<prec_t> iv(rmdp.state_count(),0.0);
 
-    auto&& so = mpi_jac(rmdp, 0.9, iv, uniform_nature(rmdp, optimistic_unbounded, 0.0), 100, 0.0, 10, 0.0);
+    auto&& so = mpi_jac(rmdp, 0.9, iv, SARobustBellman<WeightedRobustState>(nats::optimistic_unbounded()), 100, 0.0, 10, 0.0);
     BOOST_CHECK_CLOSE(so.valuefunction[0], 20, 1e-3);
 
-    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0), 100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::robust_unbounded()), 100,0.0,10,0.0);
     BOOST_CHECK_CLOSE(sr.valuefunction[0], 10, 1e-3);
 }
 
@@ -154,10 +154,10 @@ BOOST_AUTO_TEST_CASE( small_construct_mdpi_r ) {
     vector<prec_t> target_v_rob{12.0,12.0};
 
     BOOST_TEST_CHECKPOINT("Solving RMDP");
-    auto&& so = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,optimistic_unbounded, 0.0),100,0.0,10,0.0);
+    auto&& so = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::optimistic_unbounded()),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(so.valuefunction, target_v_opt, 1e-3);
 
-    auto&& sr = mpi_jac(rmdp,0.9,iv,uniform_nature(rmdp,robust_unbounded, 0.0),100,0.0,10,0.0);
+    auto&& sr = mpi_jac(rmdp,0.9,iv,SARobustBellman<WeightedRobustState>(nats::robust_unbounded()),100,0.0,10,0.0);
     CHECK_CLOSE_COLLECTION(sr.valuefunction, target_v_rob, 1e-3);
 }
 
@@ -275,6 +275,8 @@ void print_vector(vector<T> vec){
     }
 }*/
 
+#if __cplusplus >= 201703L
+
 BOOST_AUTO_TEST_CASE(implementable_from_samples){
     const int terminal_state = 10;
 
@@ -340,15 +342,18 @@ BOOST_AUTO_TEST_CASE(implementable_from_samples){
 
     auto sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PlainBellman(mdpi.obspol2statepol(isol)));
 
-    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 0.1);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 0.1);
 
     isol = mdpi.solve_robust(1, 0.0, 0.9, randompolicy);
     sol_impl = mpi_jac(*mdp, 0.9, numvec(0), PlainBellman(mdpi.obspol2statepol(isol)));
 
-    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 1e-3);
-    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 1e-3);
+    BOOST_CHECK_CLOSE(sol_impl.total_return(initial), 51.3135, 0.1);
+    BOOST_CHECK_CLOSE(mdpi.total_return(0.9), 51.3135, 0.1);
 }
+
+#endif //  __cplusplus >= 201703L
+
 
 BOOST_AUTO_TEST_CASE(test_return_of_implementable){
     // test return with different initial states

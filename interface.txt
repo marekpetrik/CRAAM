@@ -1,0 +1,13 @@
+Methods:
+
+construct_mdp(dataframe)            // constructs mdp object from a dataframe
+construct_nature(dataframe)         // constructs a description of nature from a data frame
+mdp,nature,smdp <- from_samples_mdp(dataframe,smdp=?)         // constructs an mdp and nature from samples
+
+
+** simplified interface
+
+mdp.dataframe,nature.dataframe <- from_samples(dataframe)         // constructs an mdp and nature from samples
+solve_mdp(mdp, nature)              // solve the mdp using nature, mdp could be a dataframe, nature could be the dataframe description
+samples.dataframe <- simulate(name,runs,horizon)
+

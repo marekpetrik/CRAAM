@@ -46,7 +46,6 @@ Second, install Eigen in the same directory.
     $ mv eigen-eigen-5a0156e40feb/Eigen ../include
 ```
 
-
 Finally, download and solve a simple benchmark problem:
 
 ``` bash
@@ -81,14 +80,16 @@ The library has minimal dependencies and was tested on Linux. It has not been te
 
 ### Requirements
 
--   C++14 compatible compiler:
+-   At least C++14 compatible compiler (must edit `CMakeLists.txt`):
     -   Tested with Linux GCC 4.9.2,5.2.0,6.1.0; does not work with GCC 4.7, 4.8.
     -   Tested with Linux Clang 3.6.2 (and maybe 3.2+).
+-   All unit tests enabled only with a C++17 compiler
 -   [Eigen](http://eigen.tuxfamily.org) 3+ for computing occupancy frequencies
 
 #### Optional Dependencies
 
 -   [CMake](http://cmake.org/): 3.1.0 to build tests, command line executable, and the documentation
+-   [Gurobi 8](http://gurobi.com) for using robust objectives that require a linear program solver. On linux, the files that need to be copied to `lib/gurobi` are `libgurobi80.so`,`libgurobi_g++5.2.a`. If you figure out what to do on other platforms, please send a pull request. Also `gurobi_c++.h` and `gurobi_c.h` must be copied to `include/gurobi`.
 -   [OpenMP](http://openmp.org) to enable parallel computation
 -   [Doxygen](http://doxygen.org%3E) 1.8.0+ to generate documentation
 -   [Boost](http://boost.org) for compiling and running unit tests (`boost-devel` package, `libboost-all-dev` package on some distributions)
@@ -159,7 +160,7 @@ library(devtools)
 devtools::install_bitbucket("marekpetrik/craam/rcraam")
 ```
 
-R version 3.4 is recommended, but the package probably works with earlier versions too.
+R version 3.4 and above is recommended, but the package probably works with earlier versions too. The local compiler must support at least C++14.
 
 The following short program can be used to load and solve an MDP:
 

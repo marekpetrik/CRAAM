@@ -1,4 +1,4 @@
 #library(Rcpp)
 
-MDP <- setRcppClass("MDP")
+#MDP <- setRcppClass("MDP")
 #loadModule("MDP", TRUE)

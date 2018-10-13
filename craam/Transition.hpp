@@ -261,7 +261,6 @@ public:
         return inner_product(probabilities.cbegin(), probabilities.cend(), rewards.cbegin(), 0.0);
     }
 
-
     /** Computes the mean return from this transition */
     prec_t mean_reward() const{
         return mean_reward(probabilities);
